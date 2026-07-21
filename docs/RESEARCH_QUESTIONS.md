@@ -4,6 +4,8 @@ Status: **Backlog only — no literature review has been performed yet.**
 
 This document records what should be investigated before SUDACHI makes any strong novelty claim or connects a live parent model. The research should inform positioning and terminology without blocking the deterministic Phase 1 organism.
 
+Provider permission, terms, privacy, and operational questions are tracked separately in [`PARENT_MODEL_PROVIDER_REVIEW.md`](PARENT_MODEL_PROVIDER_REVIEW.md).
+
 ## Core research question
 
 Which parts of SUDACHI already exist in adjacent fields, and which combination or measurement strategy may be genuinely distinctive?
