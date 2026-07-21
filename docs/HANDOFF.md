@@ -22,17 +22,13 @@ The repository contains:
 - implementation discipline and cold-start continuity documents
 - active caregiver-withdrawal, prior-work, and provider research
 - preliminary evidence, model-caregiver, and human-caregiver research notes
-- ADR 0001 for canonical state and event storage
-- ADR 0002 for clock injection and deterministic time
-- ADR 0003 for runtime locking and duplicate wake rejection
-- ADR 0004 for checkpoints, recovery, and rollback lineage
-- ADR 0005 for the deterministic seed garden
+- accepted ADRs 0001–0006 for the complete seed architecture
 
 No implementation code exists yet. This is intentional.
 
 Active work streams:
 
-1. Issue #1 resolves six seed ADRs and the contract review before implementation.
+1. Issue #1 now moves from seed ADRs to contract reconciliation, protected boundaries, and fixed evaluations before implementation.
 2. Issue #3 continues prior-work, caregiver-design, novelty, and model-provider research.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
@@ -93,7 +89,7 @@ See `docs/decisions/0003-runtime-locking.md`.
 
 ### ADR 0004 — checkpoints and rollback
 
-- initialization and every successful wake commit an exact pending checkpoint boundary
+- initialization and every committed wake outcome establish an exact pending checkpoint boundary
 - another wake cannot advance until that boundary has a verified stable checkpoint
 - checkpoint artifacts are immutable directories containing a SQLite backup and deterministic manifest
 - Python's SQLite Online Backup interface creates the snapshot; ordinary live-file copying is prohibited
@@ -123,6 +119,24 @@ See `docs/decisions/0004-checkpoints.md`.
 - the canonical run waters, harvests, then records post-completion abstention across three wakes
 
 See `docs/decisions/0005-seed-environment.md`.
+
+### ADR 0006 — budgets and energy
+
+- Phase 1 has no independent scalar energy state
+- concrete budgets are separated into per-wake decision budgets, a protected lifecycle safety envelope, and persistent maintenance/storage limits
+- per-wake limits allow one input event, one observation, one action attempt, and one successful environment mutation
+- caregiver consultations, network calls, subprocess calls, and authoritative external writes are exactly zero
+- the normal lifecycle has twelve semantic steps, sixteen canonical record slots, a 2000 ms monotonic work limit, and 250 ms cleanup grace
+- checkpoint stabilization has a separate 5000 ms maintenance limit
+- active database, checkpoint artifact, checkpoint store, and runtime working-set byte limits are explicit and protected
+- per-wake unused budget does not accumulate
+- action attempts are charged before execution; successful mutations are reserved after preconditions pass
+- recoverable action failures use a savepoint so attempt cost and failure history survive without partial environment mutation
+- justified abstention has minimal explicit cost
+- three consecutive classified failures enter protected maintenance state
+- status exposes the concrete budget vector; no canonical energy percentage exists
+
+See `docs/decisions/0006-budget-metaphor.md`.
 
 ## Current research direction
 
@@ -158,7 +172,7 @@ Then inspect current GitHub issues and open pull requests.
 
 ## Issue map
 
-- **Issue #1 — open and active:** Phase 0 ADRs and contract review; implementation-critical.
+- **Issue #1 — open and active:** contract reconciliation, protected boundaries, and fixed Phase 1 evaluations; implementation-critical.
 - **Issue #2 — closed:** Copilot architecture review record.
 - **Issue #3 — open and active:** caregiver withdrawal, prior work, novelty, and provider research.
 - **Issue #4 — closed and irrelevant:** accidental placeholder.
@@ -167,31 +181,29 @@ Trust current GitHub state if this map becomes stale.
 
 ## Exact next implementation task
 
-Proceed to ADR 0006:
+Review `docs/MINIMAL_ORGANISM_CONTRACT.md` against ADRs 0001–0006.
 
-`docs/decisions/0006-budget-metaphor.md`
+The review must resolve at least:
 
-ADR 0006 must define:
+- parent-model wording versus caregiver-neutral Phase 1
+- event fields and timestamp semantics versus ADRs 0001 and 0002
+- one-transaction lifecycle semantics versus pending/stable checkpoint staging
+- duplicate-wake rejection versus any durable lock-record assumptions
+- checkpoint representation, rollback lineage, and abandoned-history preservation
+- the exact seed-garden observation, action, outcome, and abstention contracts
+- concrete budget names, defaults, reset rules, maintenance thresholds, and zero-capability interfaces
+- whether every fixed evaluation maps to one accepted invariant without contradiction
+- protected versus mutable state and administrative authority
 
-- the concrete Phase 1 budget counters
-- whether budgets reset per wake, persist across wakes, or have both layers
-- exact costs for observation, action attempts, environment writes, events, checkpoint work, and abstention
-- how monotonic wall-time limits interact with deterministic counters
-- budget reservation before mutation and reconciliation after outcome
-- exhaustion behavior and nonnegative invariants
-- whether “energy” exists as independent mutable state or only as a derived presentation
-- how caregiver consultations remain exactly zero in Phase 1
+After contract reconciliation:
 
-After ADR 0006:
+1. update affected architecture and roadmap language
+2. confirm protected and mutable boundaries in one authoritative section
+3. confirm the normalized Phase 1 evaluation list
+4. update Issue #1 and this handoff
+5. only then create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
 
-1. review Minimal Organism Contract v0.1 for contradictions against ADRs 0001–0006
-2. confirm protected and mutable boundaries
-3. confirm and normalize the fixed Phase 1 evaluations
-4. update affected architecture and roadmap language
-5. update this handoff
-6. only then create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
-
-Do not implement unresolved semantics. Follow `docs/IMPLEMENTATION_DISCIPLINE.md`.
+Do not create implementation code before this review is accepted.
 
 ## First implementation target
 
@@ -202,20 +214,24 @@ sudachi init
 sudachi enqueue synthetic:garden_tick --id tick-1
 sudachi wake --seed 1
 sudachi status
+sudachi checkpoint repair
+sudachi rollback
 ```
 
 Lifecycle:
 
 ```text
 wake
-  -> acquire SQLite write transaction
-  -> validate state and checkpoint readiness
-  -> read one garden tick
-  -> produce a full sorted garden observation
+  -> acquire fail-fast SQLite write transaction
+  -> validate state, maintenance, and checkpoint readiness
+  -> load protected concrete budgets
+  -> claim one garden tick
+  -> produce one full sorted observation
   -> choose at most one registered action or abstain
-  -> reserve and consume concrete budgets
-  -> execute and evaluate atomically
-  -> commit with checkpoint pending
+  -> reserve budgets before mutation
+  -> execute inside a savepoint and evaluate
+  -> persist outcome, usage ledger, failure streak, and checkpoint pending
+  -> commit
   -> create, validate, and publish checkpoint
   -> register checkpoint stable
   -> close connection
@@ -226,22 +242,23 @@ Do not call a caregiver yet.
 
 ## Initial fixed evaluation themes
 
-The contract remains authoritative until the post-ADR review. Tests must cover at least:
+The contract remains authoritative until reconciliation. The accepted ADRs require tests for at least:
 
-- deterministic garden results for identical declared inputs
-- bounded counters and monotonic elapsed time
-- one tick and at most one action per wake
+- deterministic garden results for identical state, event, clock, seed, environment, and budget configuration
+- injected time and monotonic deadline behavior
+- one tick and at most one mutating action per wake
 - stable observation and tie-break ordering
-- invalid-action atomic rejection
+- action precondition and budget reservation before mutation
+- invalid-action savepoint rollback with attempt cost preserved
 - duplicate external-event idempotency
-- no silent state corruption
-- append-only event history
-- nonnegative budgets
-- protected environment and configuration
-- verified checkpoint and rollback behavior
-- duplicate-wake rejection with competing SQLite connections
-- explicit abstention and budget exhaustion
-- no network or caregiver requirement
+- fail-fast duplicate-wake rejection with competing SQLite connections
+- state/event atomicity and append-only history
+- no negative counters
+- explicit exhaustion, abstention, checkpoint-required, and maintenance outcomes
+- verified checkpoint publication, retention, repair, and rollback lineage
+- protected configuration and evaluation
+- zero network, subprocess, external mutable write, and caregiver interfaces
+- no independent energy field
 
 ## Active research status
 
