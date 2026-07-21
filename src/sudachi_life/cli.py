@@ -1,4 +1,4 @@
-"""Minimal command-line interface for the Phase 1 foundation."""
+"""Bounded command-line interface for SUDACHI-0."""
 
 from __future__ import annotations
 
@@ -9,7 +9,10 @@ import sys
 from typing import Sequence
 
 from .errors import SudachiError
+from .inbox import GARDEN_TICK_EVENT_TYPE, enqueue_garden_tick
+from .lifecycle import perform_first_water_wake
 from .organism import get_status, initialize_organism
+from .paths import OrganismPaths
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,6 +29,17 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument("organism_id")
     init_parser.add_argument("--json", action="store_true", dest="as_json")
 
+    enqueue_parser = subparsers.add_parser("enqueue", help="enqueue one synthetic input")
+    enqueue_parser.add_argument("organism_id")
+    enqueue_parser.add_argument("event_type", choices=[GARDEN_TICK_EVENT_TYPE])
+    enqueue_parser.add_argument("--id", required=True, dest="external_event_id")
+    enqueue_parser.add_argument("--json", action="store_true", dest="as_json")
+
+    wake_parser = subparsers.add_parser("wake", help="perform one bounded Phase 1 wake")
+    wake_parser.add_argument("organism_id")
+    wake_parser.add_argument("--seed", type=int, required=True)
+    wake_parser.add_argument("--json", action="store_true", dest="as_json")
+
     status_parser = subparsers.add_parser("status", help="read canonical organism status")
     status_parser.add_argument("organism_id")
     status_parser.add_argument("--json", action="store_true", dest="as_json")
@@ -33,30 +47,8 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _format_human(status: dict[str, object]) -> str:
-    lines = [
-        f"organism_id: {status['organism_id']}",
-        f"status: {status['status']}",
-        f"contract_version: {status['contract_version']}",
-        f"schema_version: {status['schema_version']}",
-        f"environment_version: {status['environment_version']}",
-        f"lineage_generation: {status['lineage_generation']}",
-        f"lifecycle_number: {status['lifecycle_number']}",
-        f"checkpoint_pending: {str(status['checkpoint_pending']).lower()}",
-        f"latest_stable_checkpoint_id: {status['latest_stable_checkpoint_id']}",
-        f"latest_stable_event_sequence: {status['latest_stable_event_sequence']}",
-        f"event_count: {status['event_count']}",
-        f"environment_step: {status['environment_step']}",
-        f"objective_complete: {str(status['objective_complete']).lower()}",
-        f"water_units: {status['water_units']}",
-        f"harvested_fruit: {status['harvested_fruit']}",
-    ]
-    for plot in status["plots"]:  # type: ignore[index]
-        lines.append(
-            "plot: "
-            f"{plot['plot_id']} stage={plot['stage']} moisture={plot['moisture']} fruit={plot['fruit']}"
-        )
-    return "\n".join(lines)
+def _format_human(payload: dict[str, object]) -> str:
+    return "\n".join(f"{key}: {value}" for key, value in payload.items())
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -67,9 +59,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             status, checkpoint = initialize_organism(args.runtime_dir, args.organism_id)
             payload = status.as_dict()
             payload["genesis_checkpoint_id"] = checkpoint.checkpoint_id
+        elif args.command == "enqueue":
+            paths = OrganismPaths.build(args.runtime_dir, args.organism_id)
+            payload = enqueue_garden_tick(paths, args.external_event_id).as_dict()
+        elif args.command == "wake":
+            payload = perform_first_water_wake(
+                args.runtime_dir,
+                args.organism_id,
+                seed=args.seed,
+            ).as_dict()
         elif args.command == "status":
             payload = get_status(args.runtime_dir, args.organism_id).as_dict()
-        else:  # pragma: no cover - argparse enforces the command set.
+        else:
             parser.error(f"unknown command: {args.command}")
             return 2
     except SudachiError as exc:
