@@ -13,13 +13,14 @@ Do not rely on conversation memory, prior model context, an issue title, or a si
 Read these files in order:
 
 1. `README.md`
-2. `docs/ORIGIN.md`
-3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-4. `docs/ROADMAP.md`
-5. `docs/ARCHITECTURE.md`
-6. `docs/RESEARCH_QUESTIONS.md`
-7. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-8. `docs/HANDOFF.md`
+2. `docs/CHATGPT_PROJECT_HANDOFF.md`
+3. `docs/ORIGIN.md`
+4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+5. `docs/ROADMAP.md`
+6. `docs/ARCHITECTURE.md`
+7. `docs/RESEARCH_QUESTIONS.md`
+8. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+9. `docs/HANDOFF.md`
 
 Then inspect the current open issues and confirm which issue is active.
 
