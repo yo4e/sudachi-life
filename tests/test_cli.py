@@ -31,12 +31,12 @@ def test_cli_reports_missing_organism(tmp_path: Path, capsys) -> None:
     assert "organism database not found" in captured.err
 
 
-def test_cli_runs_water_then_harvest(tmp_path: Path, capsys) -> None:
+def test_cli_runs_canonical_three_wake_sequence(tmp_path: Path, capsys) -> None:
     runtime = tmp_path / "runtime"
     assert main(["--runtime-dir", str(runtime), "init", "alpha", "--json"]) == 0
     capsys.readouterr()
 
-    for event_id, seed in (("tick-1", "1"), ("tick-2", "2")):
+    for event_id, seed in (("tick-1", "1"), ("tick-2", "2"), ("tick-3", "3")):
         assert main([
             "--runtime-dir", str(runtime), "enqueue", "alpha",
             "synthetic:garden_tick", "--id", event_id, "--json",
@@ -48,12 +48,17 @@ def test_cli_runs_water_then_harvest(tmp_path: Path, capsys) -> None:
         ]) == 0
         wake_payload = json.loads(capsys.readouterr().out)
 
-    assert wake_payload["decision"]["action_id"] == "harvest_plot"
+    assert wake_payload["decision"] == {
+        "decision_type": "abstention",
+        "reason": "objective_already_complete",
+    }
     assert wake_payload["evaluation"]["objective_complete_after"] is True
+    assert wake_payload["budget_ledger"]["consumed"]["action_attempts"] == 0
+    assert wake_payload["budget_ledger"]["consumed"]["environment_mutations"] == 0
 
     assert main(["--runtime-dir", str(runtime), "status", "alpha", "--json"]) == 0
     status = json.loads(capsys.readouterr().out)
-    assert status["lifecycle_number"] == 2
+    assert status["lifecycle_number"] == 3
     assert status["objective_complete"] is True
     assert status["harvested_fruit"] == 1
-    assert status["event_count"] == 25
+    assert status["event_count"] == 35
