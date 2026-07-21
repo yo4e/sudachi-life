@@ -23,6 +23,7 @@ The repository contains:
 - active caregiver-withdrawal, prior-work, and provider research
 - preliminary evidence, model-caregiver, and human-caregiver research notes
 - ADR 0001 for canonical state and event storage
+- ADR 0002 for clock injection and deterministic time
 
 No implementation code exists yet. This is intentional.
 
@@ -49,18 +50,31 @@ Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
 ### ADR 0001 — state and event storage
 
-Accepted decision:
-
 - one SQLite database per organism is the sole canonical durable store
-- current state, budgets, event history, outcomes, provenance, and checkpoint metadata share that authority
+- state, budgets, event history, outcomes, provenance, and checkpoint metadata share that authority
 - logically related lifecycle changes commit in one SQLite transaction
 - canonical event order is a monotonically increasing database sequence, not a timestamp
 - canonical event rows are append-only
 - JSONL is a reproducible, non-canonical export only
-- Phase 1 uses a local filesystem and begins from the rollback-journal model unless later ADRs justify WAL
+- Phase 1 starts from SQLite's rollback-journal model unless later ADRs justify WAL
 - schema evolution is explicit, versioned, validated, transactional, and outside organism authority
 
 See `docs/decisions/0001-state-and-event-storage.md`.
+
+### ADR 0002 — clock and determinism
+
+- every time read goes through an injected clock boundary
+- a clock reading contains integer UTC epoch microseconds and monotonic nanoseconds
+- operational runs use a real clock; tests and replay use an explicit fake clock
+- unexpected extra fake-clock reads fail deterministic tests
+- canonical wall timestamps are SQLite integers; ISO 8601 strings are derived presentation
+- absolute monotonic origins are never treated as portable durable timestamps
+- elapsed-time budgets and deadlines use monotonic time
+- event sequence from ADR 0001 remains the authoritative order even when wall time repeats or moves backward
+- current time may not be an implicit seed, identifier, or tie breaker
+- time-dependent behavior must receive time as a declared input
+
+See `docs/decisions/0002-clock-and-determinism.md`.
 
 ## Current research direction
 
@@ -105,26 +119,26 @@ Trust current GitHub state if this map becomes stale.
 
 ## Exact next implementation task
 
-Proceed to ADR 0002:
+Proceed to ADR 0003:
 
-`docs/decisions/0002-clock-and-determinism.md`
+`docs/decisions/0003-runtime-locking.md`
 
-ADR 0002 must define:
+ADR 0003 must define:
 
-- the clock interface
-- real operational time versus injected test time
-- timestamp representation and precision
-- deterministic timestamp behavior
-- handling of wall-clock movement and equal timestamps
-- which recorded times are authoritative facts and which are presentation metadata
-- compatibility with ADR 0001's rule that event sequence, not timestamp, defines canonical order
+- how one wake obtains exclusive write ownership
+- how duplicate simultaneous wakes are rejected
+- whether lock acquisition uses a SQLite write transaction, a lock record, or both
+- the relationship between runtime ownership and the lifecycle transaction
+- process identity and diagnostic metadata
+- crash behavior and stale-lock handling without trusting wall time as mutual-exclusion authority
+- test behavior under injected clocks and competing connections
+- compatibility with ADR 0001 transaction boundaries and ADR 0002 clock semantics
 
 Then resolve:
 
-1. ADR 0003 — runtime locking and duplicate wakes
-2. ADR 0004 — checkpoints and rollback
-3. ADR 0005 — seed environment
-4. ADR 0006 — budget metaphor and energy
+1. ADR 0004 — checkpoints and rollback
+2. ADR 0005 — seed environment
+3. ADR 0006 — budget metaphor and energy
 
 After all six ADRs:
 
@@ -169,8 +183,8 @@ Do not call a caregiver yet.
 
 The contract remains authoritative. Tests must cover at least:
 
-- deterministic results for identical declared inputs
-- bounded steps and time
+- deterministic results for identical declared inputs, including fake-clock readings
+- bounded steps and monotonic elapsed time
 - sandboxed effects
 - no silent state corruption
 - append-only event history
