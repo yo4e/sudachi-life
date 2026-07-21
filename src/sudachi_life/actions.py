@@ -81,7 +81,7 @@ def select_garden_decision(observation: GardenObservation) -> GardenDecision:
             reason="fixed_policy_first_executable_harvest",
         )
 
-    raise ActionRejectedError("no-applicable-action abstention is not implemented yet")
+    return GardenAbstention(reason="no_applicable_action")
 
 
 def select_first_water_decision(observation: GardenObservation) -> GardenActionDecision:
