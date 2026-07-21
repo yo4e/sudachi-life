@@ -1,0 +1,68 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 3e62773..a6734e6 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -42,23 +42,25 @@ No research result authorizes a live caregiver during Phase 1.
+ 
+ ## Immediate restart point
+ 
+-Slices 1–5 establish:
++Slices 1–6 establish:
+ 
+ - a canonical SQLite organism body
+ - injected time and protected concrete budgets
+-- stable genesis, water, harvest, and abstention checkpoints
++- stable genesis, water, harvest, justified-abstention, and blocked-abstention checkpoints
+ - idempotent synthetic garden ticks
+ - fail-fast wake ownership and deterministic observation
+ - fixed-policy `water_plot(bed-a)` and `harvest_plot(bed-b)` wakes
+ - justified `objective_already_complete` abstention with zero action and mutation cost
+-- independent transition, abstention, and objective evaluation
+-- the complete canonical three-wake run with exact pending boundaries and return to sleep
++- classified `no_applicable_action` abstention when the objective is incomplete but no protected mutation is executable
++- independent transition and abstention evaluation
++- explicit failure-streak accounting below the maintenance threshold
++- the complete canonical three-wake run plus one protected blocked-state fixture
+ 
+-After PR #19 is merged, the exact next implementation slice is **Slice 6: classified `no_applicable_action` abstention and failure-streak accounting**.
++After PR #20 is merged, the exact next implementation slice is **Slice 7: resource-aware harvest fallback and failure-streak reset**.
+ 
+-It must use an explicit protected test fixture with an incomplete objective and no executable mutating action, commit the specific abstention, increment the failure streak exactly once, checkpoint the outcome, and return to sleep below the maintenance threshold.
++It must use an explicit protected fixture with an incomplete objective, a dry living plot, no water, one harvestable fruit, and `consecutive_failures = 1`; prove that the fixed policy skips impossible watering, selects `harvest_plot`, makes positive progress, resets the failure streak to zero, checkpoints the outcome, and returns to sleep.
+ 
+-Do not add budget-exhaustion handling, action-failure injection, maintenance threshold entry, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 6.
++Do not add budget-exhaustion handling, injected action failure, maintenance-threshold entry, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 7.
+ 
+ Phase 1 remains deterministic, local, network-free, and caregiver-free.
+ 
+diff --git a/docs/HANDOFF.md b/docs/HANDOFF.md
+index 2147259..8c74ef2 100644
+--- a/docs/HANDOFF.md
++++ b/docs/HANDOFF.md
+@@ -1,6 +1,6 @@
+ # SUDACHI Project Handoff
+ 
+-Last updated: July 21, 2026
++Last updated: July 22, 2026
+ 
+ ## Cold-start summary
+ 
+@@ -59,7 +59,7 @@ Merged through PR #18:
+ 
+ ### Slice 5 — objective-complete abstention
+ 
+-Implemented and verified in PR #19:
++Merged through PR #19:
+ 
+ - the third canonical tick observes `objective_complete = true`
+ - a dedicated abstention decision records `objective_already_complete`
+@@ -69,25 +69,35 @@ Implemented and verified in PR #19:
+ - the organism returns to `sleeping` with failure streak zero
+ - the complete canonical water, harvest, abstention run is protected
+ 
+-No live human, fixture, or model caregiver is connected.
++### Slice 6 — classified no-applicable-action abstention
++
++Implemented and verified in PR #20:
++
++- a protected admini
