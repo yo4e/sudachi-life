@@ -4,11 +4,15 @@ Last updated: July 21, 2026
 
 ## Cold-start summary
 
-SUDACHI is a developmental artificial-life experiment whose central question is whether an artificial organism can become **less dependent on a capable parent model as it becomes more capable**.
+SUDACHI is a developmental artificial-life experiment whose central question is now stated more generally:
 
-A young organism may eventually consult a parent model when local capability is insufficient. Successful assistance should be converted into verified memory, tested skills, and deterministic local behavior so that dependency decreases with development.
+> Can a bounded artificial organism convert external cognitive scaffolding into verified local competence and retain capability while becoming less dependent on that scaffolding?
 
-The repository is treated as the organism's body, developmental record, skill substrate, and auditable lineage. The language model is an organ or parent, not the whole organism.
+The external caregiver may be a human, a deterministic fixture, a local model, a hosted model API, or a human-AI team. The architecture must not assume that the caregiver is an AI model or a named commercial product.
+
+Successful assistance should be converted into verified experience, tested skills, deterministic routines, or other inspectable local artifacts. Maturity is measured by retained capability under declining caregiver access, not by model size, token usage, file count, personality performance, or uncontrolled complexity.
+
+The repository is treated as the organism's body, developmental record, skill substrate, and auditable lineage. A language model may be an organ or caregiver, but it is not the organism.
 
 ## Current state
 
@@ -19,79 +23,93 @@ The repository contains:
 - a conservative architecture proposal
 - Minimal Organism Contract v0.1 as a draft
 - continuity instructions for future AI collaborators
-- implementation discipline and guardrails
-- a deferred prior-work and novelty research plan
-- a deferred provider and compliance checklist for any future live parent model
+- an active prior-work and novelty research plan
+- an active provider and compliance review for any future live model caregiver
+- a preliminary evidence map in `docs/research/INITIAL_EVIDENCE_MAP.md`
+- a preliminary provider-neutral model strategy in `docs/research/PARENT_MODEL_STRATEGY.md`
+- a human-caregiver and virtual-pet comparison in `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
 
 No implementation code exists yet. This is intentional.
 
-The project is paused at the boundary between design and implementation. The next task is to resolve six seed architecture decisions as ADRs, review the contract for contradictions, and only then build the Python package skeleton and first deterministic lifecycle.
+The project has two active work streams:
 
-## Decisions already made
+1. Issue #1 resolves the six seed architecture decisions before implementation.
+2. Issue #3 maps prior work, caregiver designs, novelty candidates, and provider constraints.
+
+Phase 1 remains deterministic, local, network-free, and caregiver-free. Research does not authorize connecting a live model or human chat interface to organism actions.
+
+## Decisions and working directions
+
+Accepted project decisions:
 
 - Project name: **SUDACHI**
 - Repository: `yo4e/sudachi-life`
 - First organism: provisional name **SUDACHI-0**
-- Primary objective: convert parent-model assistance into memory, tested skills, and deterministic local behavior so that dependency decreases with development
-- Initial technical candidates: Python, SQLite, JSONL exports, Git, and pytest
 - Runtime model: execute one bounded lifecycle and terminate; do not begin with an unbounded resident loop
 - Initial environment: local execution with no network access
-- Phase 1 will not call a parent model
-- A deterministic mocked parent may later verify the parent-adapter pathway
+- Phase 1 will not consult a parent or caregiver
+- A deterministic fixture may later verify consultation plumbing
 - The repository is both body and developmental history
-- The LLM is an organ or parent, not the whole organism
-- Maturity means increasing retained capability and autonomous duration without increasing dependence
 - SUDACHI-0 will not initially rewrite its own source code
 - Repository language is English, except for the two Japanese etymology lines intentionally preserved in `README.md`
-- Prior-work research is recorded but intentionally deferred; it does not block deterministic Phase 1
-- **The caregiver/parent concept is provider-neutral:** can be human, model, hybrid, or fixture; human caregiver is the leading candidate for first live experiment
-- No live commercial parent may be connected until current provider terms, product boundaries, automation rules, data practices, output-use rules, and operational constraints have been reviewed
-- Candidate novelty claims are hypotheses only until the prior-work review is complete
+- Prior-work and provider research was explicitly authorized by the owner on July 21, 2026
+- No live commercial model may be connected until current provider terms, product boundaries, automation rules, data practices, output-use rules, and operational constraints have been reviewed
+- Model-weight distillation is a distinct transformation class and remains disabled unless a provider- and model-specific review explicitly permits it
+- Candidate novelty claims remain hypotheses until the comparison work is substantially complete
+
+Current research direction, not yet a final architecture decision:
+
+- define the parent by function as an external caregiver or cognitive-scaffolding source, not by model identity
+- treat a human chat caregiver as the leading candidate for the first live developmental experiment
+- keep the caregiver interface source-neutral so deterministic, human, local-model, hosted-model, hybrid, and no-caregiver conditions can be compared
+- treat caregiver messages as typed proposals rather than direct executable commands
+- measure human time, consultations, clarification turns, latency, and hidden intervention as real resource costs
+- define maturity as retained capability after caregiver access is reduced or withheld
+- distinguish SUDACHI from virtual pets through verified skill acquisition and decreasing justified dependence, not through simulated needs, affection, or cosmetic development
 
 ## Reading order when resuming
 
 Read all of these before proposing implementation:
 
 1. `README.md`
-2. `docs/ORIGIN.md`
-3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-4. `docs/ROADMAP.md`
-5. `docs/ARCHITECTURE.md`
-6. `docs/RESEARCH_QUESTIONS.md`
-7. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-8. `docs/IMPLEMENTATION_DISCIPLINE.md` ← implementation guardrails and session protocol
-9. `AGENTS.md`
-10. this file
+2. `docs/CHATGPT_PROJECT_HANDOFF.md`
+3. `docs/ORIGIN.md`
+4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+5. `docs/ROADMAP.md`
+6. `docs/ARCHITECTURE.md`
+7. `docs/RESEARCH_QUESTIONS.md`
+8. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+9. `docs/research/INITIAL_EVIDENCE_MAP.md`
+10. `docs/research/PARENT_MODEL_STRATEGY.md`
+11. `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
+12. `AGENTS.md`
+13. this file
 
-Then inspect current GitHub issues. Do not rely on remembered issue state.
+Then inspect current GitHub issues and open pull requests. Do not rely on remembered issue state.
 
 ## Issue map at handoff
 
-- **Issue #1 — open and active:** Phase 0 architecture decisions and ADRs. This is the next work stream.
-- **Issue #2 — closed:** Copilot architecture review record. Its accepted recommendations were folded into the plan; it does not create a separate implementation stream.
-- **Issue #3 — open but deferred:** literature, novelty, caregiver design, and parent-provider compliance research. Research may proceed in parallel with Phase 1; complete it before live caregiver integration or strong novelty claims.
+- **Issue #1 — open and active:** Phase 0 architecture decisions and ADRs. This remains the implementation-critical work stream.
+- **Issue #2 — closed:** Copilot architecture review record. Its accepted recommendations were folded into the plan.
+- **Issue #3 — open and active:** prior-work, novelty, human-caregiver, virtual-pet, and model-provider research. Initial notes exist, but the review is incomplete.
 - **Issue #4 — closed and irrelevant:** accidental placeholder created during repository setup.
+- **PR #5 — open draft:** initial Issue #3 research and continuity updates.
 
 If this map differs from current GitHub state, trust current GitHub state and update this file.
 
-## Exact next task
+## Exact next implementation task
 
-Resume with Issue #1.
+Resume with Issue #1 and draft `docs/decisions/0001-state-and-event-storage.md`.
 
-Create `docs/decisions/` and record:
+The ADR must decide whether SQLite is the sole canonical store or whether JSONL has any canonical role. It should account for deterministic replay, append-only event guarantees, atomic lifecycle commits, checkpoint boundaries, export reproducibility, and future provenance records without designing live-caregiver integration.
 
-1. `0001-state-and-event-storage.md`
-   - SQLite only, or SQLite as canonical state plus JSONL exports
-2. `0002-clock-and-determinism.md`
-   - real time in operation and an injectable clock interface in tests
-3. `0003-runtime-locking.md`
-   - how to prevent two simultaneous wakes of the same organism
-4. `0004-checkpoints.md`
-   - checkpoint representation, rollback granularity, and cross-resource atomicity
-5. `0005-seed-environment.md`
-   - the first synthetic environment and objective
-6. `0006-budget-metaphor.md`
-   - whether energy is an independent state variable or a readable view of concrete budgets
+Then resolve:
+
+1. `0002-clock-and-determinism.md`
+2. `0003-runtime-locking.md`
+3. `0004-checkpoints.md`
+4. `0005-seed-environment.md`
+5. `0006-budget-metaphor.md`
 
 Current recommendations, not yet accepted ADRs:
 
@@ -139,7 +157,7 @@ wake
   -> sleep, release the lock, and terminate
 ```
 
-Do not call a parent model yet.
+Do not call a caregiver yet.
 
 ## Initial fixed tests
 
@@ -155,37 +173,70 @@ Treat the Phase 1 evaluations in `docs/MINIMAL_ORGANISM_CONTRACT.md` as authorit
 - rollback restores the latest stable checkpoint
 - duplicate simultaneous waking is rejected
 - abstention and budget exhaustion are explicitly recorded
-- no network or parent model is required
+- no network, human caregiver, or model caregiver is required
 
-## Deferred reviews
+## Active research status
 
-### Caregiver design and prior work
+### Human caregiver hypothesis
 
-`docs/RESEARCH_QUESTIONS.md`, tracked by Issue #3, records future research across artificial life, developmental AI, caregiver-supported learning, distillation, skill compilation, continual learning, and related systems.
+`docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md` records the current comparison.
 
-Issue #3 research may proceed in parallel with Phase 1 implementation. It does not block the deterministic, caregiver-free Phase 1 organism.
+Early findings:
 
-Do not claim that SUDACHI is unprecedented until this review is complete. Its likely contribution may be a distinctive integration and experimental framing rather than wholly unprecedented components.
+- human teaching, feedback, demonstrations, language instruction, and assistance requesting are established research areas
+- developmental robotics already includes human caregivers who adapt task difficulty as a robot develops
+- interactive imitation learning already seeks to reduce human intervention and monitoring burden
+- Tamagotchi establishes persistent needs, care-shaped growth, and emotional responsibility
+- Creatures and aibo are closer precedents because interaction can change learned behavior or personality
 
-The caregiver concept has been broadened to include human, model, hybrid, and fixture caregivers. The human caregiver is the leading candidate for the first live developmental experiment.
+Therefore, "an artificial creature raised by a human" is not a novelty claim.
 
-### Parent-model provider and compliance
+The stronger candidate is the full longitudinal experiment:
 
-`docs/PARENT_MODEL_PROVIDER_REVIEW.md`, also tracked by Issue #3, must be completed before connecting ChatGPT, an OpenAI API model, or another live commercial parent.
+> finite recorded caregiving -> verified local artifact -> retained capability -> competence-gated withdrawal -> measured independence
 
-The review must distinguish an interactive product from an official programmatic API and verify:
+The central failure mode is **Tamagotchi with Git**: simulated needs, branching growth, chat history, and personality changes without measurable acquisition of caregiver-independent competence.
 
-- current terms and usage policies
-- automation and unattended-call rules
-- whether outputs may become skills, code, memory, distillation data, or training data
-- data retention, privacy, deletion, and publication controls
-- credentials, costs, rate limits, quotas, reliability, and fallback behavior
-- attribution, disclosure, provenance, and branding requirements
-- provider-independent and no-parent baselines
+### Candidate first live-caregiver experiment
 
-A dated ADR must select the first live provider. Do not treat ChatGPT and the OpenAI API as interchangeable.
+After deterministic Phase 1 and a fixture-caregiver protocol test:
 
-Neither deferred review blocks Phase 0 ADRs, the deterministic Phase 1 lifecycle, mocked-parent plumbing, provider-neutral interfaces, or local invariant tests.
+1. expose a bounded human chat interface
+2. classify input as demonstration, correction, constraint, explanation, preference, question, defer, or abstain
+3. treat every response as a proposal subject to normal permissions, budget, sandbox, evaluation, and adoption rules
+4. record human minutes, consultations, latency, confidence, clarification, and later reuse
+5. reduce access only after protected competence tests pass
+6. run withheld-caregiver and transfer trials
+
+The human caregiver may not directly execute actions, modify protected state, weaken tests, raise budgets, erase history, or promote skills.
+
+### Prior work and novelty
+
+`docs/research/INITIAL_EVIDENCE_MAP.md` finds clear precedents for digital organisms, teacher-student distillation, executable skill libraries, wake-sleep program learning, model routing, human feedback, and caregiver scaffolding.
+
+The strongest remaining candidate is the integration and longitudinal measurement of retained capability under deliberately declining external scaffolding, with protected evaluation, rollback, provenance, and full resource accounting. This is still a hypothesis, not a novelty claim.
+
+Next research outputs include:
+
+- annotated bibliography
+- broader related-work and product comparison matrix
+- negative-search record
+- terminology and positioning note
+- explicit comparison with Creatures, aibo, Tamagotchi, interactive task learning, and intervention-efficient imitation learning
+
+### Model-provider and compliance research
+
+`docs/PARENT_MODEL_PROVIDER_REVIEW.md` and `docs/research/PARENT_MODEL_STRATEGY.md` remain relevant for later artificial-caregiver conditions.
+
+Current direction:
+
+- distinguish consumer chat products from official programmatic APIs
+- separate transient advice, retained memory, deterministic artifacts, synthetic data, and model-weight distillation
+- default model-weight distillation to prohibited until explicitly authorized for the exact provider and model
+- preserve local open-weight, deterministic fixture, human, hybrid, and no-caregiver conditions
+- do not select ChatGPT or another named model as the canonical parent
+
+A human-first experiment reduces API cost and provider dependence, but it does not remove the need to measure labor, privacy, consent, experimenter intervention, or bias.
 
 ## Do not implement yet
 
@@ -198,43 +249,45 @@ Neither deferred review blocks Phase 0 ADRs, the deterministic Phase 1 lifecycle
 - a physical robot body
 - replication outside the repository
 - personality performance before the life mechanisms exist
-- a live named parent provider
+- a live named model caregiver
+- a free-form human chat channel that can bypass registered actions and protected policy
 
 ## Central research metrics
 
 Do not reduce the project to one intelligence score. Observe changes in:
 
-- parent calls per successful action
-- reusable behaviors acquired per parent call
-- successful autonomous duration without parent access
+- caregiver consultations per successful action
+- caregiver minutes per retained capability
+- reusable behaviors acquired per consultation
+- successful autonomous duration without caregiver access
 - skill reuse rate
 - transfer to unfamiliar tasks through composition of existing skills
-- recovery rate after failure
-- storage and inference cost per retained capability
+- recovery rate after failure or misleading advice
+- storage and computation cost per retained capability
+- clarification and correction rate
 - correct abstention under uncertainty
+- hidden retries and unrecorded human intervention
 
 ## End-of-session protocol
 
-Before ending any substantial future work session, follow the restart checklist in `docs/IMPLEMENTATION_DISCIPLINE.md § 8`:
+Before ending any substantial future work session:
 
 1. update accepted ADRs and affected documentation
 2. update the relevant issue checklist and status
 3. update this file with the true current state and one exact next action
 4. ensure `AGENTS.md` still points to the correct files and issue roles
 5. leave no required decision only in chat, model memory, or an uncommitted local note
-6. record any newly deferred research or compliance question in the repository
+6. record newly deferred research or compliance questions in the repository
 
 The next collaborator should be able to resume from a cold start without access to the conversation that created the project.
 
 ## To the next AI collaborator
 
-Do not flatten this project into a generic autonomous-agent framework.
+Do not flatten this project into a generic autonomous-agent framework or a virtual-pet presentation layer.
 
-The center is development, not task completion.
+The center is development, not task completion or simulated affection.
 
-Knowledge borrowed from the parent should settle into the body. The organism should gradually do more without asking, consolidate memory and skills, and carry itself into another day within finite resources.
-
-Do not connect a named live provider merely because an adapter can be written. Verify permission and operational constraints first.
+Knowledge borrowed from a caregiver should settle into the body. The organism should gradually do more without asking, consolidate memory and skills, and carry itself into another day within finite resources. Making that process observable is the core of SUDACHI.
 
 Do not make it large merely because expansion is easy.
 
