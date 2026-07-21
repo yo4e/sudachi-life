@@ -4,7 +4,7 @@ Last updated: July 21, 2026
 
 ## Current state
 
-The repository now contains the founding concept, origin record, roadmap, initial architecture, and the first draft of the Minimal Organism Contract v0.1.
+The repository now contains the founding concept, origin record, roadmap, initial architecture, the first draft of the Minimal Organism Contract v0.1, and a deferred prior-work research plan.
 
 No implementation code exists yet. This is intentional. The next step is to close the remaining architectural decisions with short decision records, then implement the Python skeleton for SUDACHI-0.
 
@@ -24,6 +24,7 @@ No implementation code exists yet. This is intentional. The next step is to clos
 - Maturity means increasing retained capability and autonomous duration without increasing dependence
 - SUDACHI-0 will not initially be allowed to rewrite its own source code
 - Repository language: English, except for the two Japanese etymology lines intentionally preserved in `README.md`
+- Prior-work research is recorded but intentionally deferred; it does not block deterministic Phase 1
 
 ## Reading order when resuming
 
@@ -32,8 +33,9 @@ No implementation code exists yet. This is intentional. The next step is to clos
 3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
 4. `docs/ROADMAP.md`
 5. `docs/ARCHITECTURE.md`
-6. `AGENTS.md`
-7. this file
+6. `docs/RESEARCH_QUESTIONS.md`
+7. `AGENTS.md`
+8. this file
 
 ## Next concrete task
 
@@ -65,6 +67,14 @@ Current recommendations:
 - energy: initially present concrete budgets directly instead of introducing a mysterious independent variable
 
 After the ADRs are accepted, create `pyproject.toml`, `src/sudachi_life/`, and `tests/`.
+
+## Deferred prior-work review
+
+The questions and search plan are recorded in `docs/RESEARCH_QUESTIONS.md` and tracked by Issue #3.
+
+Do not claim novelty yet. The future review should map artificial life, developmental AI, teacher-student withdrawal, distillation, agent skill compilation, continual learning, memory consolidation and forgetting, resource-rational intelligence, safe self-improvement, and identity or lineage in digital organisms.
+
+Begin that review before connecting a live parent model or publishing a strong originality claim. It does not block the Phase 0 ADRs or deterministic Phase 1 implementation.
 
 ## First implementation target
 
