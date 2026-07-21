@@ -1,0 +1,147 @@
+diff --git a/.github/workflows/dev-snapshot.yml b/.github/workflows/dev-snapshot.yml
+deleted file mode 100644
+index ff011b6..0000000
+--- a/.github/workflows/dev-snapshot.yml
++++ /dev/null
+@@ -1,26 +0,0 @@
+-name: Development snapshot
+-
+-on:
+-  pull_request:
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  snapshot:
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 5
+-    steps:
+-      - name: Check out repository
+-        uses: actions/checkout@v4
+-
+-      - name: Package exact pull-request tree
+-        run: zip -rq sudachi-pr-tree.zip . -x '.git/*' 'sudachi-pr-tree.zip'
+-
+-      - name: Upload source snapshot
+-        uses: actions/upload-artifact@v4
+-        with:
+-          name: sudachi-pr-tree
+-          path: sudachi-pr-tree.zip
+-          if-no-files-found: error
+-          retention-days: 1
+diff --git a/.github/workflows/test.yml b/.github/workflows/test.yml
+index b272d8b..b93a90b 100644
+--- a/.github/workflows/test.yml
++++ b/.github/workflows/test.yml
+@@ -53,27 +53,41 @@ jobs:
+         if: steps.pytest.outputs.status != '0'
+         run: exit 1
+ 
+-      - name: Smoke-test genesis CLI
++      - name: Smoke-test first canonical wake CLI
+         shell: bash
+         run: |
+           runtime_dir="$(mktemp -d)"
+           sudachi --runtime-dir "$runtime_dir" init sudachi-0 --json > init.json
++          sudachi --runtime-dir "$runtime_dir" enqueue sudachi-0 synthetic:garden_tick --id tick-1 --json > enqueue.json
++          sudachi --runtime-dir "$runtime_dir" wake sudachi-0 --seed 1 --json > wake.json
+           sudachi --runtime-dir "$runtime_dir" status sudachi-0 --json > status.json
+           python - <<'PY'
+           import json
+ 
+           with open("init.json", encoding="utf-8") as handle:
+               initialized = json.load(handle)
++          with open("enqueue.json", encoding="utf-8") as handle:
++              enqueued = json.load(handle)
++          with open("wake.json", encoding="utf-8") as handle:
++              wake = json.load(handle)
+           with open("status.json", encoding="utf-8") as handle:
+               status = json.load(handle)
+ 
+           assert initialized["organism_id"] == "sudachi-0"
+           assert initialized["status"] == "sleeping"
+           assert initialized["checkpoint_pending"] is False
+-          assert initialized["genesis_checkpoint_id"] == status["latest_stable_checkpoint_id"]
++          assert enqueued["inserted"] is True
++          assert wake["decision"]["action_id"] == "water_plot"
++          assert wake["decision"]["parameters"] == {"plot_id": "bed-a"}
++          assert wake["status"] == "sleeping"
+           assert status["organism_id"] == "sudachi-0"
+-          assert status["event_count"] == 3
+-          assert status["water_units"] == 1
++          assert status["lifecycle_number"] == 1
++          assert status["event_count"] == 14
++          assert status["environment_step"] == 1
++          assert status["water_units"] == 0
+           assert status["harvested_fruit"] == 0
++          assert status["latest_stable_checkpoint_id"] == wake["checkpoint_id"]
+           assert [plot["plot_id"] for plot in status["plots"]] == ["bed-a", "bed-b"]
++          assert status["plots"][0]["moisture"] == 1
++          assert status["plots"][1]["fruit"] == 1
+           PY
+diff --git a/AGENTS.md b/AGENTS.md
+index 2500c01..6a28cd3 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -4,188 +4,93 @@ This file is the continuity contract for AI collaborators working on SUDACHI.
+ 
+ ## Cold-start rule
+ 
+-Assume you remember nothing about SUDACHI.
++Assume you remember nothing. Reconstruct the project from repository state before changing anything.
+ 
+-Do not rely on conversation memory, prior model context, an issue title, or one code fragment. Reconstruct the project from repository state before proposing or changing anything.
+-
+-## Before doing any work
+-
+-Read these files in order:
++Read in this order:
+ 
+ 1. `README.md`
+ 2. `docs/CHATGPT_PROJECT_HANDOFF.md`
+ 3. `docs/ORIGIN.md`
+ 4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+-5. accepted files in `docs/decisions/`, in numeric order
++5. accepted ADRs in `docs/decisions/`
+ 6. `docs/ARCHITECTURE.md`
+ 7. `docs/ROADMAP.md`
+ 8. `docs/IMPLEMENTATION_DISCIPLINE.md`
+-9. `docs/RESEARCH_QUESTIONS.md`
+-10. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+-11. `docs/research/INITIAL_EVIDENCE_MAP.md`
+-12. `docs/research/PARENT_MODEL_STRATEGY.md`
+-13. `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
+-14. `docs/HANDOFF.md`
+-
+-Then inspect current open issues and pull requests and confirm which work streams are active.
+-
+-Current issue roles after Contract v0.2 reconciliation:
+-
+-- **#1** — Phase 0 seed architecture and contract freeze; close when the reconciliation PR is merged
+-- **#2** — completed Copilot architecture review record; closed
+-- **#3** — active caregiver-withdrawal, prior-work, novelty, human-caregiver, and model-provider research
+-- **#4** — accidental placeholder; closed and irrelevant
+-
+-If repository state and this list disagree, trust current GitHub state and update `docs/HANDOFF.md`.
+-
+-Do not infer the project only from the latest issue or code fragment. SUDACHI is a developmental artificial-life experiment, not a generic autonomous-agent framework or virtual-pet presentation layer.
+-
+-## Immediate restart point
+-
+-After the Contract v0.2 reconciliation PR is merged, begin Phase 1 implementation from the contract rather than redesigning it.
+-
+-The first implementation slice is:
+-
+-1. create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
+-2. encode protected Contract v0.2 tests before broad organism behavior
+-3. implement canonical SQLite initialization and schema validation
+-4. implement injected real and fake clocks
+-5. create a stable genesis checkpoint
+-6. expose the minimal `sudachi init` and `sudachi status` commands
++9. `docs/PHASE1_TEST_MATRIX.md`
++10. implemented slice notes in `docs/phase1/`
++11. research and provider documents
++12. `docs/HANDOFF.md`
++13. current GitHub issues, pull requests, and CI
+ 
