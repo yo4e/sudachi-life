@@ -18,14 +18,15 @@ Read these files in order:
 4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
 5. `docs/ROADMAP.md`
 6. `docs/ARCHITECTURE.md`
-7. `docs/RESEARCH_QUESTIONS.md`
-8. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-9. `docs/research/INITIAL_EVIDENCE_MAP.md`
-10. `docs/research/PARENT_MODEL_STRATEGY.md`
-11. `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
-12. `docs/HANDOFF.md`
+7. `docs/IMPLEMENTATION_DISCIPLINE.md`
+8. `docs/RESEARCH_QUESTIONS.md`
+9. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+10. `docs/research/INITIAL_EVIDENCE_MAP.md`
+11. `docs/research/PARENT_MODEL_STRATEGY.md`
+12. `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
+13. `docs/HANDOFF.md`
 
-Then inspect the current open issues and pull requests and confirm which work streams are active.
+Then inspect current open issues and pull requests and confirm which work streams are active.
 
 Current issue roles after the owner authorized research on July 21, 2026:
 
@@ -42,11 +43,12 @@ Do not infer the project only from the latest issue or code fragment. SUDACHI is
 
 For implementation planning, resume at Issue #1:
 
-1. create `docs/decisions/`
-2. resolve ADRs 0001 through 0006
-3. review the Minimal Organism Contract for contradictions
-4. update `docs/HANDOFF.md`
-5. only then create the Python package skeleton
+1. resolve ADRs 0001 through 0006 in `docs/decisions/`
+2. review the Minimal Organism Contract for contradictions
+3. confirm protected and mutable boundaries
+4. confirm fixed Phase 1 evaluations
+5. update `docs/HANDOFF.md`
+6. only then create the Python package skeleton
 
 Issue #3 research may proceed in parallel. Research findings must be written to the repository with dated primary sources. Research does not authorize connecting a live human or model caregiver.
 
@@ -86,7 +88,7 @@ Growth is not the accumulation of text, files, prompts, simulated needs, persona
 10. **Update the handoff.** After a substantial change, update `docs/HANDOFF.md` with the current state, decisions, issue roles, and next concrete action.
 11. **Verify model providers before connection.** Do not assume ChatGPT, an API, or another commercial model may be used as a live caregiver. Complete the provider review and record a dated decision first.
 12. **Review human-study boundaries before recruitment.** A local owner-researcher experiment is not automatically equivalent to a public participant study. Review consent, privacy, and institutional requirements before recruiting or analyzing additional people.
-13. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the active prior-work review is complete.
+13. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the active prior-work review is substantially complete.
 14. **Separate transformation classes.** Transient advice, retained memory, deterministic artifacts, synthetic data, and model-weight development require separate permissions and provenance.
 15. **Do not infer distillation permission from output ownership.** Weight-level learning remains disabled until the exact provider, product, model, and intended transformation are explicitly approved.
 16. **Do not build Tamagotchi with Git.** Simulated needs, affection, branching growth, or chat history do not count as development without retained caregiver-independent competence on protected evaluations.
@@ -118,7 +120,7 @@ Every claimed caregiver-derived gain should identify:
 ## Working method
 
 - Make small, testable changes.
-- Use branches and pull requests once implementation begins, and for substantial research or decision changes when practical.
+- Use branches and pull requests for implementation and for substantial research or decision changes.
 - Record the hypothesis behind an experiment before running it.
 - Store raw events separately from consolidated knowledge.
 - Keep organism state separate from source code.
@@ -127,7 +129,7 @@ Every claimed caregiver-derived gain should identify:
 - Prefer primary papers, official repositories, and current first-party provider or product documentation for research.
 - Record verification dates for provider terms and time-sensitive claims.
 - Distinguish caregiving from experiment administration and record both.
-- Before ending a work session, leave the repository restartable without conversation context.
+- Before ending substantial work, follow the restart checklist in `docs/IMPLEMENTATION_DISCIPLINE.md` and leave the repository restartable without conversation context.
 
 ## Initial boundary
 
