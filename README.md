@@ -85,6 +85,7 @@ The language model is an organ, not the whole organism.
 - [`docs/MINIMAL_ORGANISM_CONTRACT.md`](docs/MINIMAL_ORGANISM_CONTRACT.md) — draft contract for the smallest valid SUDACHI-0
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — proposed system architecture
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased development plan
+- [`docs/RESEARCH_QUESTIONS.md`](docs/RESEARCH_QUESTIONS.md) — future prior-work and literature review plan; research has not begun
 - [`docs/HANDOFF.md`](docs/HANDOFF.md) — current state and exact restart point
 
 ## Language policy
@@ -96,5 +97,7 @@ The repository is written in English. The only intentional Japanese text is the 
 **Seed phase — repository established and Minimal Organism Contract v0.1 drafted on July 21, 2026.**
 
 No organism has been implemented yet. The next task is to resolve the contract’s open design decisions, record them as short decision documents, and then build one deterministic lifecycle cycle before connecting any language model.
+
+The prior-work review is recorded as a future task and does not block deterministic Phase 1 implementation.
 
 Start with [`docs/HANDOFF.md`](docs/HANDOFF.md).
