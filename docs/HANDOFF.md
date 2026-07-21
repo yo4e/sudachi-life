@@ -24,6 +24,7 @@ The repository contains:
 - preliminary evidence, model-caregiver, and human-caregiver research notes
 - ADR 0001 for canonical state and event storage
 - ADR 0002 for clock injection and deterministic time
+- ADR 0003 for runtime locking and duplicate wake rejection
 
 No implementation code exists yet. This is intentional.
 
@@ -68,13 +69,25 @@ See `docs/decisions/0001-state-and-event-storage.md`.
 - operational runs use a real clock; tests and replay use an explicit fake clock
 - unexpected extra fake-clock reads fail deterministic tests
 - canonical wall timestamps are SQLite integers; ISO 8601 strings are derived presentation
-- absolute monotonic origins are never treated as portable durable timestamps
 - elapsed-time budgets and deadlines use monotonic time
-- event sequence from ADR 0001 remains the authoritative order even when wall time repeats or moves backward
+- event sequence remains authoritative when wall time repeats or moves backward
 - current time may not be an implicit seed, identifier, or tie breaker
-- time-dependent behavior must receive time as a declared input
 
 See `docs/decisions/0002-clock-and-determinism.md`.
+
+### ADR 0003 — runtime locking
+
+- one fresh SQLite connection executes `BEGIN IMMEDIATE` before reading mutable state
+- the resulting SQLite write transaction is the authoritative wake lock
+- lock acquisition is fail-fast; a busy attempt is rejected rather than queued
+- the same transaction spans the bounded canonical wake and atomic persistence
+- no committed lease row, PID file, wall-time expiry, or in-process mutex is a second authority
+- a crashed or closed connection releases the file lock and rolls back uncommitted canonical changes
+- process IDs, hostnames, thread IDs, and ephemeral owner tokens are non-canonical diagnostics only
+- nested and reentrant wakes are prohibited
+- later interactive caregiver phases must separate long proposal work from a short adoption transaction
+
+See `docs/decisions/0003-runtime-locking.md`.
 
 ## Current research direction
 
@@ -119,26 +132,26 @@ Trust current GitHub state if this map becomes stale.
 
 ## Exact next implementation task
 
-Proceed to ADR 0003:
+Proceed to ADR 0004:
 
-`docs/decisions/0003-runtime-locking.md`
+`docs/decisions/0004-checkpoints.md`
 
-ADR 0003 must define:
+ADR 0004 must define:
 
-- how one wake obtains exclusive write ownership
-- how duplicate simultaneous wakes are rejected
-- whether lock acquisition uses a SQLite write transaction, a lock record, or both
-- the relationship between runtime ownership and the lifecycle transaction
-- process identity and diagnostic metadata
-- crash behavior and stale-lock handling without trusting wall time as mutual-exclusion authority
-- test behavior under injected clocks and competing connections
-- compatibility with ADR 0001 transaction boundaries and ADR 0002 clock semantics
+- checkpoint representation and manifest
+- how a consistent SQLite snapshot is produced
+- checkpoint timing relative to ADR 0003's runtime transaction
+- stable event-sequence boundaries
+- validation, integrity checks, and compatibility metadata
+- rollback granularity and what happens to post-checkpoint history
+- checkpoint retention and failure handling
+- whether external sandbox effects are included, staged, or explicitly excluded
+- recovery after process failure without introducing a second canonical state
 
 Then resolve:
 
-1. ADR 0004 — checkpoints and rollback
-2. ADR 0005 — seed environment
-3. ADR 0006 — budget metaphor and energy
+1. ADR 0005 — seed environment
+2. ADR 0006 — budget metaphor and energy
 
 After all six ADRs:
 
@@ -165,15 +178,16 @@ Lifecycle:
 
 ```text
 wake
-  -> acquire lock
+  -> acquire SQLite write transaction
   -> validate state
   -> read bounded input
   -> choose at most one registered action
   -> consume budgets
   -> evaluate
   -> persist state and append events atomically
-  -> create or confirm checkpoint
-  -> release lock
+  -> commit
+  -> create or confirm checkpoint according to ADR 0004
+  -> close connection
   -> sleep and exit
 ```
 
@@ -191,7 +205,7 @@ The contract remains authoritative. Tests must cover at least:
 - nonnegative budgets
 - protected configuration
 - rollback
-- duplicate-wake rejection
+- duplicate-wake rejection with competing SQLite connections
 - explicit abstention and budget exhaustion
 - no network or caregiver requirement
 
