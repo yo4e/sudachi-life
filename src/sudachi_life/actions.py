@@ -15,7 +15,7 @@ class ActionRejectedError(SudachiError):
 
 
 @dataclass(frozen=True, slots=True)
-class GardenDecision:
+class GardenActionDecision:
     action_id: str
     action_version: int
     plot_id: str
@@ -23,11 +23,26 @@ class GardenDecision:
 
     def as_dict(self) -> dict[str, object]:
         return {
+            "decision_type": "action",
             "action_id": self.action_id,
             "action_version": self.action_version,
             "parameters": {"plot_id": self.plot_id},
             "reason": self.reason,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class GardenAbstention:
+    reason: str
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "decision_type": "abstention",
+            "reason": self.reason,
+        }
+
+
+GardenDecision = GardenActionDecision | GardenAbstention
 
 
 def _observed_action(observation: GardenObservation, action_id: str) -> dict[str, object]:
@@ -41,18 +56,15 @@ def _observed_action(observation: GardenObservation, action_id: str) -> dict[str
 
 
 def select_garden_decision(observation: GardenObservation) -> GardenDecision:
-    """Apply the fixed Phase 1 policy for water, then harvest.
-
-    Objective-complete and no-applicable-action abstention remain outside Slice 4.
-    """
+    """Apply the fixed Phase 1 policy for water, harvest, then abstention."""
 
     if observation.objective_complete:
-        raise ActionRejectedError("objective-complete abstention is not implemented yet")
+        return GardenAbstention(reason="objective_already_complete")
 
     water = _observed_action(observation, "water_plot")
     water_targets = tuple(water["applicable_targets"])
     if water_targets:
-        return GardenDecision(
+        return GardenActionDecision(
             action_id="water_plot",
             action_version=int(water["version"]),
             plot_id=str(water_targets[0]),
@@ -62,7 +74,7 @@ def select_garden_decision(observation: GardenObservation) -> GardenDecision:
     harvest = _observed_action(observation, "harvest_plot")
     harvest_targets = tuple(harvest["applicable_targets"])
     if harvest_targets:
-        return GardenDecision(
+        return GardenActionDecision(
             action_id="harvest_plot",
             action_version=int(harvest["version"]),
             plot_id=str(harvest_targets[0]),
@@ -72,18 +84,18 @@ def select_garden_decision(observation: GardenObservation) -> GardenDecision:
     raise ActionRejectedError("no-applicable-action abstention is not implemented yet")
 
 
-def select_first_water_decision(observation: GardenObservation) -> GardenDecision:
+def select_first_water_decision(observation: GardenObservation) -> GardenActionDecision:
     """Compatibility name for the Slice 3 first-state policy assertion."""
 
     decision = select_garden_decision(observation)
-    if decision.action_id != "water_plot":
+    if not isinstance(decision, GardenActionDecision) or decision.action_id != "water_plot":
         raise ActionRejectedError("canonical first wake did not select water_plot")
     return decision
 
 
 def _validate_definition(
     connection: sqlite3.Connection,
-    decision: GardenDecision,
+    decision: GardenActionDecision,
 ) -> None:
     definition = connection.execute(
         "SELECT version, deterministic, protected FROM action_definition WHERE action_id = ?",
@@ -102,7 +114,7 @@ def _validate_definition(
 
 def execute_water_plot(
     connection: sqlite3.Connection,
-    decision: GardenDecision,
+    decision: GardenActionDecision,
     ledger: WakeBudgetLedger,
 ) -> None:
     """Validate, reserve, and execute one water transition inside a savepoint."""
@@ -159,7 +171,7 @@ def execute_water_plot(
 
 def execute_harvest_plot(
     connection: sqlite3.Connection,
-    decision: GardenDecision,
+    decision: GardenActionDecision,
     ledger: WakeBudgetLedger,
 ) -> None:
     """Validate, reserve, and execute one harvest transition inside a savepoint."""
@@ -214,7 +226,7 @@ def execute_harvest_plot(
 
 def execute_garden_action(
     connection: sqlite3.Connection,
-    decision: GardenDecision,
+    decision: GardenActionDecision,
     ledger: WakeBudgetLedger,
 ) -> None:
     """Dispatch one protected registered mutating garden action."""
