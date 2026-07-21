@@ -72,7 +72,7 @@ jobs:
           assert initialized["checkpoint_pending"] is False
           assert initialized["genesis_checkpoint_id"] == status["latest_stable_checkpoint_id"]
           assert status["organism_id"] == "sudachi-0"
-          assert status["event_count"] == 2
+          assert status["event_count"] == 3
           assert status["water_units"] == 1
           assert status["harvested_fruit"] == 0
           assert [plot["plot_id"] for plot in status["plots"]] == ["bed-a", "bed-b"]
