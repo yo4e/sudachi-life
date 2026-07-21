@@ -7,10 +7,11 @@ This file is the continuity contract for AI collaborators working on SUDACHI.
 Read these files in order:
 
 1. `README.md`
-2. `docs/ORIGIN_JA.md`
-3. `docs/ROADMAP.md`
-4. `docs/ARCHITECTURE.md`
-5. `docs/HANDOFF_JA.md`
+2. `docs/ORIGIN.md`
+3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+4. `docs/ROADMAP.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/HANDOFF.md`
 
 Do not infer the project only from the latest issue or code fragment. SUDACHI is a developmental artificial-life experiment, not a generic autonomous-agent framework.
 
@@ -26,9 +27,9 @@ Growth is not the accumulation of text, files, prompts, or model calls.
 
 ## Language policy
 
-- Write code, identifiers, public technical documentation, interfaces, and tests in English.
-- Use Japanese for origin records, conceptual nuance, handoff notes, and journals when it preserves the meaning better.
-- Bilingual documents are acceptable when they improve continuity.
+- Write repository content in English, including code, identifiers, documentation, interfaces, tests, decision records, journals, and handoff notes.
+- Preserve only the two Japanese name-etymology lines explicitly marked in `README.md`.
+- Do not add other Japanese text unless the repository owner changes this policy.
 
 ## Non-negotiable design rules
 
@@ -41,7 +42,7 @@ Growth is not the accumulation of text, files, prompts, or model calls.
 7. **No unrestricted network or filesystem access.** Use allowlists and a sandbox. Default to no external writes.
 8. **Do not equate autonomy with continuous execution.** Event-driven or periodic waking is preferred to an unbounded always-on loop.
 9. **Do not anthropomorphize away the mechanics.** Life-like language is welcome, but state, budgets, triggers, and evaluation must remain explicit.
-10. **Update the handoff.** After a substantial change, update `docs/HANDOFF_JA.md` with the current state, decisions, and next concrete action.
+10. **Update the handoff.** After a substantial change, update `docs/HANDOFF.md` with the current state, decisions, and next concrete action.
 
 ## Definition of a valid developmental improvement
 
