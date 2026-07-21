@@ -50,6 +50,19 @@ def _unresolved_needs(connection: sqlite3.Connection) -> int:
     return int(dry_living) + int(harvestable) + missing_harvest
 
 
+def _unresolved_needs_before(observation: GardenObservation) -> int:
+    dry_living = sum(
+        1
+        for plot in observation.plots
+        if plot["stage"] in {"sprout", "mature"} and plot["moisture"] == 0
+    )
+    harvestable = sum(1 for plot in observation.plots if plot["fruit"] > 0)
+    missing_harvest = (
+        1 if observation.harvested_fruit < 1 and harvestable == 0 else 0
+    )
+    return dry_living + harvestable + missing_harvest
+
+
 def recompute_objective(connection: sqlite3.Connection) -> bool:
     dry_living = connection.execute(
         "SELECT COUNT(*) FROM garden_plot "
@@ -64,6 +77,53 @@ def recompute_objective(connection: sqlite3.Connection) -> bool:
     return dry_living == 0 and harvestable == 0 and harvested >= 1
 
 
+def _read_after_state(connection: sqlite3.Connection):
+    environment = connection.execute(
+        "SELECT environment_step FROM environment_state WHERE singleton_id = 1"
+    ).fetchone()
+    inventory = connection.execute(
+        "SELECT water_units, harvested_fruit FROM inventory WHERE singleton_id = 1"
+    ).fetchone()
+    plots = {
+        row["plot_id"]: dict(row)
+        for row in connection.execute(
+            "SELECT plot_id, stage, moisture, fruit FROM garden_plot ORDER BY plot_id"
+        ).fetchall()
+    }
+    if environment is None or inventory is None:
+        raise SchemaValidationError("garden evaluation cannot read canonical state")
+    return environment, inventory, plots
+
+
+def _finish_evaluation(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    *,
+    environment_step_after: int,
+) -> GardenEvaluation:
+    objective_after = recompute_objective(connection)
+    connection.execute(
+        "UPDATE environment_state SET objective_complete = ? WHERE singleton_id = 1",
+        (int(objective_after),),
+    )
+    unresolved_before = _unresolved_needs_before(before)
+    unresolved_after = _unresolved_needs(connection)
+    if unresolved_after >= unresolved_before:
+        raise SchemaValidationError(
+            "successful garden action did not reduce unresolved needs"
+        )
+    return GardenEvaluation(
+        success=True,
+        objective_complete_before=before.objective_complete,
+        objective_complete_after=objective_after,
+        unresolved_needs_before=unresolved_before,
+        unresolved_needs_after=unresolved_after,
+        progress="positive",
+        environment_step_before=before.environment_step,
+        environment_step_after=environment_step_after,
+    )
+
+
 def evaluate_water_transition(
     connection: sqlite3.Connection,
     before: GardenObservation,
@@ -71,30 +131,16 @@ def evaluate_water_transition(
 ) -> GardenEvaluation:
     """Re-read canonical state and independently prove the exact water transition."""
 
-    after_environment = connection.execute(
-        "SELECT environment_step FROM environment_state WHERE singleton_id = 1"
-    ).fetchone()
-    after_inventory = connection.execute(
-        "SELECT water_units, harvested_fruit FROM inventory WHERE singleton_id = 1"
-    ).fetchone()
-    after_plots = {
-        row["plot_id"]: dict(row)
-        for row in connection.execute(
-            "SELECT plot_id, stage, moisture, fruit FROM garden_plot ORDER BY plot_id"
-        ).fetchall()
-    }
+    after_environment, after_inventory, after_plots = _read_after_state(connection)
     before_plots = {str(plot["plot_id"]): dict(plot) for plot in before.plots}
-    if after_environment is None or after_inventory is None:
-        raise SchemaValidationError("garden evaluation cannot read canonical state")
     if set(after_plots) != set(before_plots):
         raise SchemaValidationError("water_plot changed the protected plot set")
 
     for plot_id, prior in before_plots.items():
-        current = after_plots[plot_id]
         expected = dict(prior)
         if plot_id == decision.plot_id:
             expected["moisture"] = 1
-        if current != expected:
+        if after_plots[plot_id] != expected:
             raise SchemaValidationError(
                 f"water_plot produced an invalid transition for {plot_id}"
             )
@@ -106,30 +152,65 @@ def evaluate_water_transition(
     if after_environment["environment_step"] != before.environment_step + 1:
         raise SchemaValidationError("water_plot did not advance exactly one environment step")
 
-    objective_after = recompute_objective(connection)
-    connection.execute(
-        "UPDATE environment_state SET objective_complete = ? WHERE singleton_id = 1",
-        (int(objective_after),),
-    )
-    before_harvestable = sum(1 for plot in before.plots if plot["fruit"] > 0)
-    unresolved_before = sum(
-        1
-        for plot in before.plots
-        if plot["stage"] in {"sprout", "mature"} and plot["moisture"] == 0
-    ) + before_harvestable + (
-        1 if before.harvested_fruit < 1 and before_harvestable == 0 else 0
-    )
-    unresolved_after = _unresolved_needs(connection)
-    if unresolved_after >= unresolved_before:
-        raise SchemaValidationError("successful water_plot did not reduce unresolved needs")
-
-    return GardenEvaluation(
-        success=True,
-        objective_complete_before=before.objective_complete,
-        objective_complete_after=objective_after,
-        unresolved_needs_before=unresolved_before,
-        unresolved_needs_after=unresolved_after,
-        progress="positive",
-        environment_step_before=before.environment_step,
+    return _finish_evaluation(
+        connection,
+        before,
         environment_step_after=int(after_environment["environment_step"]),
     )
+
+
+def evaluate_harvest_transition(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    decision: GardenDecision,
+) -> GardenEvaluation:
+    """Re-read canonical state and independently prove the exact harvest transition."""
+
+    after_environment, after_inventory, after_plots = _read_after_state(connection)
+    before_plots = {str(plot["plot_id"]): dict(plot) for plot in before.plots}
+    if set(after_plots) != set(before_plots):
+        raise SchemaValidationError("harvest_plot changed the protected plot set")
+
+    for plot_id, prior in before_plots.items():
+        expected = dict(prior)
+        if plot_id == decision.plot_id:
+            if prior["stage"] != "mature" or prior["fruit"] < 1:
+                raise SchemaValidationError(
+                    "harvest_plot evaluation received an invalid prior target"
+                )
+            expected["fruit"] = prior["fruit"] - 1
+        if after_plots[plot_id] != expected:
+            raise SchemaValidationError(
+                f"harvest_plot produced an invalid transition for {plot_id}"
+            )
+
+    if after_inventory["water_units"] != before.water_units:
+        raise SchemaValidationError("harvest_plot changed water inventory")
+    if after_inventory["harvested_fruit"] != before.harvested_fruit + 1:
+        raise SchemaValidationError(
+            "harvest_plot did not add exactly one harvested fruit"
+        )
+    if after_environment["environment_step"] != before.environment_step + 1:
+        raise SchemaValidationError(
+            "harvest_plot did not advance exactly one environment step"
+        )
+
+    return _finish_evaluation(
+        connection,
+        before,
+        environment_step_after=int(after_environment["environment_step"]),
+    )
+
+
+def evaluate_garden_transition(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    decision: GardenDecision,
+) -> GardenEvaluation:
+    """Dispatch the protected evaluator independently of executor claims."""
+
+    if decision.action_id == "water_plot":
+        return evaluate_water_transition(connection, before, decision)
+    if decision.action_id == "harvest_plot":
+        return evaluate_harvest_transition(connection, before, decision)
+    raise SchemaValidationError(f"no protected evaluator for {decision.action_id}")

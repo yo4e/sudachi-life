@@ -1,4 +1,4 @@
-"""The first complete bounded SUDACHI-0 wake."""
+"""Complete bounded mutating wakes for the deterministic seed garden."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .actions import GardenDecision, execute_water_plot, select_first_water_decision
+from .actions import GardenDecision, execute_garden_action, select_garden_decision
 from .budgets import WakeBudgetLedger
 from .checkpoints import CheckpointResult, create_and_register_lifecycle_checkpoint
 from .clock import Clock, RealClock
 from .constants import ACTIVE_DATABASE_MAX_BYTES
-from .evaluation import GardenEvaluation, evaluate_water_transition
+from .evaluation import GardenEvaluation, evaluate_garden_transition
 from .errors import SchemaValidationError
 from .paths import OrganismPaths
 from .storage import read_status, validate_canonical_state
@@ -104,14 +104,14 @@ def _event(
     )
 
 
-def perform_first_water_wake(
+def perform_garden_wake(
     runtime_root: Path | str,
     organism_id: str,
     *,
     seed: int,
     clock: Clock | None = None,
 ) -> WakeResult:
-    """Perform Slice 3's one canonical water wake and stabilize its checkpoint."""
+    """Perform one fixed-policy mutating wake and stabilize its checkpoint."""
 
     clock = clock or RealClock()
     paths = OrganismPaths.build(runtime_root, organism_id)
@@ -161,7 +161,7 @@ def perform_first_water_wake(
             ledger=ledger,
         )
 
-        decision = select_first_water_decision(observation)
+        decision = select_garden_decision(observation)
         _event(
             wake,
             organism_id=organism["organism_id"],
@@ -172,7 +172,7 @@ def perform_first_water_wake(
             ledger=ledger,
         )
 
-        execute_water_plot(wake.connection, decision, ledger)
+        execute_garden_action(wake.connection, decision, ledger)
         _event(
             wake,
             organism_id=organism["organism_id"],
@@ -183,7 +183,7 @@ def perform_first_water_wake(
             ledger=ledger,
         )
 
-        evaluation = evaluate_water_transition(wake.connection, observation, decision)
+        evaluation = evaluate_garden_transition(wake.connection, observation, decision)
         _event(
             wake,
             organism_id=organism["organism_id"],
@@ -281,4 +281,18 @@ def perform_first_water_wake(
         budget_ledger=ledger.as_dict(),
         checkpoint=checkpoint,
         status=status.status,
+    )
+
+
+def perform_first_water_wake(
+    runtime_root: Path | str,
+    organism_id: str,
+    *,
+    seed: int,
+    clock: Clock | None = None,
+) -> WakeResult:
+    """Compatibility entry point retained for the canonical first wake tests."""
+
+    return perform_garden_wake(
+        runtime_root, organism_id, seed=seed, clock=clock
     )
