@@ -251,6 +251,69 @@ def evaluate_objective_complete_abstention(
     )
 
 
+def evaluate_no_applicable_action_abstention(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    decision: GardenAbstention,
+) -> GardenEvaluation:
+    """Prove an incomplete garden has no executable mutation and remains unchanged."""
+
+    if decision.reason != "no_applicable_action":
+        raise SchemaValidationError("unsupported protected abstention reason")
+    if before.objective_complete:
+        raise SchemaValidationError(
+            "no_applicable_action abstention requires an incomplete observation"
+        )
+
+    after_environment, after_inventory, after_plots = _read_after_state(connection)
+    before_plots = {str(plot["plot_id"]): dict(plot) for plot in before.plots}
+    if after_plots != before_plots:
+        raise SchemaValidationError("no-applicable-action abstention changed garden plots")
+    if after_inventory["water_units"] != before.water_units:
+        raise SchemaValidationError("no-applicable-action abstention changed water inventory")
+    if after_inventory["harvested_fruit"] != before.harvested_fruit:
+        raise SchemaValidationError("no-applicable-action abstention changed harvested fruit")
+    if after_environment["environment_step"] != before.environment_step:
+        raise SchemaValidationError("no-applicable-action abstention changed environment step")
+    if after_environment["objective_complete"] != 0 or recompute_objective(connection):
+        raise SchemaValidationError(
+            "no-applicable-action abstention did not preserve an incomplete objective"
+        )
+
+    executable_water = any(
+        plot["stage"] in {"sprout", "mature"}
+        and plot["moisture"] == 0
+        and after_inventory["water_units"] > 0
+        for plot in after_plots.values()
+    )
+    executable_harvest = any(
+        plot["stage"] == "mature" and plot["fruit"] > 0
+        for plot in after_plots.values()
+    )
+    if executable_water or executable_harvest:
+        raise SchemaValidationError(
+            "no-applicable-action abstention ignored an executable protected action"
+        )
+
+    unresolved_before = _unresolved_needs_before(before)
+    unresolved_after = _unresolved_needs(connection)
+    if unresolved_before <= 0 or unresolved_after != unresolved_before:
+        raise SchemaValidationError(
+            "no-applicable-action abstention did not preserve the blocked need state"
+        )
+
+    return GardenEvaluation(
+        success=False,
+        objective_complete_before=False,
+        objective_complete_after=False,
+        unresolved_needs_before=unresolved_before,
+        unresolved_needs_after=unresolved_after,
+        progress="blocked_no_applicable_action",
+        environment_step_before=before.environment_step,
+        environment_step_after=int(after_environment["environment_step"]),
+    )
+
+
 def evaluate_garden_decision(
     connection: sqlite3.Connection,
     before: GardenObservation,
@@ -259,7 +322,13 @@ def evaluate_garden_decision(
     """Dispatch the protected evaluator independently of executor claims."""
 
     if isinstance(decision, GardenAbstention):
-        return evaluate_objective_complete_abstention(connection, before, decision)
+        if decision.reason == "objective_already_complete":
+            return evaluate_objective_complete_abstention(connection, before, decision)
+        if decision.reason == "no_applicable_action":
+            return evaluate_no_applicable_action_abstention(connection, before, decision)
+        raise SchemaValidationError(
+            f"no protected evaluator for abstention reason {decision.reason}"
+        )
     if decision.action_id == "water_plot":
         return evaluate_water_transition(connection, before, decision)
     if decision.action_id == "harvest_plot":
