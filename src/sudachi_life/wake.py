@@ -20,6 +20,10 @@ class WakeRejectedError(SudachiError):
     """Canonical state is not eligible for a normal wake operation."""
 
 
+class CheckpointRequiredError(WakeRejectedError):
+    """A committed boundary must be stabilized before another wake."""
+
+
 class NoInputEventError(SudachiError):
     """No eligible garden tick is available to claim."""
 
@@ -35,10 +39,10 @@ class ClaimedInput:
 
 
 class WakeTransaction:
-    """An acquired outer wake transaction.
+    """One acquired outer wake transaction.
 
-    Slice 2 deliberately provides rollback-only ownership. A later slice will add
-    validated lifecycle commit and checkpoint stabilization.
+    Context-manager exit remains rollback-only for preparation and tests. A lifecycle
+    controller may commit explicitly and then call ``close_committed``.
     """
 
     def __init__(self, connection: sqlite3.Connection, lifecycle_number: int) -> None:
@@ -59,23 +63,22 @@ class WakeTransaction:
             except sqlite3.OperationalError as exc:
                 code = getattr(exc, "sqlite_errorcode", None)
                 if code in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED} or "locked" in str(exc).lower():
-                    raise WakeBusyError(
-                        "organism wake is busy; this attempt was not queued"
-                    ) from exc
+                    raise WakeBusyError("organism wake is busy; this attempt was not queued") from exc
                 raise
 
-            validate_canonical_state(connection, expect_checkpoint_pending=False)
+            validate_canonical_state(connection)
             organism = connection.execute(
                 "SELECT lifecycle_number, status, checkpoint_pending FROM organism "
                 "WHERE singleton_id = 1"
             ).fetchone()
             if organism is None:
                 raise WakeRejectedError("canonical organism state is missing")
-            if organism["status"] != "sleeping" or organism["checkpoint_pending"] != 0:
-                raise WakeRejectedError(
-                    f"organism is not wakeable: status={organism['status']} "
-                    f"checkpoint_pending={organism['checkpoint_pending']}"
+            if organism["checkpoint_pending"] != 0:
+                raise CheckpointRequiredError(
+                    "organism has a committed checkpoint boundary that must be stabilized"
                 )
+            if organism["status"] != "sleeping":
+                raise WakeRejectedError(f"organism is not wakeable: status={organism['status']}")
             return cls(connection, int(organism["lifecycle_number"]) + 1)
         except Exception:
             if connection.in_transaction:
@@ -90,28 +93,18 @@ class WakeTransaction:
             raise WakeRejectedError("wake transaction already claimed an input")
 
         row = self.connection.execute(
-            """
-            SELECT inbox_id, external_event_id, event_type, source, received_wall_time_utc_us
-            FROM inbox_event
-            WHERE consumed = 0
-              AND claimed_lifecycle_number IS NULL
-              AND event_type = ?
-            ORDER BY inbox_id
-            LIMIT 1
-            """,
+            """SELECT inbox_id, external_event_id, event_type, source, received_wall_time_utc_us
+               FROM inbox_event
+               WHERE consumed = 0 AND claimed_lifecycle_number IS NULL AND event_type = ?
+               ORDER BY inbox_id LIMIT 1""",
             (GARDEN_TICK_EVENT_TYPE,),
         ).fetchone()
         if row is None:
             raise NoInputEventError("no unclaimed synthetic:garden_tick is available")
 
         cursor = self.connection.execute(
-            """
-            UPDATE inbox_event
-            SET claimed_lifecycle_number = ?
-            WHERE inbox_id = ?
-              AND consumed = 0
-              AND claimed_lifecycle_number IS NULL
-            """,
+            """UPDATE inbox_event SET claimed_lifecycle_number = ?
+               WHERE inbox_id = ? AND consumed = 0 AND claimed_lifecycle_number IS NULL""",
             (self.lifecycle_number, row["inbox_id"]),
         )
         if cursor.rowcount != 1:
@@ -131,6 +124,14 @@ class WakeTransaction:
         if self._claimed is None:
             raise WakeRejectedError("an input must be claimed before observation")
         return build_garden_observation(self.connection)
+
+    def close_committed(self) -> None:
+        if self._closed:
+            return
+        if self.connection.in_transaction:
+            raise WakeRejectedError("cannot close a committed wake while a transaction is active")
+        self.connection.close()
+        self._closed = True
 
     def rollback_and_close(self) -> None:
         if self._closed:
