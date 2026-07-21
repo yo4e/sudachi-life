@@ -81,6 +81,7 @@ The language model is an organ, not the whole organism.
 ## Repository map
 
 - [`AGENTS.md`](AGENTS.md) — cold-start and continuity instructions for future AI collaborators
+- [`docs/CHATGPT_PROJECT_HANDOFF.md`](docs/CHATGPT_PROJECT_HANDOFF.md) — startup context for a dedicated ChatGPT Project with project-only memory
 - [`docs/ORIGIN.md`](docs/ORIGIN.md) — origin, intent, and founding conversation
 - [`docs/MINIMAL_ORGANISM_CONTRACT.md`](docs/MINIMAL_ORGANISM_CONTRACT.md) — draft contract for the smallest valid SUDACHI-0
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — proposed system architecture
