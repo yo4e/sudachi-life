@@ -10,8 +10,8 @@ A young SUDACHI may ask a capable “parent model” how to handle unfamiliar si
 
 The name carries two meanings:
 
-- **巣立ち (sudachi):** leaving the nest
-- **すだち (Sudachi):** a small Japanese citrus fruit—green, compact, and alive
+- 巣立ち (sudachi): leaving the nest
+- すだち (Sudachi): a small Japanese citrus fruit—green, compact, and alive
 
 ## Core hypothesis
 
@@ -80,31 +80,21 @@ The language model is an organ, not the whole organism.
 
 ## Repository map
 
-- [`AGENTS.md`](AGENTS.md) — instructions for future AI collaborators
-- [`docs/ORIGIN_JA.md`](docs/ORIGIN_JA.md) — origin, intent, and founding conversation in Japanese
+- [`AGENTS.md`](AGENTS.md) — continuity instructions for future AI collaborators
+- [`docs/ORIGIN.md`](docs/ORIGIN.md) — origin, intent, and founding conversation
 - [`docs/MINIMAL_ORGANISM_CONTRACT.md`](docs/MINIMAL_ORGANISM_CONTRACT.md) — draft contract for the smallest valid SUDACHI-0
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — proposed system architecture
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased development plan
-- [`docs/HANDOFF_JA.md`](docs/HANDOFF_JA.md) — current state and exact restart point
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — current state and exact restart point
 
 ## Language policy
 
-- **English:** public README, code, APIs, architecture, tests, and research-facing documentation
-- **Japanese:** origin notes, conceptual nuance, project journals, and handoff context where Japanese preserves the intended meaning better
-- Important decisions may be bilingual when precision or continuity requires it.
-
-This is not a translation hierarchy. English keeps the project interoperable; Japanese keeps its conceptual birthplace intact.
+The repository is written in English. The only intentional Japanese text is the two name-etymology lines near the top of this README.
 
 ## Status
 
-**Seed phase — repository established and Minimal Organism Contract v0.1 drafted on 2026-07-21.**
+**Seed phase — repository established and Minimal Organism Contract v0.1 drafted on July 21, 2026.**
 
 No organism has been implemented yet. The next task is to resolve the contract’s open design decisions, record them as short decision documents, and then build one deterministic lifecycle cycle before connecting any language model.
 
-## Japanese summary
-
-SUDACHI（スダチ）は、巨大な言語モデルへの依存を、経験・記憶・技能・習慣へ置き換えながら、成長するほど軽くなっていく人工生命の実験です。
-
-目標は「小型ChatGPT」を作ることではありません。親モデルに教わった知恵を、自分の身体であるリポジトリへ沈殿させ、親を呼ばずに生きられる時間を少しずつ延ばすことです。
-
-Start with [`docs/HANDOFF_JA.md`](docs/HANDOFF_JA.md).
+Start with [`docs/HANDOFF.md`](docs/HANDOFF.md).
