@@ -1,12 +1,14 @@
 # SUDACHI
 
-**A lightweight artificial life that learns to leave its parent model.**
+**A lightweight artificial life that learns to leave the nest.**
 
-SUDACHI is an experimental artificial-life project built around a simple reversal of the usual AI scaling story:
+SUDACHI is an experimental artificial-life project built around a reversal of the usual AI scaling story:
 
-> As it grows, it should need *less* help from a large language model.
+> As it develops, it should retain more capability while requiring less external cognitive scaffolding.
 
-A young SUDACHI may ask a capable “parent model” how to handle unfamiliar situations. When an approach succeeds, it should convert that help into local memory, tested skills, and embodied routines. Maturity is not defined by a larger model or more tokens. It is defined by preserving useful behavior while reducing dependence on the parent.
+A young SUDACHI may eventually ask a caregiver how to handle unfamiliar situations. The caregiver may be a human, a deterministic fixture, a local or hosted model, a human-AI team, or absent in a control condition. When assistance succeeds, the organism should convert the experience into verified memory, tested skills, and inspectable local routines.
+
+Maturity is not defined by a larger model, more tokens, more files, simulated affection, or permanent access to a helper. It is defined by preserving useful behavior while justified dependence decreases.
 
 The name carries two meanings:
 
@@ -15,35 +17,38 @@ The name carries two meanings:
 
 ## Core hypothesis
 
-Can an artificial organism become lighter as it becomes more capable?
+Can a bounded artificial organism convert finite external scaffolding into verified local competence and retain that competence while caregiver access is reduced?
 
 More precisely:
 
-- Can parent-model reasoning be compiled into small, reusable local skills?
-- Can the organism preserve competence while parent access is gradually reduced?
-- Can memory consolidation, forgetting, and skill reuse lower inference cost over time?
-- Can a repository, rather than a model alone, serve as the organism’s body and developmental history?
+- Can caregiver assistance become small, reusable local skills or rules?
+- Can the same individual preserve competence after assistance is reduced or withheld?
+- Can memory consolidation, forgetting, and skill reuse lower total cost over time?
+- Can caregiver burden fall without hiding the cost in storage, computation, retries, or unrecorded human work?
+- Can a repository, rather than a model alone, serve as the organism's body and developmental history?
 
 ## What SUDACHI is
 
 SUDACHI is planned as a small local Python system composed of:
 
-- a bounded lifecycle loop
-- persistent state and memory
+- a bounded wake–act–evaluate–persist–sleep lifecycle
+- persistent state and append-only event history
 - a registry of tested skills
-- a parent-model adapter used only when necessary
+- a source-neutral caregiver interface used only when justified
 - explicit resource and consultation budgets
-- evaluation and rollback mechanisms
+- protected evaluation and rollback mechanisms
 - Git history as an auditable developmental record
 
-The language model is an organ, not the whole organism.
+A language model may be an organ or caregiver. It is not the whole organism.
 
 ## What SUDACHI is not
 
 - A smaller imitation of ChatGPT
+- A commercial-model wrapper
 - An unrestricted self-modifying agent
 - A process that must run continuously
-- A system whose “growth” is measured by file count, token count, or uncontrolled complexity
+- A virtual pet whose apparent growth is only mood, personality, or branching presentation
+- A system whose growth is measured by file count, token count, or uncontrolled complexity
 - A project that treats autonomy as the absence of boundaries
 
 ## Design principles
@@ -52,13 +57,13 @@ The language model is an organ, not the whole organism.
    Intelligence should be distributed across memory, tools, routines, tests, and environment.
 
 2. **Skills are compiled cognition**  
-   Repeated successful reasoning should become cheaper, deterministic behavior where possible.
+   Repeated successful assistance should become cheaper, inspectable local behavior where possible.
 
-3. **Maturity means reduced dependency**  
-   Parent-model calls should decline without unacceptable loss of performance or safety.
+3. **Maturity means reduced justified dependency**  
+   Caregiver consultations should decline without unacceptable loss of performance or safety.
 
 4. **Finite resources create meaningful behavior**  
-   Time, storage, consultation, and action budgets must be visible and bounded.
+   Time, storage, computation, human labor, consultation, and action budgets must be visible and bounded.
 
 5. **Forgetting is a feature**  
    The organism should consolidate experience rather than accumulate everything forever.
@@ -69,25 +74,45 @@ The language model is an organ, not the whole organism.
 7. **The measuring stick is protected**  
    Core evaluation criteria and safety boundaries must not be rewritten merely to make the organism appear successful.
 
+8. **Caregiver advice is a proposal**  
+   Human or model guidance must not bypass permissions, budgets, sandboxing, evaluation, or skill-adoption review.
+
 ## Initial maturity metrics
 
-- **Parent calls per successful action**
-- **Autonomous survival time** after parent access is removed
-- **Skill reuse rate**
-- **Transfer to unfamiliar tasks** using existing skills
-- **Recovery rate** after failure or corruption
-- **Storage and inference cost per retained capability**
+- caregiver consultations per successful action
+- caregiver minutes per retained capability
+- successful autonomous duration after caregiver access is removed
+- reusable behaviors acquired per consultation
+- skill reuse rate
+- transfer to unfamiliar tasks using existing skills
+- recovery after failure, corruption, or misleading advice
+- storage and computation cost per retained capability
+- correct abstention under uncertainty
+
+## Tamagotchi test
+
+SUDACHI has not demonstrated its central claim if it only adds simulated needs, affection, personality, chat history, or branching growth.
+
+A developmental gain must connect:
+
+`finite recorded caregiving -> verified local artifact -> retained capability -> reduced caregiver burden`
+
+The closest precedents include developmental robotics, human-in-the-loop learning, interactive task learning, Tamagotchi, Creatures, and aibo. The project's possible contribution is a specific longitudinal integration and measurement strategy, not the unprecedented invention of human-taught artificial creatures.
 
 ## Repository map
 
-- [`AGENTS.md`](AGENTS.md) — cold-start and continuity instructions for future AI collaborators
-- [`docs/CHATGPT_PROJECT_HANDOFF.md`](docs/CHATGPT_PROJECT_HANDOFF.md) — startup context for a dedicated ChatGPT Project with project-only memory
+- [`AGENTS.md`](AGENTS.md) — cold-start and continuity instructions for AI collaborators
+- [`docs/CHATGPT_PROJECT_HANDOFF.md`](docs/CHATGPT_PROJECT_HANDOFF.md) — startup context for a dedicated ChatGPT Project
 - [`docs/ORIGIN.md`](docs/ORIGIN.md) — origin, intent, and founding conversation
 - [`docs/MINIMAL_ORGANISM_CONTRACT.md`](docs/MINIMAL_ORGANISM_CONTRACT.md) — draft contract for the smallest valid SUDACHI-0
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — proposed system architecture
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased development plan
-- [`docs/RESEARCH_QUESTIONS.md`](docs/RESEARCH_QUESTIONS.md) — deferred prior-work and novelty research plan
-- [`docs/PARENT_MODEL_PROVIDER_REVIEW.md`](docs/PARENT_MODEL_PROVIDER_REVIEW.md) — deferred provider, terms, automation, data, and compliance checklist
+- [`docs/IMPLEMENTATION_DISCIPLINE.md`](docs/IMPLEMENTATION_DISCIPLINE.md) — implementation guardrails and restart checklist
+- [`docs/RESEARCH_QUESTIONS.md`](docs/RESEARCH_QUESTIONS.md) — active prior-work and novelty research plan
+- [`docs/PARENT_MODEL_PROVIDER_REVIEW.md`](docs/PARENT_MODEL_PROVIDER_REVIEW.md) — model-provider, terms, data, and compliance checklist
+- [`docs/research/INITIAL_EVIDENCE_MAP.md`](docs/research/INITIAL_EVIDENCE_MAP.md) — preliminary related-work map
+- [`docs/research/PARENT_MODEL_STRATEGY.md`](docs/research/PARENT_MODEL_STRATEGY.md) — provider-neutral model-caregiver strategy
+- [`docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`](docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md) — human-caregiver hypothesis and virtual-pet comparison
 - [`docs/HANDOFF.md`](docs/HANDOFF.md) — authoritative current state, issue map, and exact restart point
 
 ## Language policy
@@ -96,10 +121,10 @@ The repository is written in English. The only intentional Japanese text is the 
 
 ## Status
 
-**Seed phase — repository established and Minimal Organism Contract v0.1 drafted on July 21, 2026.**
+**Seed phase — architecture and research framing are being resolved before implementation.**
 
-No organism has been implemented yet. The next task is to resolve the contract’s open design decisions as ADRs, review the contract, and then build one deterministic lifecycle cycle before connecting any language model.
+No organism has been implemented yet. The implementation-critical next task is ADR 0001 for state and event storage, followed by ADRs 0002–0006, contract review, and then one deterministic caregiver-free lifecycle.
 
-The prior-work and provider-compliance reviews are recorded as future tasks. They do not block deterministic Phase 1, but both must be completed before live parent integration or strong novelty and provider-permission claims.
+Issue #3 research proceeds in parallel. No live human or model caregiver is connected.
 
-For a cold start, read [`AGENTS.md`](AGENTS.md), then [`docs/HANDOFF.md`](docs/HANDOFF.md).
+For a cold start, read [`AGENTS.md`](AGENTS.md), follow its reading order, and then inspect the current open issues and pull requests.
