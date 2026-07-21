@@ -1,0 +1,26 @@
+lure and cleanup tests |
+-| 8. Hard-zero external capabilities | water, harvest, and completion-abstention ledgers assert zero caregiver, network, subprocess, and external-write consumption |
++| 8. Hard-zero external capabilities | water, harvest, completion-abstention, and no-applicable-action ledgers assert zero caregiver, network, subprocess, and external-write consumption |
+ | 9. No independent energy field | `tests/test_initialization.py::test_canonical_state_has_no_energy_column` |
+ | 10. First canonical tick waters `bed-a` | `tests/test_first_water_success.py::test_first_water_wake_commits_evaluates_and_checkpoints` |
+ | 11. Second canonical tick harvests `bed-b` | `tests/test_second_harvest_success.py::test_second_wake_harvests_and_completes_objective` |
+ | 12. Third canonical tick abstains after completion | `tests/test_objective_complete_boundary.py::test_third_wake_abstains_after_objective_completion` |
+ | 13. Lexicographic tie breaking | Initial sorted observation and first-water target are covered; altered insertion-order action scenario remains planned |
+ | 14. Resource-aware harvest fallback | Planned |
+-| 15. Specific no-applicable-action abstention | Planned |
++| 15. Specific no-applicable-action abstention | `tests/test_no_applicable_action.py::test_no_applicable_action_abstains_and_increments_failure_once`; the companion evaluator test rejects abstention when a protected action is executable |
+ | 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
+-| 17. No negative counters | SQLite constraints and exact action/abstention ledgers cover the canonical three-wake path |
++| 17. No negative counters | SQLite constraints and exact action/abstention ledgers cover the canonical path and blocked fixture |
+ | 18. Action attempt is charged before execution | Implemented in protected action execution; injected action-failure assertion remains planned |
+ | 19. Savepoint removes partial mutation while preserving failure cost | Implemented; explicit protected failure test remains planned |
+ | 20. Budget exhaustion occurs before forbidden mutation | Checkpoint deadline is tested separately; lifecycle budget-exhaustion outcome remains planned |
+-| 21. Failure streak and maintenance threshold | Completion abstention proves the justified zero/reset state; classified increments and threshold remain planned |
++| 21. Failure streak and maintenance threshold | Completion abstention proves the justified zero state; Slice 6 proves one classified increment below threshold; successful reset from a prior failure and threshold entry remain planned |
+ | 22. Atomic state/event commit | Genesis transaction and rollback-only wake preparation are protected; injected action-failure lifecycle test remains planned |
+-| 23. Sequence order is canonical | Genesis and all three canonical lifecycle event sequences are asserted |
++| 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, and the blocked-state failure sequence are asserted |
+ | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
+ | 25. JSONL export deterministic and non-canonical | Planned |
+ | 26. Competing wake has one winner and one non-queued rejection | `tests/test_wake.py::test_competing_wake_is_rejected_and_not_queued` |
+ | 27. Crash before commit preserves prior state | Transaction/context rollback is co
