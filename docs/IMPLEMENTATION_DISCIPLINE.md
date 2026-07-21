@@ -1,257 +1,278 @@
 # Implementation Discipline for SUDACHI
 
-This document records implementation guardrails established before Phase 1 code begins.
+This document records implementation guardrails for Phase 1.
 
 Updated: **July 21, 2026**
 
 ## Core principle
 
-> Design decisions live in `docs/decisions/` as ADRs, not hidden inside implementation code.
+> Implement Minimal Organism Contract v0.2 and ADRs 0001–0006. Do not hide a new architecture inside code.
 
-A future collaborator must be able to restart the project without chat history or model memory. Every architectural choice must be recoverable from repository state, accepted ADRs, tests, and current issues.
+A future collaborator must be able to restart the project without chat history or model memory. Every invariant, exception, and change of direction belongs in repository state.
 
-## 1. Freeze seed architecture before writing code
+## 1. Phase 0 is frozen
 
-Issue #1 must resolve six ADRs before `src/` is created:
+The seed architecture decisions are accepted:
 
-1. **ADR 0001 — State and event storage**  
-   Decide the canonical store, append-only history, export role, and replay boundary.
-2. **ADR 0002 — Clock and determinism**  
-   Define operational time, injected test time, timestamps, and deterministic ordering.
-3. **ADR 0003 — Runtime locking**  
-   Define how duplicate simultaneous wakes are rejected and stale locks are handled.
-4. **ADR 0004 — Checkpoints and rollback**  
-   Define representation, granularity, atomicity, validation, and recovery.
-5. **ADR 0005 — Seed environment**  
-   Define the first deterministic environment, observations, actions, and objective.
-6. **ADR 0006 — Budget metaphor**  
-   Decide whether energy is independent state or only a presentation of concrete budgets.
+1. SQLite is the sole canonical live store.
+2. Time is injected; event sequence defines order.
+3. `BEGIN IMMEDIATE` is the fail-fast wake lock.
+4. Every committed wake requires a verified stable checkpoint before another wake.
+5. Phase 1 uses `seed-garden-v1`.
+6. Concrete budgets replace scalar energy.
 
-These decisions interact. Later ADRs may expose a contradiction in an earlier one; revise the ADR explicitly rather than compensating silently in code.
+Contract v0.2 reconciles those decisions and defines 41 protected evaluations.
 
-### Exit criteria for Issue #1
+Implementation may choose ordinary local structure such as module names, private helpers, and equivalent typed abstractions. It may not privately change canonical authority, time, locking, checkpoint lineage, garden transitions, budget values, protected authority, or fixed evaluations.
 
-- [ ] ADRs 0001–0006 exist and are accepted
-- [ ] Minimal Organism Contract v0.1 is reviewed for contradictions
-- [ ] protected and mutable boundaries are confirmed
-- [ ] fixed Phase 1 evaluations are confirmed
-- [ ] `docs/HANDOFF.md` is updated
-- [ ] no implementation decision remains only in conversation context
-- [ ] no Phase 1 implementation code has been written prematurely
+When implementation reveals a contradiction, stop and update the contract or ADR through review.
 
-Only then create `pyproject.toml`, `src/sudachi_life/`, and `tests/`.
+## 2. Start test-first from the protected boundary
 
-## 2. Keep Issue #3 research separate from Phase 1 mechanics
+Create the package skeleton only after the Contract v0.2 reconciliation pull request is merged.
+
+The first implementation slice should include:
+
+- `pyproject.toml`
+- `src/sudachi_life/`
+- `tests/`
+- contract and schema validation tests
+- SQLite initialization tests
+- real and fake clock tests
+- genesis checkpoint tests
+- minimal `init` and `status` commands
+
+Do not begin by filling every future module or by creating a generic framework.
+
+The full test suite must eventually map each of the 41 fixed Contract v0.2 evaluations to one or more protected tests. Maintain a visible mapping so no requirement becomes an untested paragraph.
+
+Do not weaken a protected test because implementation is difficult.
+
+## 3. Keep research separate from Phase 1 mechanics
 
 Phase 1 does not need:
 
 - a live human caregiver
-- a live model caregiver
-- final caregiver selection
-- a completed literature review
-- a completed model-provider review
+- a deterministic fixture caregiver in action selection
+- a model caregiver
 - a chat interface
-- learning or skill adoption
+- final novelty claims
+- a completed literature review
+- memories, skills, learning, consolidation, or fading
 
 Phase 1 does need:
 
-- a deterministic bounded lifecycle
-- local network-free execution
-- canonical state and append-only event history
+- one canonical SQLite organism
+- injected time
+- fail-fast wake locking
 - explicit budgets
-- registered actions and sandbox boundaries
-- evaluation and rollback
+- deterministic garden actions
+- protected evaluation
+- checkpoints, repair, retention, and rollback
 - fixed tests
 
-Research may proceed in parallel, but it must not leak unresolved caregiver semantics into Phase 1 code.
+Issue #3 research may proceed in parallel, but unresolved caregiver semantics must not enter Phase 1 code.
 
-## 3. Treat the contract as an executable boundary
+## 4. Treat the contract as executable
 
-`docs/MINIMAL_ORGANISM_CONTRACT.md` is not decorative prose. The contract must eventually map to explicit schemas, validation, tests, and failure behavior.
+`docs/MINIMAL_ORGANISM_CONTRACT.md` is an accepted specification.
 
-Do not prescribe a class hierarchy before the ADRs settle the state and event boundaries. The implementation may use functions, dataclasses, protocols, or classes, but it must provide testable validation for:
+Implementation must provide testable validation for:
 
-- organism state
-- events and event ordering
-- registered actions and parameters
-- budget consumption
-- protected regions
-- lifecycle outcomes
-- checkpoints and recovery
+- identity and version fields
+- durable status transitions
+- canonical SQLite schema
+- inbox and append-only event history
+- clock readings and deterministic inputs
+- concrete budget configuration and ledgers
+- registered actions and garden transitions
+- checkpoint manifests, validation, and lineage
+- protected, mutable, and administrative authority
+- typed outcomes and terminal states
 
-A validation path must not be bypassed by a caregiver response, generated artifact, helper function, or error handler.
+Validation paths cannot be bypassed by helpers, error handlers, administration, future caregiver responses, or generated artifacts.
 
-## 4. Protect the Phase 1 minimalism boundary
+## 5. Protect the Phase 1 lifecycle
 
-The intended lifecycle is:
+The required lifecycle is:
 
 ```text
 wake
-  -> acquire lock
-  -> load and validate state
-  -> read a bounded set of events
-  -> choose at most one registered action
-  -> execute within declared budgets
-  -> evaluate
-  -> persist atomically
-  -> checkpoint or confirm stability
-  -> release lock
-  -> sleep and exit
+  -> acquire fail-fast SQLite write transaction
+  -> validate state and checkpoint readiness
+  -> load protected budgets
+  -> claim one garden tick
+  -> build one sorted observation
+  -> choose water, harvest, or abstention
+  -> validate and reserve budgets
+  -> execute recoverable action inside a savepoint
+  -> independently evaluate
+  -> append outcome, events, and usage ledger
+  -> mark checkpoint pending and commit
+  -> create and validate immutable checkpoint
+  -> register checkpoint stable
+  -> sleep or enter maintenance
+  -> terminate
 ```
+
+The normal wake has twelve counted semantic steps. Internal code may combine functions but may not hide retries, loops, or additional actions inside one step.
 
 Phase 1 must not include:
 
-- continuous or unbounded execution
+- continuous execution
 - unrestricted retries
-- multiple hidden action loops
 - source-code self-modification
-- arbitrary generated shell commands or code execution
+- arbitrary generated code or shell commands
 - caregiver consultation
-- unrestricted internet or filesystem access
+- network or subprocess access
+- authoritative mutable files outside SQLite
 - complex planning or backtracking
-- personality, affection, or virtual-pet presentation as a substitute for mechanics
+- personality, affection, mood, or virtual-pet presentation
 
-The hardest discipline is often not adding an attractive feature before its experimental role is defined.
+## 6. Keep one canonical body
 
-## 5. Protect the fixed Phase 1 evaluations
+SQLite is authoritative for state, input claim, garden state, budgets, outcomes, events, maintenance, and checkpoint registration.
 
-The authoritative evaluation list is the current contract, not the illustrative function names in this document. Tests should cover at least:
+JSONL and status views are reproducible exports.
 
-- identical seed, state, event, clock, and configuration produce identical results
-- step and timeout limits cannot be exceeded
-- actions cannot write outside allowed paths
-- failures do not silently corrupt durable state
-- event history is append-only
-- budgets never become negative
-- protected configuration cannot be modified by an action
-- rollback restores the latest stable checkpoint
-- duplicate simultaneous waking is rejected
-- abstention and budget exhaustion are explicitly recorded
-- no network or caregiver is required
+Never introduce a second canonical file because it is easier to inspect. A lifecycle may not dual-write canonical SQLite and canonical JSONL.
 
-These evaluations remain protected until the contract is revised through an explicit reviewed change. Do not weaken a test because the implementation cannot satisfy it.
+All state-changing lifecycle operations use the existing outer transaction context. Helpers do not open hidden write connections.
 
-## 6. Keep documents, decisions, and code in their proper roles
+## 7. Use explicit time and concurrency
 
-### `docs/HANDOFF.md`
+Runtime code reads time only through the injected clock adapter.
 
-Records:
+Tests use explicit fake-clock readings and fail on unexpected reads. Do not patch global clocks as the primary design.
 
-- current state
-- active issue map
-- accepted decisions and clearly labeled working directions
-- one exact next action
-- current research boundaries
+Locking tests use real competing SQLite connections or subprocesses. Do not replace database locking with mocks.
 
-### `docs/decisions/000N-*.md`
+A busy wake is rejected and not queued. Do not add automatic wait-and-run behavior.
 
-Records:
+## 8. Use concrete budgets and preserve terminal capacity
 
-- context
-- decision
-- alternatives considered
-- consequences and risks
-- compatibility with the contract and other ADRs
+Phase 1 has no scalar energy.
 
-### Concept documents
+Keep distinct:
 
-`README.md`, `ORIGIN.md`, `ROADMAP.md`, and `ARCHITECTURE.md` explain what SUDACHI is and why it exists. They must not silently override accepted ADRs.
+- per-wake decision counters
+- lifecycle time and record limits
+- persistent storage and failure thresholds
+- checkpoint maintenance cost
 
-### Code comments
+Check and reserve budgets before mutation. Use a savepoint for recoverable action execution so partial mutation disappears while attempt cost and failure history remain.
 
-Explain local non-obvious reasoning. Do not duplicate an ADR or use comments to introduce an undocumented architectural decision.
+Never use protected cleanup grace or terminal record slots for more organism work.
 
-## 7. Keep recommendations distinct from accepted decisions
+Hard-zero caregiver, network, subprocess, and external mutable-write capabilities must be absent or fail before effect. Do not perform those effects inside “infrastructure.”
 
-ADR 0006 has not yet decided the energy model.
+## 9. Checkpoint every committed wake
 
-The current recommendation is to expose concrete budgets first, such as:
+Initialization and every committed wake create one exact pending checkpoint boundary.
 
-- steps
-- wall time
-- writes
-- subprocess calls
-- generated bytes
-- consecutive failures
-- caregiver consultations, fixed at zero in Phase 1
+No later wake may advance until the boundary is stable.
 
-This is a recommendation, not an accepted schema. Do not copy an illustrative dataclass into code before the ADR is accepted.
+Checkpoint implementation must:
 
-Future phases may introduce drives such as curiosity, fatigue, urgency, or homeostatic variables if they add explanatory or experimental value. Do not hide concrete limits behind a mystery energy number during the seed phase.
+- use SQLite's backup interface
+- create a unique temporary same-filesystem artifact
+- close before hashing
+- validate integrity, foreign keys, identity, versions, lineage, and event boundary
+- publish atomically
+- register stability in a short transaction
+- preserve pending state on failure
 
-## 8. Keep caregiver input outside organism authority
+Rollback is offline administration. It creates a pre-rollback archive and a new lineage generation. Never overwrite the immutable source checkpoint or silently discard the abandoned future.
 
-A future caregiver may be human, deterministic, model-based, or hybrid. Regardless of source, a response is a proposal.
+## 10. Keep authority categories distinct
 
-A caregiver must not directly:
+### Organism runtime
 
-- execute an organism action
-- mutate durable organism state
-- modify protected files or evaluation
-- raise budgets
-- erase history
-- adopt a skill
-- bypass the sandbox
-- authorize model training or distillation
+May change only the mutable fields listed in Contract v0.2 through validated transactions.
 
-Consultation, interpretation, evaluation, and adoption are separate recorded stages.
+### Administration
 
-## 9. Apply the Tamagotchi test structurally
+May initialize, enqueue input, inspect, repair checkpoints, prune eligible artifacts, enter maintenance, roll back, quarantine, migrate, and export.
 
-SUDACHI has failed its central research claim if later phases add:
+Administrative work is not organism autonomy and must be distinguishable in records and reports.
 
-- a cute interface
-- simulated hunger, fatigue, affection, or mood
-- growing chat history
-- personality quirks
-- branching developmental presentation
+### Repository change
 
-without demonstrating retained caregiver-independent competence.
+Required for source, action definitions, evaluators, protected defaults, environment version, contract, schema migrations, and new capabilities.
+
+### Future caregiver
+
+Provides proposals only. It cannot execute actions, mutate state, weaken tests, raise budgets, erase history, or adopt skills directly.
+
+## 11. Apply the Tamagotchi test structurally
+
+SUDACHI fails its central claim if later phases add simulated needs, affection, personality, chat history, or branching presentation without retained caregiver-independent competence.
 
 Before treating a feature as development, identify:
 
 1. the capability that previously required caregiver help
-2. the recorded scaffolding supplied
-3. the verified local artifact or policy change produced
-4. the protected evaluation retained after assistance is reduced
-5. the reduction in caregiver burden
-6. the added storage, computation, retries, complexity, and experimenter labor
+2. recorded scaffolding
+3. the verified local artifact or policy change
+4. protected evaluation after assistance is reduced
+5. reduced caregiver burden
+6. added storage, compute, retries, complexity, and human labor
 
-A feature that cannot answer those questions may still be useful presentation, but it is not evidence of maturation.
+A feature may be useful presentation without being evidence of maturation. Label it honestly.
 
-## 10. Restart checklist
+## 12. Keep documentation roles clear
+
+### Contract
+
+Defines normative Phase 1 invariants and fixed evaluations.
+
+### ADRs
+
+Preserve context, decisions, alternatives, consequences, and follow-up constraints.
+
+### `docs/HANDOFF.md`
+
+Records true current state, issue roles, accepted decisions, failures, and one exact next action.
+
+### Architecture and roadmap
+
+Explain structure and developmental sequence. They do not override the contract.
+
+### Code comments
+
+Explain local non-obvious reasoning. They do not introduce architecture.
+
+## 13. Restart checklist
 
 Before ending substantial work:
 
-- [ ] accepted decisions and open questions are recorded in ADRs or issues
-- [ ] `docs/HANDOFF.md` reflects the true current state
-- [ ] the relevant issue checklist and status are current
-- [ ] `AGENTS.md` points to the correct files and active work streams
+- [ ] contract and ADR assumptions still match implementation
+- [ ] protected test mapping is current
+- [ ] relevant tests were run and results reported
+- [ ] failures and skipped checks are reported plainly
+- [ ] `docs/HANDOFF.md` reflects the true state and exact next action
+- [ ] issue and pull-request status is current
+- [ ] `AGENTS.md` points to the correct work streams
 - [ ] repository content follows the language policy
-- [ ] one exact resume point is documented
 - [ ] no critical decision exists only in chat, model memory, or an uncommitted note
-- [ ] research claims include appropriate sources and verification dates
-- [ ] failures, uncertainty, and unfinished work are reported plainly
+- [ ] research claims include sources and verification dates
 
 This is how the project remains restartable after a long gap.
 
-## 11. When research changes design
+## 14. When research or implementation changes design
 
-When Issue #3 surfaces:
-
-- a precedent that weakens a novelty candidate — update the research notes and handoff
-- a provider constraint — update `PARENT_MODEL_PROVIDER_REVIEW.md`
-- a caregiver-protocol requirement — record it in Issue #3 or a dedicated future ADR
-- a Phase 1 design implication — record it in Issue #1 before implementation
-
-Do not silently change architecture because a new paper or product term was found.
+- A precedent that weakens novelty updates the research notes and handoff.
+- A provider constraint updates the provider review.
+- A caregiver-protocol requirement belongs in Issue #3 or a future ADR.
+- A Phase 1 contradiction requires a contract or ADR change before code proceeds.
+- A measured performance limitation may justify a versioned budget or checkpoint amendment, not silent drift.
 
 ## See also
 
-- `AGENTS.md` — cold-start instructions
-- `docs/HANDOFF.md` — authoritative current state and restart point
-- `docs/MINIMAL_ORGANISM_CONTRACT.md` — draft executable contract
-- `docs/RESEARCH_QUESTIONS.md` — active research plan
-- `docs/decisions/` — accepted architecture decisions once created
+- `AGENTS.md`
+- `docs/MINIMAL_ORGANISM_CONTRACT.md`
+- `docs/decisions/`
+- `docs/ARCHITECTURE.md`
+- `docs/ROADMAP.md`
+- `docs/HANDOFF.md`
 
-**End state:** A collaborator arriving months later can read the repository, inspect current issues, and continue without access to the conversations that created it.
+**End state:** A collaborator arriving months later can read the repository, run protected tests, inspect current issues, and continue without the conversations that created it.

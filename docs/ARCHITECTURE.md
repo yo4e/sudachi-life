@@ -1,300 +1,431 @@
 # SUDACHI Architecture
 
-This document describes the intended architecture before implementation. It is deliberately conservative: the first organism should be understandable, bounded, and testable.
+Status: **Phase 1 baseline aligned with Minimal Organism Contract v0.2**
+
+This document describes the implementation architecture accepted for the first organism. The normative sources are:
+
+1. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+2. accepted ADRs in `docs/decisions/`
+3. protected Phase 1 tests
+
+This document explains structure. It does not override those sources.
 
 ## Architectural thesis
 
-SUDACHI is not a language model wrapped in a loop.
+SUDACHI is not a language model wrapped in a loop and is not a virtual pet whose growth is only presentation.
 
-It is a small organism composed of state, memory, drives, budgets, skills, evaluators, and a lifecycle. A language model may serve as a parent or cognitive organ, but it should remain optional and explicitly accounted for.
+It is a bounded persistent organism composed of:
 
-## Proposed top-level structure
+- one canonical body in SQLite
+- an append-only developmental history
+- explicit concrete budgets
+- a deterministic environment and action repertoire
+- protected evaluation
+- verified checkpoints and rollback lineage
+- a finite wake–act–evaluate–persist–checkpoint–sleep lifecycle
+
+A future caregiver may be human, deterministic, model-based, hybrid, or absent. No caregiver exists in the Phase 1 runtime.
+
+## Phase 1 authority model
+
+### Canonical authority
+
+One SQLite database per organism is the sole canonical live store.
+
+It owns:
+
+- organism identity and lineage generation
+- contract, schema, environment, and budget versions
+- mutable lifecycle status
+- input queue state
+- seed-garden state and inventory
+- concrete budget ledgers
+- append-only events and outcomes
+- checkpoint registration and maintenance state
+
+### Non-canonical artifacts
+
+The following may be derived or maintained but are not live organism authority:
+
+- JSONL exports
+- rendered status views
+- diagnostic logs
+- immutable checkpoint copies and manifests
+- Git history
+- experiment reports
+
+Git records source and developmental decisions. It is not the runtime transaction engine.
+
+## Proposed repository structure
 
 ```text
 sudachi-life/
 ├── AGENTS.md
 ├── README.md
+├── pyproject.toml
 ├── docs/
+│   ├── MINIMAL_ORGANISM_CONTRACT.md
+│   ├── ARCHITECTURE.md
+│   ├── ROADMAP.md
+│   ├── HANDOFF.md
+│   └── decisions/
+│       ├── 0001-state-and-event-storage.md
+│       ├── 0002-clock-and-determinism.md
+│       ├── 0003-runtime-locking.md
+│       ├── 0004-checkpoints.md
+│       ├── 0005-seed-environment.md
+│       └── 0006-budget-metaphor.md
 ├── src/sudachi_life/
-│   ├── organism.py
+│   ├── __init__.py
+│   ├── cli.py
 │   ├── lifecycle.py
-│   ├── state.py
-│   ├── events.py
+│   ├── storage.py
+│   ├── schema.py
+│   ├── clock.py
 │   ├── budgets.py
+│   ├── events.py
+│   ├── garden.py
 │   ├── actions.py
 │   ├── evaluation.py
-│   ├── memory.py
-│   ├── skills.py
-│   ├── parent.py
-│   └── sandbox.py
+│   ├── checkpoints.py
+│   └── errors.py
 ├── tests/
-├── experiments/
-├── runtime/             # ignored: mutable organism state
-│   ├── state.db
-│   ├── event-log.jsonl
-│   ├── checkpoints/
-│   └── workspaces/
-└── pyproject.toml
+│   ├── fixtures/
+│   ├── test_contract.py
+│   ├── test_determinism.py
+│   ├── test_storage.py
+│   ├── test_locking.py
+│   ├── test_garden.py
+│   ├── test_budgets.py
+│   └── test_checkpoints.py
+└── runtime/                     # ignored by Git
+    └── <organism-id>/
+        ├── organism.sqlite3
+        ├── checkpoints/
+        │   └── <checkpoint-id>/
+        │       ├── organism.sqlite3
+        │       └── manifest.json
+        ├── exports/
+        └── diagnostics/
 ```
 
-The repository contains source, policy, tests, and developmental history. Mutable runtime state should remain separate and ignored by Git unless intentionally captured as an experiment artifact.
+Module names may change without an ADR when the contract boundary is unchanged. Phase 1 does not need memory, skill, model, chat, or caregiver modules.
 
 ## Core components
 
-### 1. Organism state
+### 1. Schema and contract validation
 
-The smallest durable description of the current individual.
+The schema layer defines and validates:
 
-Candidate fields:
+- protected identity and version fields
+- durable status transitions
+- garden plots and inventory
+- inbox and event schemas
+- concrete budget configuration and ledgers
+- checkpoint and lineage metadata
 
-- organism ID
-- developmental stage
-- cycle number
-- energy or run budget
-- parent-consultation budget
-- unresolved goals
-- fatigue or failure count
-- active skill versions
-- current checkpoint
-- last wake and sleep times
-- random seed
+Validation occurs before mutable state is used and before commit.
 
-State must be serializable, versioned, and validated before use.
+The validator is not optional middleware. Every lifecycle path reaches it.
 
-### 2. Event stream
+### 2. Storage boundary
 
-Events are observations, not conclusions.
+The storage layer:
 
-Examples:
+- opens one organism database path
+- enables and verifies foreign keys
+- creates and migrates supported schemas administratively
+- exposes explicit transaction ownership
+- enforces append-only event behavior
+- performs parameterized queries
+- never exposes arbitrary SQL to organism actions
 
-- a file appeared in an allowed directory
-- a scheduled wake occurred
-- a test passed or failed
-- a skill invocation succeeded or failed
-- a parent consultation returned advice
-- a budget threshold was reached
+State, input consumption, budget usage, outcomes, and canonical events commit together.
 
-Use an append-only event log. Consolidated knowledge belongs elsewhere.
+JSONL is generated only from a declared committed event boundary.
 
-### 3. Lifecycle controller
+### 3. Injected clock
 
-A lifecycle run should be finite.
+The clock boundary returns one explicit reading containing:
+
+- integer UTC epoch microseconds
+- monotonic nanoseconds
+
+Real operation uses system wall and monotonic clocks. Tests use a fake clock with an explicit reading sequence.
+
+Clock access must not be hidden inside storage, logging, or identifiers.
+
+### 4. Runtime locking
+
+A wake:
+
+1. opens a fresh SQLite connection
+2. attempts fail-fast `BEGIN IMMEDIATE`
+3. reads mutable state only after acquisition
+4. uses that transaction through canonical wake commit
+5. rolls back or closes on every failure path
+
+A competing wake receives an explicit busy rejection and is not silently queued.
+
+There is no authoritative PID file, lease row, or wall-time stale-lock rule.
+
+### 5. Lifecycle controller
+
+The accepted Phase 1 lifecycle is:
 
 ```text
-wake
-  -> validate state
-  -> collect one or more allowed observations
-  -> select one bounded objective
-  -> choose local skill, parent consultation, abstention, or sleep
-  -> execute one action in a sandbox
-  -> evaluate
-  -> update state and logs
-  -> checkpoint
-  -> sleep and terminate
+wake command
+  -> open database and acquire fail-fast write transaction
+  -> validate state, versions, maintenance, and checkpoint readiness
+  -> load protected concrete budgets
+  -> claim one synthetic:garden_tick
+  -> build one full sorted garden observation
+  -> choose one registered action or abstain
+  -> validate and reserve budgets
+  -> execute recoverable action inside a savepoint
+  -> independently evaluate outcome and objective
+  -> append outcomes, events, and budget ledger
+  -> mark an exact checkpoint boundary pending
+  -> validate and commit
+  -> create, validate, and publish an immutable SQLite checkpoint
+  -> register checkpoint stable in a short transaction
+  -> set sleeping or maintenance_required
+  -> close and terminate
 ```
 
-The controller enforces limits. No component may silently create an unbounded internal loop.
+The twelve semantic wake steps are fixed by Contract v0.2. Internal code may be factored differently but may not hide retries or additional actions.
 
-### 4. Budgets and metabolism
+### 6. Seed garden
 
-Budgets give actions consequences and prevent “autonomy” from meaning unlimited execution.
+`seed-garden-v1` is fully observable and stored in SQLite.
 
-Initial budgets should include:
+Initial state:
 
-- maximum lifecycle steps
-- wall-clock time
-- parent-model calls
-- tokens or model cost
-- filesystem writes
-- subprocess executions
-- generated storage
-- consecutive failures
+- `bed-a`: dry sprout
+- `bed-b`: mature with one fruit
+- one water unit
+- zero harvested fruit
 
-The first implementation may use simple integer counters. Physical-energy metaphors must map to inspectable mechanics.
+Registered mutating actions:
 
-### 5. Action registry
+- `water_plot(plot_id)`
+- `harvest_plot(plot_id)`
 
-Actions are the organism’s available motor repertoire.
+Policy:
 
-Each action should declare:
+1. water the lexicographically first executable dry living plot
+2. otherwise harvest the lexicographically first executable mature fruit
+3. otherwise abstain
 
-- name and version
-- input schema
-- output schema
+There is no randomness, hidden state, natural-language interpretation, autonomous ecology, personality, mood, or caregiver.
+
+### 7. Action registry and executor
+
+An action definition includes:
+
+- identifier and version
+- parameter and outcome schemas
 - preconditions
-- permissions required
-- budget cost
-- deterministic or stochastic behavior
-- timeout
+- permissions
+- concrete budget costs
+- deterministic behavior declaration
 - evaluator
 - rollback behavior
 
-Unknown free-form tool use should not be the default.
+The executor:
 
-### 6. Skill registry
+1. charges the action attempt
+2. validates schema, target, preconditions, permissions, and remaining budgets
+3. reserves a mutation only after preconditions pass
+4. opens a SQLite savepoint
+5. performs the exact transition
+6. rolls back partial mutation on recoverable failure
+7. preserves attempt cost and typed failure in the outer transaction
 
-A skill is reusable, tested behavior acquired or refined through experience.
+No arbitrary generated code, shell command, dynamic tool name, network call, subprocess, or external mutable write exists in Phase 1.
 
-A proposed skill record should include:
+### 8. Evaluation
 
-- stable identifier
-- purpose
-- provenance: how and why it was created
-- implementation
-- tests
-- preconditions and limits
-- observed success/failure counts
-- parent calls replaced
-- last validation time
-- status: proposed, active, deprecated, quarantined
+The evaluator independently recomputes:
 
-Skills should be promoted only after evaluation. The organism may propose a skill, but should not unilaterally weaken the test required to adopt it.
-
-### 7. Parent-model adapter
-
-The parent is an external source of expensive general reasoning.
-
-The adapter must expose usage rather than conceal it.
-
-A consultation record should include:
-
-- consultation ID
-- reason for asking
-- local attempts already made
-- information supplied
-- response summary or hash
-- cost
-- proposed action
-- verification result
-- whether the interaction later produced a reusable skill
-
-Implement a deterministic mock before any live provider.
-
-### 8. Memory system
-
-Separate at least three layers:
-
-- **episodic memory:** what happened in particular cycles
-- **semantic memory:** consolidated facts and learned relations
-- **procedural memory:** skills and routines
-
-Do not feed all memory into every decision. Retrieval should be selective, inspectable, and budgeted.
-
-### 9. Evaluator
-
-The evaluator determines whether an action or proposed change improved the organism.
-
-Protected evaluation should include:
-
-- fixed regression tests
-- task-specific outcome checks
+- action transition validity
+- garden objective status
+- protected invariants
 - budget compliance
-- state integrity
-- permission compliance
-- comparison with an earlier baseline
+- before/after unresolved needs
+- progress classification
 
-The organism may propose new tests. It must not delete or relax protected tests merely to pass.
+An action cannot declare itself successful.
 
-### 10. Sandbox and permissions
+Fixed tests protect the evaluator and measuring conditions from organism or caregiver modification.
 
-Default posture:
+### 9. Concrete budgets
 
-- no network access
-- no external writes
-- repository-scoped read access
-- writes only to designated runtime or proposal directories
-- subprocess allowlist
-- strict timeout
-- resource limits where available
+Phase 1 has no canonical scalar energy.
 
-Source-code changes should begin as proposals or branches and pass tests before adoption.
+Budget layers:
 
-## Decision policy
+- per-wake decision counters
+- protected lifecycle safety envelope
+- persistent storage and maintenance limits
 
-A minimal decision order could be:
+Core per-wake limits:
 
-1. Can a verified local skill handle this event?
-2. Can a safe deterministic action handle it?
-3. Is abstention or deferral acceptable?
-4. Is the event important and novel enough to justify a parent call?
-5. If the parent is unavailable, can the organism preserve itself and report uncertainty?
+- one input event
+- one observation
+- one action attempt
+- one successful environment mutation
+- zero caregiver consultations
+- zero network calls
+- zero subprocess calls
+- zero authoritative external writes
 
-This order prevents the parent from becoming the invisible default.
+Core runtime limits:
+
+- twelve semantic steps
+- sixteen canonical records, with terminal capacity reserved
+- 2000 ms normal monotonic deadline
+- 250 ms cleanup grace
+- 5000 ms checkpoint deadline
+
+Storage and failure defaults are defined in ADR 0006 and Contract v0.2.
+
+Status must expose the budget vector rather than a misleading energy percentage.
+
+### 10. Event history and inbox
+
+The mutable input inbox and immutable event history are separate schemas.
+
+Inbox state may change transactionally when a tick is claimed. Historical receipt, claim, decision, outcome, and evaluation facts are append-only.
+
+Canonical event order uses an increasing integer sequence. Timestamps are audit metadata and do not define order.
+
+Cross-lineage identity is:
+
+```text
+(organism_id, lineage_generation, event_sequence)
+```
+
+### 11. Checkpoints and rollback
+
+Every initialization and committed wake establishes a pending checkpoint boundary. Another wake cannot advance until it becomes stable.
+
+Checkpoint creation uses SQLite's backup interface and publishes an immutable directory only after:
+
+- database close
+- digest and size calculation
+- integrity and foreign-key checks
+- identity and version checks
+- lineage and event-boundary verification
+- atomic same-filesystem publication
+
+Rollback is offline administration. It creates a verified pre-rollback archive, restores a selected checkpoint through a temporary candidate, increments lineage generation, and preserves the abandoned future for audit.
+
+### 12. Administrative boundary
+
+Administration may:
+
+- initialize an organism
+- enqueue a uniquely identified garden tick
+- inspect status
+- create or repair checkpoints
+- prune eligible checkpoints
+- enter or clear maintenance with a reason
+- roll back or quarantine
+- perform supported migrations
+- export non-canonical records
+
+Administration is not organism autonomy and must be reported separately in experiments.
+
+## Protected, mutable, and future layers
+
+### Protected from organism and caregiver
+
+- contract and ADRs
+- validators and canonical schemas
+- fixed evaluations
+- permissions and hard-zero capabilities
+- action definitions and evaluators
+- seed-garden fixture, policy, and objective
+- budget defaults and enforcement
+- append-only enforcement
+- clock boundary
+- checkpoint and rollback machinery
+- source code and migration rules
+
+### Mutable through bounded Phase 1 runtime
+
+- lifecycle counters and allowed status transitions
+- queue claim state
+- append-only event additions
+- garden moisture, fruit, and inventory
+- objective and environment step
+- per-wake budget ledger
+- failure streak and maintenance reason
+- checkpoint-pending and stable references
+
+### Future caregiver and learning layers
+
+Not implemented in Phase 1:
+
+- caregiver request and response protocol
+- human chat interface
+- model adapter
+- memories and skills
+- proposal and adoption pipeline
+- caregiver fading experiments
+- consolidation and forgetting
+
+A future caregiver response is always a proposal and cannot directly mutate protected or canonical state.
 
 ## Maturity model
 
-A simple initial maturity score should not collapse everything into one number. Track a vector instead:
+Phase 1 does not claim maturity. It proves metabolism and recovery.
 
-- dependency: parent calls per successful action
-- competence: success rate on fixed tasks
-- autonomy: successful cycles without parent access
-- efficiency: compute/storage per retained capability
-- adaptability: transfer to controlled novel tasks
-- resilience: recovery after injected failure
-- honesty: correct abstention under uncertainty
+Later development should track a vector including:
 
-A mature organism is not one that always acts. It is one that knows when local capability is insufficient without immediately becoming helpless.
+- caregiver consultations per retained capability
+- caregiver minutes and latency
+- autonomous duration after withdrawal
+- fixed-task competence and transfer
+- skill reuse
+- recovery after failure or misleading advice
+- storage and computation cost
+- correct abstention
+- hidden retries and experimenter intervention
 
-## Protected versus mutable layers
-
-### Protected
-
-- constitutional safety boundaries
-- fixed core evaluations
-- permission policy
-- budget enforcement
-- provenance requirements
-- rollback mechanisms
-
-### Mutable through tested proposals
-
-- skills
-- retrieval strategies
-- memory summaries
-- action-selection heuristics
-- internal self-description
-- non-protected tests
-
-This distinction is necessary to prevent Goodhart-style self-improvement, where the organism edits the measuring system instead of becoming better.
-
-## Scheduling model
-
-Prefer sleeping processes over permanent processes.
-
-Possible wake triggers:
-
-- explicit invocation
-- scheduled interval
-- queued event
-- repository change
-- experiment harness
-
-Each wake creates a bounded run, persists state, and exits. Continuity comes from state and history, not from keeping one process alive forever.
+No single score should hide those dimensions.
 
 ## Minimal technical choices
 
-Initial recommendation:
+Phase 1 baseline:
 
 - Python 3.12+
 - standard library where practical
-- SQLite for state and indexed memory
-- JSON Lines for append-only event records
-- `pytest` for tests
-- Git for source and developmental history
-- no vector database in the seed phase
-- no model fine-tuning in the seed phase
+- `sqlite3` for canonical storage and backup
+- integer timestamps and counters
+- `pytest` for protected tests
+- Git for source and decision history
+- local single-host filesystem
+- no vector database
+- no network
+- no live or fixture caregiver in action selection
+- no model fine-tuning
+- no scalar energy
 
 ## First implementation target
 
-The first executable SUDACHI should be deliberately unimpressive:
+The first executable SUDACHI is deliberately unimpressive:
 
-- wake from a CLI command
-- read validated state
-- receive one synthetic event
-- choose among two or three deterministic actions
-- spend a visible budget
-- log the result
-- checkpoint
-- sleep
+```text
+sudachi init
+sudachi enqueue synthetic:garden_tick --id tick-1
+sudachi wake --seed 1
+sudachi status
+sudachi checkpoint repair
+sudachi rollback
+```
 
-If that lifecycle is not trustworthy, adding an LLM will only make the failure more articulate.
+It must pass every fixed evaluation in Contract v0.2 before any caregiver or learning layer is added.
+
+A trustworthy metabolism precedes a clever brain.

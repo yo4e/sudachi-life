@@ -31,13 +31,13 @@ More precisely:
 
 SUDACHI is planned as a small local Python system composed of:
 
-- a bounded wake–act–evaluate–persist–sleep lifecycle
-- persistent state and append-only event history
-- a registry of tested skills
-- a source-neutral caregiver interface used only when justified
-- explicit resource and consultation budgets
-- protected evaluation and rollback mechanisms
-- Git history as an auditable developmental record
+- a bounded wake–act–evaluate–persist–checkpoint–sleep lifecycle
+- one canonical SQLite body with append-only event history
+- explicit concrete resource budgets
+- protected evaluation and rollback lineage
+- a deterministic seed environment
+- later, a source-neutral caregiver boundary used only when justified
+- Git history as an auditable source and decision record
 
 A language model may be an organ or caregiver. It is not the whole organism.
 
@@ -77,7 +77,29 @@ A language model may be an organ or caregiver. It is not the whole organism.
 8. **Caregiver advice is a proposal**  
    Human or model guidance must not bypass permissions, budgets, sandboxing, evaluation, or skill-adoption review.
 
+## Phase 1 organism
+
+Minimal Organism Contract v0.2 and ADRs 0001–0006 define the first executable organism.
+
+SUDACHI-0 begins as a deliberately small deterministic garden metabolism:
+
+- one SQLite database per organism
+- one queued `synthetic:garden_tick` per wake
+- two plots: a dry sprout and a mature fruiting plant
+- one water unit
+- two mutating actions: `water_plot` and `harvest_plot`
+- explicit abstention
+- one action attempt and one successful mutation at most per wake
+- zero caregiver, network, subprocess, and external mutable-write capability
+- a verified immutable checkpoint after every committed wake
+- rollback that preserves the abandoned future and creates a new lineage generation
+- no scalar energy variable
+
+The canonical run waters, harvests, then abstains after objective completion. This proves metabolism and recovery, not learning or intelligence.
+
 ## Initial maturity metrics
+
+Later caregiver experiments should track:
 
 - caregiver consultations per successful action
 - caregiver minutes per retained capability
@@ -104,10 +126,11 @@ The closest precedents include developmental robotics, human-in-the-loop learnin
 - [`AGENTS.md`](AGENTS.md) — cold-start and continuity instructions for AI collaborators
 - [`docs/CHATGPT_PROJECT_HANDOFF.md`](docs/CHATGPT_PROJECT_HANDOFF.md) — startup context for a dedicated ChatGPT Project
 - [`docs/ORIGIN.md`](docs/ORIGIN.md) — origin, intent, and founding conversation
-- [`docs/MINIMAL_ORGANISM_CONTRACT.md`](docs/MINIMAL_ORGANISM_CONTRACT.md) — draft contract for the smallest valid SUDACHI-0
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — proposed system architecture
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased development plan
+- [`docs/MINIMAL_ORGANISM_CONTRACT.md`](docs/MINIMAL_ORGANISM_CONTRACT.md) — accepted Contract v0.2 for SUDACHI-0
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — Phase 1 architecture aligned with the contract
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — developmental roadmap from metabolism to caregiver withdrawal
 - [`docs/IMPLEMENTATION_DISCIPLINE.md`](docs/IMPLEMENTATION_DISCIPLINE.md) — implementation guardrails and restart checklist
+- [`docs/decisions/`](docs/decisions/) — accepted ADRs 0001–0006
 - [`docs/RESEARCH_QUESTIONS.md`](docs/RESEARCH_QUESTIONS.md) — active prior-work and novelty research plan
 - [`docs/PARENT_MODEL_PROVIDER_REVIEW.md`](docs/PARENT_MODEL_PROVIDER_REVIEW.md) — model-provider, terms, data, and compliance checklist
 - [`docs/research/INITIAL_EVIDENCE_MAP.md`](docs/research/INITIAL_EVIDENCE_MAP.md) — preliminary related-work map
@@ -121,10 +144,10 @@ The repository is written in English. The only intentional Japanese text is the 
 
 ## Status
 
-**Seed phase — architecture and research framing are being resolved before implementation.**
+**Phase 0 contract freeze is complete pending merge of the Contract v0.2 reconciliation pull request.**
 
-No organism has been implemented yet. The implementation-critical next task is ADR 0001 for state and event storage, followed by ADRs 0002–0006, contract review, and then one deterministic caregiver-free lifecycle.
+No organism has been implemented yet. After the aligned contract and documentation merge, the next implementation milestone is a test-first Python package skeleton whose initialization command creates a validated SQLite organism and stable genesis checkpoint.
 
 Issue #3 research proceeds in parallel. No live human or model caregiver is connected.
 
-For a cold start, read [`AGENTS.md`](AGENTS.md), follow its reading order, and then inspect the current open issues and pull requests.
+For a cold start, read [`AGENTS.md`](AGENTS.md), follow its reading order, and then inspect current issues and pull requests.

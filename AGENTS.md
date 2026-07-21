@@ -6,7 +6,7 @@ This file is the continuity contract for AI collaborators working on SUDACHI.
 
 Assume you remember nothing about SUDACHI.
 
-Do not rely on conversation memory, prior model context, an issue title, or a single code fragment. Reconstruct the project from the repository before proposing or changing anything.
+Do not rely on conversation memory, prior model context, an issue title, or one code fragment. Reconstruct the project from repository state before proposing or changing anything.
 
 ## Before doing any work
 
@@ -16,49 +16,68 @@ Read these files in order:
 2. `docs/CHATGPT_PROJECT_HANDOFF.md`
 3. `docs/ORIGIN.md`
 4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-5. `docs/ROADMAP.md`
+5. accepted files in `docs/decisions/`, in numeric order
 6. `docs/ARCHITECTURE.md`
-7. `docs/IMPLEMENTATION_DISCIPLINE.md`
-8. `docs/RESEARCH_QUESTIONS.md`
-9. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-10. `docs/research/INITIAL_EVIDENCE_MAP.md`
-11. `docs/research/PARENT_MODEL_STRATEGY.md`
-12. `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
-13. `docs/HANDOFF.md`
+7. `docs/ROADMAP.md`
+8. `docs/IMPLEMENTATION_DISCIPLINE.md`
+9. `docs/RESEARCH_QUESTIONS.md`
+10. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+11. `docs/research/INITIAL_EVIDENCE_MAP.md`
+12. `docs/research/PARENT_MODEL_STRATEGY.md`
+13. `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
+14. `docs/HANDOFF.md`
 
 Then inspect current open issues and pull requests and confirm which work streams are active.
 
-Current issue roles after the owner authorized research on July 21, 2026:
+Current issue roles after Contract v0.2 reconciliation:
 
-- **#1** — active Phase 0 architecture decisions and ADR work; implementation-critical
+- **#1** — Phase 0 seed architecture and contract freeze; close when the reconciliation PR is merged
 - **#2** — completed Copilot architecture review record; closed
-- **#3** — active caregiver-withdrawal, prior-work, novelty, and model-provider research
+- **#3** — active caregiver-withdrawal, prior-work, novelty, human-caregiver, and model-provider research
 - **#4** — accidental placeholder; closed and irrelevant
 
 If repository state and this list disagree, trust current GitHub state and update `docs/HANDOFF.md`.
 
-Do not infer the project only from the latest issue or code fragment. SUDACHI is a developmental artificial-life experiment, not a generic autonomous-agent framework or a virtual-pet presentation layer.
+Do not infer the project only from the latest issue or code fragment. SUDACHI is a developmental artificial-life experiment, not a generic autonomous-agent framework or virtual-pet presentation layer.
 
 ## Immediate restart point
 
-For implementation planning, resume at Issue #1:
+After the Contract v0.2 reconciliation PR is merged, begin Phase 1 implementation from the contract rather than redesigning it.
 
-1. resolve ADRs 0001 through 0006 in `docs/decisions/`
-2. review the Minimal Organism Contract for contradictions
-3. confirm protected and mutable boundaries
-4. confirm fixed Phase 1 evaluations
-5. update `docs/HANDOFF.md`
-6. only then create the Python package skeleton
+The first implementation slice is:
 
-Issue #3 research may proceed in parallel. Research findings must be written to the repository with dated primary sources. Research does not authorize connecting a live human or model caregiver.
+1. create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
+2. encode protected Contract v0.2 tests before broad organism behavior
+3. implement canonical SQLite initialization and schema validation
+4. implement injected real and fake clocks
+5. create a stable genesis checkpoint
+6. expose the minimal `sudachi init` and `sudachi status` commands
 
-Do not begin implementation with a live caregiver. Phase 1 must remain deterministic, local, network-free, and caregiver-free.
+Do not begin with a caregiver, chat interface, model adapter, memory system, skill system, or general agent loop.
+
+Issue #3 research may continue in parallel. Research findings must be written to the repository with dated primary sources. Research does not authorize connecting a live human or model caregiver.
+
+Phase 1 remains deterministic, local, network-free, and caregiver-free.
+
+## Normative implementation authority
+
+For Phase 1, use this precedence:
+
+1. Minimal Organism Contract v0.2
+2. accepted ADRs 0001–0006
+3. protected tests
+4. `docs/HANDOFF.md`
+5. explanatory architecture and roadmap documents
+
+When sources conflict, stop and repair the documentation or contract. Do not choose a private interpretation in code.
+
+Ordinary module names and private helpers do not require an ADR when they preserve every contract invariant.
 
 ## Project intent
 
 SUDACHI may eventually receive assistance from an external caregiver or cognitive-scaffolding source. The caregiver may be human, deterministic, model-based, hybrid, or absent in a control condition.
 
-Successful assistance should be converted into verified experience, reusable skills, tests, deterministic routines, or other inspectable local artifacts. The central research question is whether capability can be retained while justified dependence on external scaffolding decreases.
+Successful assistance should become verified experience, reusable skills, tests, deterministic routines, or other inspectable local artifacts. The central research question is whether capability can be retained while justified dependence on external scaffolding decreases.
 
 The caregiver is a role behind a source-neutral boundary, not a commitment to ChatGPT, another named product, or even an AI model.
 
@@ -76,66 +95,87 @@ Growth is not the accumulation of text, files, prompts, simulated needs, persona
 
 ## Non-negotiable design rules
 
-1. **Bound all autonomous activity.** Every run must have explicit limits on steps, time, storage, and external effects.
-2. **Keep caregiver usage measurable.** Human minutes, consultations, model calls, clarification turns, latency, and hidden intervention must not disappear inside helper functions or experiment administration.
-3. **Separate proposals from adoption.** Caregiver responses and self-generated changes are proposals. They must be validated and tested before becoming part of the organism.
-4. **Protect evaluation.** The organism and caregiver must not alter fixed tests, safety boundaries, or success metrics merely to improve the score.
-5. **Prefer local deterministic skills.** Once a recurring action is understood, replace repeated external reasoning with tested code, a compact rule, or another inspectable local capability when practical.
-6. **Preserve rollback.** Every developmental step must be reversible through Git or an equivalent state checkpoint.
-7. **No unrestricted network or filesystem access.** Use allowlists and a sandbox. Default to no external writes.
-8. **Do not equate autonomy with continuous execution.** Event-driven or periodic waking is preferred to an unbounded always-on loop.
-9. **Do not anthropomorphize away the mechanics.** Life-like language is welcome, but state, budgets, triggers, learning evidence, and evaluation must remain explicit.
-10. **Update the handoff.** After a substantial change, update `docs/HANDOFF.md` with the current state, decisions, issue roles, and next concrete action.
-11. **Verify model providers before connection.** Do not assume ChatGPT, an API, or another commercial model may be used as a live caregiver. Complete the provider review and record a dated decision first.
-12. **Review human-study boundaries before recruitment.** A local owner-researcher experiment is not automatically equivalent to a public participant study. Review consent, privacy, and institutional requirements before recruiting or analyzing additional people.
-13. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the active prior-work review is substantially complete.
-14. **Separate transformation classes.** Transient advice, retained memory, deterministic artifacts, synthetic data, and model-weight development require separate permissions and provenance.
-15. **Do not infer distillation permission from output ownership.** Weight-level learning remains disabled until the exact provider, product, model, and intended transformation are explicitly approved.
-16. **Do not build Tamagotchi with Git.** Simulated needs, affection, branching growth, or chat history do not count as development without retained caregiver-independent competence on protected evaluations.
+1. **Implement the accepted contract.** Do not reopen ADRs through accidental code choices.
+2. **Bound all runtime activity.** Every wake has explicit limits on semantic steps, monotonic time, records, storage, and effects.
+3. **Keep caregiver usage measurable.** Future human minutes, consultations, model calls, clarification, latency, and hidden intervention must not disappear inside helpers or experiment administration.
+4. **Separate proposals from adoption.** Future caregiver responses and self-generated changes are proposals; they never mutate canonical state directly.
+5. **Protect evaluation.** The organism and caregiver cannot alter fixed tests, safety boundaries, or success metrics to improve a score.
+6. **Use one canonical body.** SQLite is the sole live authority; JSONL and rendered views are exports.
+7. **Preserve atomicity and lineage.** State, outcomes, events, checkpoints, and rollback behavior must match ADRs 0001, 0003, and 0004.
+8. **Use injected time.** Runtime code does not call system clocks outside the clock adapter.
+9. **Use concrete budgets.** Phase 1 has no scalar energy and no hidden retries or effects.
+10. **Keep hard-zero capabilities absent.** No caregiver, network, subprocess, or authoritative external-write effect exists in Phase 1.
+11. **Do not equate autonomy with continuous execution.** One bounded wake terminates.
+12. **Do not anthropomorphize away mechanics.** Life-like language is welcome; state, budgets, triggers, evidence, and evaluation remain explicit.
+13. **Verify model providers before connection.** Complete the provider review and dated decision before any live model caregiver.
+14. **Review human-study boundaries before recruitment.** Consent, privacy, and institutional requirements must be considered before involving additional people.
+15. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the active review is substantially complete.
+16. **Do not infer distillation permission from output ownership.** Model development remains disabled without exact permission.
+17. **Do not build Tamagotchi with Git.** Presentation is not development without retained caregiver-independent competence.
+18. **Update the handoff.** After substantial work, record the true state, issue roles, failures, and one exact next action.
 
 ## Definition of a valid developmental improvement
 
-A change counts as growth only when it does at least one of the following without unacceptable regression:
+A later change counts as growth only when it does at least one of the following without unacceptable regression:
 
-- reduces caregiver consultations for an existing capability
-- reduces caregiver time required per retained capability
+- reduces caregiver consultations or time for an existing capability
 - increases successful autonomous duration
-- turns a repeated reasoning pattern into a reusable tested skill
+- turns repeated reasoning into a reusable tested skill
 - improves transfer using existing skills
 - improves recovery from failure or misleading advice
 - reduces storage or inference cost while preserving behavior
 - improves correct abstention under uncertainty
 
-A change that merely adds complexity or emotional presentation is not growth.
-
-Every claimed caregiver-derived gain should identify:
+Every claimed caregiver-derived gain identifies:
 
 1. the capability that previously required help
 2. the recorded scaffolding supplied
 3. the verified local artifact or policy change produced
-4. the fixed evaluation retained after help is reduced
+4. the protected evaluation retained after help is reduced
 5. the reduction in caregiver burden
-6. any increase in storage, computation, retries, or complexity
+6. added storage, computation, retries, complexity, and human labor
+
+A change that merely adds complexity or emotional presentation is not growth.
 
 ## Working method
 
 - Make small, testable changes.
-- Use branches and pull requests for implementation and for substantial research or decision changes.
-- Record the hypothesis behind an experiment before running it.
-- Store raw events separately from consolidated knowledge.
+- Use branches and pull requests for implementation and substantial research or decisions.
+- Write or select protected tests before broad implementation.
 - Keep organism state separate from source code.
-- Prefer reproducible experiments with fixed seeds where possible.
-- Do not silently resolve an open architectural choice in implementation code; write or update an ADR first.
-- Prefer primary papers, official repositories, and current first-party provider or product documentation for research.
-- Record verification dates for provider terms and time-sensitive claims.
-- Distinguish caregiving from experiment administration and record both.
-- Before ending substantial work, follow the restart checklist in `docs/IMPLEMENTATION_DISCIPLINE.md` and leave the repository restartable without conversation context.
+- Store raw events separately from later consolidated knowledge.
+- Use fixed seeds and fake clocks where declared by the contract.
+- Use real competing SQLite connections for lock tests.
+- Do not weaken a protected test because implementation is difficult.
+- Record implementation discoveries that require contract changes before proceeding.
+- Prefer primary papers, official repositories, and first-party provider documentation for research.
+- Distinguish caregiving, administration, and organism action in records and reports.
+- Follow `docs/IMPLEMENTATION_DISCIPLINE.md` at the end of substantial work.
 
-## Initial boundary
+## Phase 1 boundary
 
-During the seed phase, do not connect a live human or model caregiver until a deterministic lifecycle, state store, event format, budget mechanism, evaluator, sandbox, checkpoint strategy, and consultation-provenance design exist.
+Phase 1 implements only the deterministic seed garden metabolism in Contract v0.2.
 
-A deterministic fixture caregiver is sufficient for testing later consultation plumbing. Free-form caregiver text must never bypass registered actions, permissions, budgets, or protected evaluation.
+It has:
+
+- one SQLite organism body
+- injected time
+- fail-fast wake locking
+- concrete budgets
+- one garden tick and at most one mutation per wake
+- water, harvest, or abstention
+- protected evaluation
+- a verified checkpoint after every committed wake
+- lineage-preserving rollback
+
+It does not have:
+
+- a caregiver of any kind in action selection
+- network or subprocess access
+- an organism-writable external workspace
+- arbitrary code or shell execution
+- learning, memories, skills, personality, mood, or scalar energy
+- continuous execution
 
 ## Commit guidance
 

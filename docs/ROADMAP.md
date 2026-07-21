@@ -1,216 +1,319 @@
 # SUDACHI Roadmap
 
-This roadmap is developmental rather than feature-driven. Each phase should establish a new invariant before the next layer of autonomy is introduced.
+This roadmap is developmental rather than feature-driven. Each phase must establish a measurable invariant before the next layer of assistance or autonomy is introduced.
 
-## Phase 0 — Freeze the organism contract
+The normative Phase 1 baseline is Minimal Organism Contract v0.2 plus ADRs 0001–0006.
 
-**Goal:** Define the smallest thing that counts as one living cycle of SUDACHI.
+## Phase 0 — Freeze the seed organism contract
 
-Deliverables:
+**Status:** Complete when the Contract v0.2 reconciliation pull request is merged and Issue #1 is closed.
 
-- lifecycle state machine
-- event schema
-- organism-state schema
-- explicit budgets for steps, time, storage, and parent consultation
-- fixed evaluation boundary
-- threat model and permission policy
-- definitions of growth, maturity, failure, sleep, and recovery
-- a deterministic mocked parent
+**Goal:** Define the smallest trustworthy lifecycle that may be called SUDACHI-0.
 
-Exit criteria:
+Accepted deliverables:
 
-- One complete cycle can be described without referring to a language model.
-- Every side effect has an explicit permission boundary.
-- Success cannot be achieved merely by rewriting the evaluator.
-
-## Phase 1 — Build SUDACHI-0
-
-**Goal:** Implement one bounded, deterministic organism cycle in local Python.
-
-Proposed minimal cycle:
-
-1. wake
-2. load state
-3. observe one queued event
-4. choose one allowed action
-5. execute in a sandbox
-6. evaluate the result
-7. update state and append an event record
-8. sleep and terminate
-
-Deliverables:
-
-- Python package and CLI
-- SQLite or similarly lightweight state store
-- append-only event log
-- deterministic action registry
-- budget enforcement
-- rollback/checkpoint support
-- basic unit and invariant tests
+- ADR 0001 — SQLite canonical state and append-only event history
+- ADR 0002 — injected real and fake clocks
+- ADR 0003 — fail-fast SQLite runtime locking
+- ADR 0004 — verified checkpoints and rollback lineage
+- ADR 0005 — deterministic two-plot seed garden
+- ADR 0006 — concrete budgets with no scalar energy
+- Minimal Organism Contract v0.2
+- protected and mutable authority boundaries
+- 41 fixed Phase 1 evaluations
 
 Exit criteria:
 
-- Repeated runs are reproducible with a fixed seed.
-- The organism cannot exceed its run budget.
-- A failed action leaves recoverable state.
+- One complete lifecycle can be described without a caregiver or language model.
+- Every mutable effect has one canonical authority and transaction boundary.
+- Duplicate wakes, corruption, exhaustion, checkpoint failure, and rollback have explicit outcomes.
+- Success cannot be manufactured by weakening the evaluator or budgets.
+- No unresolved seed architecture choice remains for implementation code to invent.
 
-## Phase 2 — Add parent-assisted learning
+## Phase 1 — Build SUDACHI-0 metabolism
 
-**Goal:** Allow a parent model to help only when local capability is insufficient.
+**Goal:** Implement Contract v0.2 exactly in local Python.
+
+Canonical lifecycle:
+
+```text
+wake
+  -> acquire fail-fast SQLite write transaction
+  -> validate state and checkpoint readiness
+  -> load protected concrete budgets
+  -> claim one synthetic:garden_tick
+  -> build one full sorted observation
+  -> choose water, harvest, or abstention
+  -> reserve budgets before mutation
+  -> execute recoverable action inside a savepoint
+  -> independently evaluate
+  -> append events and usage ledger
+  -> commit with checkpoint pending
+  -> create and validate immutable SQLite checkpoint
+  -> register checkpoint stable
+  -> sleep or enter maintenance
+  -> terminate
+```
 
 Deliverables:
 
-- parent-model adapter interface
-- mocked and live adapters kept interchangeable
-- explicit parent-call ledger
-- uncertainty or novelty trigger for consultation
-- proposal format for memories and skills derived from parent advice
-- human- or test-gated adoption path
+- Python 3.12+ package and CLI
+- canonical SQLite schema and versioning
+- contract and state validators
+- injected real and fake clocks
+- fail-fast duplicate-wake rejection using competing SQLite connections
+- `seed-garden-v1`
+- action registry for `water_plot` and `harvest_plot`
+- explicit abstention and typed failures
+- concrete budget ledger and storage limits
+- checkpoint publication, repair, retention, and rollback lineage
+- deterministic JSONL export
+- all protected Contract v0.2 tests
 
 Exit criteria:
 
-- Every parent call has a reason, cost, input summary, and outcome.
-- Parent advice cannot directly modify protected code, tests, or policy.
-- The organism can refuse or defer when advice cannot be verified.
+- The canonical three-wake garden run waters, harvests, and abstains reproducibly.
+- All 41 fixed evaluations pass.
+- No caregiver, network, subprocess, arbitrary code execution, or external mutable write is available.
+- A crash before commit preserves prior canonical state.
+- Every committed wake becomes checkpoint-stable before another wake.
+- Rollback preserves the abandoned future and produces a distinct lineage generation.
 
-## Phase 3 — Compile reasoning into skills
+Phase 1 does not demonstrate learning, intelligence, personality, or caregiver independence. It demonstrates trustworthy metabolism.
 
-**Goal:** Convert repeated successful assistance into cheap, local behavior.
+## Phase 2 — Build caregiver-neutral consultation plumbing
+
+**Goal:** Prove the consultation boundary without a live human or model caregiver.
 
 Deliverables:
 
-- skill schema with purpose, inputs, outputs, preconditions, tests, version, and provenance
-- skill registry and retrieval
-- skill-generation proposal pipeline
-- sandboxed skill tests
-- promotion, deprecation, and rollback lifecycle
-- comparison between parent reasoning and local skill execution
+- source-neutral caregiver request and response schemas
+- typed response classes such as demonstration, correction, constraint, explanation, preference, question, defer, and abstain
+- deterministic fixture caregiver
+- consultation provenance and cost ledger
+- proposal parsing and validation
+- strict separation between consultation, interpretation, evaluation, and adoption
+- protected tests proving that a caregiver cannot execute actions or mutate state directly
+- no-caregiver and fixture-caregiver comparison conditions
 
 Exit criteria:
 
-- At least one recurring parent-assisted task becomes a tested local skill.
-- The skill reduces parent calls while preserving agreed performance.
-- Failed or obsolete skills can be detected and retired.
+- Every consultation has a declared reason, source, cost, context summary, and outcome.
+- Fixture output cannot bypass action schemas, budgets, checkpointing, or evaluation.
+- Long consultation work occurs outside the short adoption transaction.
+- Phase 1 behavior remains available with caregiver budget zero.
 
-## Phase 4 — Begin weaning
+This phase does not require a commercial API or public human participants.
 
-**Goal:** Reduce parent-model access deliberately and measure what survives.
+## Phase 3 — Run the first bounded human-caregiver experiment
+
+**Goal:** Test whether finite human scaffolding can become verified local competence.
+
+The leading first condition is a local owner-researcher human chat caregiver, not a mandatory AI model.
+
+Prerequisites:
+
+- relevant Issue #3 prior-work review
+- typed caregiver protocol
+- privacy and consent boundary
+- explicit accounting for human minutes, latency, clarification, and hidden experimenter labor
+- a task that the organism initially cannot solve with its protected local repertoire
+- fixed withheld-caregiver evaluation
 
 Deliverables:
 
-- declining parent-call schedules or budgets
-- autonomous survival experiments
-- graceful abstention and escalation behavior
-- performance baselines under different parent quotas
-- maturity dashboard
+- bounded human chat interface
+- recorded caregiver proposals and confidence
+- clarification and rejection behavior
+- provenance from advice to candidate artifact
+- protected human-free retest
+- misleading and inconsistent-advice scenarios
+- no-caregiver baseline
+
+Exit criteria:
+
+- At least one capability that required human help becomes a verified local artifact or policy.
+- The same individual retains the capability when human access is withheld.
+- Reduced consultation is not replaced by hidden retries or unrecorded experimenter repair.
+- Human advice can be rejected or deferred when unsafe, ambiguous, or unverifiable.
+
+Recruiting additional participants requires a separate review of consent, privacy, and institutional obligations.
+
+## Phase 4 — Compile assistance into reusable skills
+
+**Goal:** Convert repeated successful scaffolding into cheaper inspectable local behavior.
+
+Deliverables:
+
+- skill schema with purpose, inputs, outputs, preconditions, tests, version, provenance, and cost
+- proposed, active, deprecated, and quarantined states
+- sandboxed skill validation
+- adoption and rollback pipeline
+- comparison between caregiver-supported reasoning and local execution
+- bounded skill-library storage and retirement rules
+
+Exit criteria:
+
+- At least one recurring caregiver-assisted capability becomes a tested local skill.
+- The skill reduces caregiver burden while preserving protected performance.
+- Failed, obsolete, or harmful skills can be rejected, retired, or rolled back.
+
+A deterministic rule or Python skill is scientifically and legally distinct from model-weight distillation.
+
+## Phase 5 — Begin competence-gated caregiver fading
+
+**Goal:** Reduce external scaffolding deliberately and measure what survives.
+
+Deliverables:
+
+- competence-gated and scheduled withdrawal conditions
+- fixed caregiver-available, declining-access, and no-caregiver comparisons
+- autonomous-duration and retained-capability measurements
+- explicit escalation and abstention behavior
+- caregiver burden dashboard
+- accounting for storage, compute, retries, and maintenance
 
 Core metrics:
 
-- parent calls per successful action
-- successful actions per parent call
-- autonomous survival time
-- skill reuse rate
-- task success under reduced consultation
+- consultations per retained capability
+- caregiver minutes and latency
+- successful autonomous duration
+- skill reuse and transfer
+- protected task success after withdrawal
 - regression and recovery rates
+- storage and computation per retained capability
+- correct abstention
 
 Exit criteria:
 
-- SUDACHI retains one meaningful capability after parent access is removed for a defined period.
-- Reduced consultation does not create hidden retries or uncontrolled local work.
-- Loss of capability is reported honestly rather than masked.
+- SUDACHI retains one meaningful capability after caregiver access is removed for a defined period.
+- Reduced consultation does not create hidden local work or evaluator drift.
+- Capability loss is reported honestly rather than masked.
 
-## Phase 5 — Sleep, consolidation, and forgetting
+## Phase 6 — Add model-caregiver comparison conditions
 
-**Goal:** Keep the organism small by reorganizing experience instead of accumulating it indefinitely.
+**Goal:** Compare human caregiving with local or hosted artificial caregivers when scientifically useful and permitted.
+
+Prerequisites:
+
+- dated provider and product review
+- exact transformation permissions
+- data-flow, retention, provenance, and cost controls
+- local open-weight license review where applicable
+- no-caregiver and human-caregiver baselines
+
+Possible conditions:
+
+- deterministic fixture
+- small local open-weight model
+- stronger local or hosted open-weight model
+- commercial API
+- human-AI team
+
+Exit criteria:
+
+- Provider identity can change without changing organism authority or protected evaluation.
+- Live model capability is not misreported as retained local competence.
+- Every call and downstream transformation is permitted, budgeted, and auditable.
+
+Model caregivers are optional comparison conditions, not the definition of SUDACHI.
+
+## Phase 7 — Sleep, consolidation, and forgetting
+
+**Goal:** Keep the organism small by reorganizing experience rather than accumulating it indefinitely.
 
 Deliverables:
 
-- separation of episodic events from consolidated knowledge
-- memory importance and expiry rules
+- separation of episodic records from consolidated knowledge
+- importance and expiry rules
 - duplicate detection and semantic merging
-- skill consolidation
-- sleep-cycle reports
-- pre/post consolidation regression tests
+- skill consolidation and retirement
+- bounded-memory reports
+- pre/post-consolidation protected tests
 
 Exit criteria:
 
-- Storage growth is bounded under a repeated workload.
+- Storage growth is bounded under repeated workload.
 - Consolidation preserves selected capabilities.
-- Forgotten information can be distinguished from corruption.
+- Forgetting is distinguishable from corruption and rollback.
 
-## Phase 6 — Developmental experiments
+## Phase 8 — Developmental experiments
 
-**Goal:** Study whether different environments and budgets produce distinct developmental trajectories.
+**Goal:** Study how environments, caregivers, and budgets produce different developmental trajectories.
 
 Deliverables:
 
 - reproducible experiment manifests
 - multiple isolated organism instances
-- fixed environmental tasks
+- fixed and novel environment variants
 - cohort comparisons
-- developmental lineage records
+- lineage and abandoned-branch records
 - published experiment reports
 
 Questions:
 
-- Does a stricter parent budget produce better skill formation or premature brittleness?
-- When should the organism ask rather than guess?
-- Which kinds of knowledge compile well into local skills?
+- Does stricter caregiver access improve compilation or cause brittleness?
+- When should the organism ask, abstain, or test locally?
+- Which kinds of assistance compile well into rules or skills?
+- How do human and artificial caregivers differ in burden and retained competence?
 - Does forgetting improve transfer or merely reduce recall?
 
 Exit criteria:
 
-- Two or more instances can be compared from identical seeds or controlled variants.
-- Results are reproducible and not dependent on hidden model context.
+- Controlled instances can be compared from identical seeds or declared variants.
+- Results do not depend on hidden conversation or provider context.
+- Total human and computational work is reported.
 
-## Phase 7 — Inheritance and branching
+## Phase 9 — Inheritance and branching
 
 **Goal:** Explore reproduction without equating copying with identity.
 
-Possible inheritance boundary:
-
-Inherited:
+Possible inherited material:
 
 - tested skills
 - constitutional constraints
-- memory-consolidation methods
+- consolidation methods
 - broad action tendencies
 
 Not inherited by default:
 
 - complete episodic history
 - conversation transcripts
-- parent organism’s current self-description
-- private credentials or environment-specific state
+- caregiver credentials
+- environment-specific state
+- the parent organism's current self-description
 
 Deliverables:
 
 - fork protocol
 - lineage metadata
-- controlled variation mechanism
+- controlled variation
 - parent/child capability comparison
-- identity and continuity notes
+- identity and continuity analysis
 
 Exit criteria:
 
-- A child instance can function from inherited structure while developing a distinct history.
-- Lineage remains auditable.
+- A child can function from inherited structure while developing a distinct history.
+- Parent, child, restored branch, and abandoned branch remain auditable.
 
 ## Deferred until justified
 
-The following should not be added merely because they sound advanced:
+Do not add these merely because they sound advanced:
 
 - unrestricted self-modification
 - autonomous internet exploration
 - continuous always-on execution
-- model fine-tuning after every interaction
+- routine model fine-tuning or LoRA updates
 - large vector databases
 - multi-agent societies
 - physical robotics
-- self-replication outside a controlled experiment
+- self-replication outside controlled experiments
+- emotional presentation before life mechanisms
 
 SUDACHI should earn complexity by demonstrating that a simpler body is insufficient.
 
 ## Immediate next milestone
 
-Write the **Minimal Organism Contract v0.1**, then implement a deterministic one-event lifecycle with a mocked parent and no network access.
+After Contract v0.2 and its aligned documentation are merged, create the Python package skeleton and implement protected tests before filling in organism behavior.
+
+The first code milestone is not a caregiver or chat window. It is a deterministic initialization path that creates a validated SQLite organism and stable genesis checkpoint.
