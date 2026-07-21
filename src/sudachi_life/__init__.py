@@ -1,0 +1,6 @@
+"""SUDACHI-0 Phase 1 foundation."""
+
+from .constants import CONTRACT_VERSION, ENVIRONMENT_VERSION, SCHEMA_VERSION
+
+__all__ = ["CONTRACT_VERSION", "ENVIRONMENT_VERSION", "SCHEMA_VERSION"]
+__version__ = "0.1.0"
