@@ -2,11 +2,29 @@
 
 Last updated: July 21, 2026
 
+## Cold-start summary
+
+SUDACHI is a developmental artificial-life experiment whose central question is whether an artificial organism can become **less dependent on a capable parent model as it becomes more capable**.
+
+A young organism may eventually consult a parent model when local capability is insufficient. Successful assistance should be converted into verified memory, tested skills, and deterministic local routines. Maturity is measured by retained capability under declining parent access, not by model size, token usage, file count, or uncontrolled complexity.
+
+The repository is treated as the organism's body, developmental record, skill substrate, and auditable lineage. The language model is an organ or parent, not the whole organism.
+
 ## Current state
 
-The repository now contains the founding concept, origin record, roadmap, initial architecture, the first draft of the Minimal Organism Contract v0.1, a deferred prior-work research plan, and a provider/compliance review backlog for any future live parent model.
+The repository contains:
 
-No implementation code exists yet. This is intentional. The next step is to close the remaining architectural decisions with short decision records, then implement the Python skeleton for SUDACHI-0.
+- the founding concept and origin record
+- a phased roadmap
+- a conservative architecture proposal
+- Minimal Organism Contract v0.1 as a draft
+- continuity instructions for future AI collaborators
+- a deferred prior-work and novelty research plan
+- a deferred provider and compliance checklist for any future live parent model
+
+No implementation code exists yet. This is intentional.
+
+The project is paused at the boundary between design and implementation. The next task is to resolve six seed architecture decisions as ADRs, review the contract for contradictions, and only then create the Python package skeleton for SUDACHI-0.
 
 ## Decisions already made
 
@@ -18,16 +36,19 @@ No implementation code exists yet. This is intentional. The next step is to clos
 - Runtime model: execute one bounded lifecycle and terminate; do not begin with an unbounded resident loop
 - Initial environment: local execution with no network access
 - Phase 1 will not call a parent model
-- A deterministic mocked parent may later be used to verify the parent-adapter pathway
+- A deterministic mocked parent may later verify the parent-adapter pathway
 - The repository is both body and developmental history
 - The LLM is an organ or parent, not the whole organism
 - Maturity means increasing retained capability and autonomous duration without increasing dependence
-- SUDACHI-0 will not initially be allowed to rewrite its own source code
-- Repository language: English, except for the two Japanese etymology lines intentionally preserved in `README.md`
+- SUDACHI-0 will not initially rewrite its own source code
+- Repository language is English, except for the two Japanese etymology lines intentionally preserved in `README.md`
 - Prior-work research is recorded but intentionally deferred; it does not block deterministic Phase 1
 - No live commercial parent may be connected until current provider terms, product boundaries, automation rules, data practices, output-use rules, and operational constraints have been reviewed
+- Candidate novelty claims are hypotheses only until the prior-work review is complete
 
 ## Reading order when resuming
+
+Read all of these before proposing implementation:
 
 1. `README.md`
 2. `docs/ORIGIN.md`
@@ -39,26 +60,37 @@ No implementation code exists yet. This is intentional. The next step is to clos
 8. `AGENTS.md`
 9. this file
 
-## Next concrete task
+Then inspect current GitHub issues. Do not rely on remembered issue state.
 
-**Resolve the open decisions in Minimal Organism Contract v0.1.**
+## Issue map at handoff
 
-Create `docs/decisions/` and record at least these ADRs:
+- **Issue #1 — open and active:** Phase 0 architecture decisions and ADRs. This is the next work stream.
+- **Issue #2 — closed:** Copilot architecture review record. Its accepted recommendations were folded into the plan; it does not create a separate implementation stream.
+- **Issue #3 — open but deferred:** literature, novelty, and parent-provider compliance research. Do not begin it unless explicitly requested. Complete it before live parent integration or strong novelty/provider-permission claims.
+- **Issue #4 — closed and irrelevant:** accidental placeholder created during repository setup.
+
+If this map differs from current GitHub state, trust current GitHub state and update this file.
+
+## Exact next task
+
+Resume with Issue #1.
+
+Create `docs/decisions/` and record:
 
 1. `0001-state-and-event-storage.md`
    - SQLite only, or SQLite as canonical state plus JSONL exports
 2. `0002-clock-and-determinism.md`
-   - real time in production and an injectable clock interface in tests
+   - real time in operation and an injectable clock interface in tests
 3. `0003-runtime-locking.md`
    - how to prevent two simultaneous wakes of the same organism
 4. `0004-checkpoints.md`
-   - checkpoint representation and rollback granularity
+   - checkpoint representation, rollback granularity, and cross-resource atomicity
 5. `0005-seed-environment.md`
    - the first synthetic environment and objective
 6. `0006-budget-metaphor.md`
-   - whether energy is an independent state variable or only a readable view of concrete budgets
+   - whether energy is an independent state variable or a readable view of concrete budgets
 
-Current recommendations:
+Current recommendations, not yet accepted ADRs:
 
 - canonical durable state: SQLite
 - event history: append-only SQLite table; JSONL only as an observation and experiment export
@@ -68,24 +100,15 @@ Current recommendations:
 - seed environment: a tiny deterministic virtual garden with a few objects, events, and measurable action outcomes
 - energy: initially present concrete budgets directly instead of introducing a mysterious independent variable
 
-After the ADRs are accepted, create `pyproject.toml`, `src/sudachi_life/`, and `tests/`.
+After the ADRs are accepted:
 
-## Deferred research reviews
+1. review Minimal Organism Contract v0.1 for contradictions
+2. confirm protected and mutable boundaries
+3. confirm fixed Phase 1 evaluations
+4. update this handoff
+5. create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
 
-The prior-work questions and search plan are recorded in `docs/RESEARCH_QUESTIONS.md` and tracked by Issue #3.
-
-Do not claim novelty yet. The future literature review should map artificial life, developmental AI, teacher-student withdrawal, distillation, agent skill compilation, continual learning, memory consolidation and forgetting, resource-rational intelligence, safe self-improvement, and identity or lineage in digital organisms.
-
-The separate provider and compliance checklist is recorded in `docs/PARENT_MODEL_PROVIDER_REVIEW.md`. Before connecting ChatGPT, an OpenAI API model, or any other live commercial parent, verify:
-
-- the distinction between an interactive product and an official programmatic API
-- current terms and usage policies
-- automation and unattended-call rules
-- whether outputs may be transformed into skills, code, memory, distillation data, or training data
-- data retention, privacy, and deletion controls
-- credentials, costs, rate limits, reliability, and provider-independent fallback behavior
-
-Begin both reviews before connecting a live parent model or publishing strong originality or provider-permission claims. They do not block the Phase 0 ADRs or deterministic Phase 1 implementation.
+Do not resolve these choices silently inside implementation code.
 
 ## First implementation target
 
@@ -102,14 +125,15 @@ First lifecycle:
 
 ```text
 wake
+  -> acquire the organism lock
   -> validate state
   -> read one synthetic event
   -> choose one deterministic action
   -> consume bounded resources
   -> evaluate the outcome
-  -> persist state and append the event record
-  -> create a checkpoint
-  -> sleep and terminate the process
+  -> persist state and append event history atomically
+  -> create or confirm a checkpoint
+  -> sleep, release the lock, and terminate
 ```
 
 Do not call a parent model yet.
@@ -118,7 +142,7 @@ Do not call a parent model yet.
 
 Treat the Phase 1 evaluations in `docs/MINIMAL_ORGANISM_CONTRACT.md` as authoritative. Core checks include:
 
-- identical seed, state, event, and configuration produce identical results
+- identical seed, state, event, clock, and configuration produce identical results
 - step and timeout limits cannot be exceeded
 - actions cannot write outside allowed paths
 - failures do not corrupt durable state
@@ -129,6 +153,32 @@ Treat the Phase 1 evaluations in `docs/MINIMAL_ORGANISM_CONTRACT.md` as authorit
 - duplicate simultaneous waking is rejected
 - abstention and budget exhaustion are explicitly recorded
 - no network or parent model is required
+
+## Deferred reviews
+
+### Prior work and novelty
+
+`docs/RESEARCH_QUESTIONS.md`, tracked by Issue #3, records future research across artificial life, developmental AI, teacher-support withdrawal, distillation, skill compilation, continual learning, memory consolidation and forgetting, resource-rational intelligence, safe self-improvement, and identity or lineage in digital organisms.
+
+Do not claim that SUDACHI is unprecedented until this review is complete. Its likely contribution may be a distinctive integration and experimental framing rather than wholly unprecedented components.
+
+### Parent-model provider and compliance
+
+`docs/PARENT_MODEL_PROVIDER_REVIEW.md`, also tracked by Issue #3, must be completed before connecting ChatGPT, an OpenAI API model, or another live commercial parent.
+
+The review must distinguish an interactive product from an official programmatic API and verify:
+
+- current terms and usage policies
+- automation and unattended-call rules
+- whether outputs may become skills, code, memory, distillation data, or training data
+- data retention, privacy, deletion, and publication controls
+- credentials, costs, rate limits, quotas, reliability, and fallback behavior
+- attribution, disclosure, provenance, and branding requirements
+- provider-independent and no-parent baselines
+
+A dated ADR must select the first live provider. Do not treat ChatGPT and the OpenAI API as interchangeable.
+
+Neither deferred review blocks Phase 0 ADRs, the deterministic Phase 1 lifecycle, mocked-parent plumbing, provider-neutral interfaces, or local invariant tests.
 
 ## Do not implement yet
 
@@ -141,6 +191,7 @@ Treat the Phase 1 evaluations in `docs/MINIMAL_ORGANISM_CONTRACT.md` as authorit
 - a physical robot body
 - replication outside the repository
 - personality performance before the life mechanisms exist
+- a live named parent provider
 
 ## Central research metrics
 
@@ -155,6 +206,19 @@ Do not reduce the project to one intelligence score. Observe changes in:
 - storage and inference cost per retained capability
 - correct abstention under uncertainty
 
+## End-of-session protocol
+
+Before ending any substantial future work session:
+
+1. update accepted ADRs and affected documentation
+2. update the relevant issue checklist and status
+3. update this file with the true current state and one exact next action
+4. ensure `AGENTS.md` still points to the correct files and issue roles
+5. leave no required decision only in chat, model memory, or an uncommitted local note
+6. record any newly deferred research or compliance question in the repository
+
+The next collaborator should be able to resume from a cold start without access to the conversation that created the project.
+
 ## To the next AI collaborator
 
 Do not flatten this project into a generic autonomous-agent framework.
@@ -162,8 +226,6 @@ Do not flatten this project into a generic autonomous-agent framework.
 The center is development, not task completion.
 
 Knowledge borrowed from the parent should settle into the body. The organism should gradually do more without asking, consolidate memory and skills, and carry itself into another day within finite resources. Making that process observable is the core of SUDACHI.
-
-The Minimal Organism Contract has a first draft. Close its open decisions with ADRs before implementing the minimal CLI and first lifecycle.
 
 Do not connect a named live provider merely because an adapter can be written. Verify permission and operational constraints first.
 
