@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -56,9 +57,7 @@ def test_active_database_registers_checkpoint_without_mutating_snapshot(initiali
 
 def test_checkpoint_digest_mismatch_is_rejected(initialized, tmp_path: Path) -> None:
     _, _, checkpoint = initialized
-    copied = tmp_path / "bad-checkpoint"
-    import shutil
-
+    copied = tmp_path / checkpoint.checkpoint_id
     shutil.copytree(checkpoint.checkpoint_dir, copied)
     with (copied / "organism.sqlite3").open("ab") as handle:
         handle.write(b"tamper")
@@ -70,8 +69,6 @@ def test_checkpoint_digest_mismatch_is_rejected(initialized, tmp_path: Path) -> 
 def test_checkpoint_directory_name_must_match_manifest(initialized, tmp_path: Path) -> None:
     _, _, checkpoint = initialized
     copied = tmp_path / "renamed-checkpoint"
-    import shutil
-
     shutil.copytree(checkpoint.checkpoint_dir, copied)
     with pytest.raises(CheckpointError, match="directory name"):
         validate_checkpoint_directory(copied)

@@ -10,7 +10,7 @@ SUDACHI is a developmental artificial-life experiment built around this candidat
 
 A future caregiver may be human, deterministic, model-based, hybrid, or absent. Phase 1 has no caregiver.
 
-One SQLite database is the canonical runtime body of each organism. The repository records source, contract, decisions, tests, and developmental history.
+One SQLite database is the canonical runtime body of each organism. The repository records source, contract, decisions, protected tests, and developmental history.
 
 ## Normative authority
 
@@ -22,61 +22,86 @@ For Phase 1, use this precedence:
 4. this handoff
 5. explanatory architecture and roadmap documents
 
-When sources conflict, stop and repair the contract or documentation. Do not choose private semantics in code.
+When sources conflict, stop and repair the contract, test, or documentation. Do not choose private semantics in code.
 
 ## Current state
 
 Phase 0 is complete. Issue #1 is closed.
 
-Issue #13 tracks Phase 1 implementation. The first implementation slice exists on the `agent/phase1-genesis` branch and includes:
+Issue #13 tracks Phase 1 implementation.
 
-- Python package configuration and CLI entry point
-- protected contract, schema, environment, and budget constants
+The following implementation slices are on `main`:
+
+### Slice 1 — foundation and genesis
+
+Merged through PR #14.
+
+- Python 3.12+ package and `sudachi` CLI entry point
+- protected contract, schema, environment, checkpoint, and budget constants
 - injected real and deterministic fake clocks
-- validated runtime paths and organism identifiers
+- validated organism identifiers and runtime paths
 - canonical SQLite schema initialization
 - protected `seed-garden-v1` genesis state
 - exact protected budget configuration in canonical state
-- append-only event triggers
+- database-level append-only event triggers
 - immutable genesis checkpoint creation through SQLite backup
-- checkpoint manifest, digest, integrity, foreign-key, identity, version, lineage, and event-boundary validation
+- checkpoint manifest, digest, integrity, foreign-key, identity, version, lineage, boundary, and byte-limit validation
 - checkpoint publication and registration
 - `sudachi init`
 - `sudachi status`
-- an explicit mapping from Contract v0.2 §15 evaluations to implemented or planned tests
+- initial Contract v0.2 evaluation-to-test mapping
 
-The slice does **not** yet implement:
+### Slice 2 — inbox, wake acquisition, and observation
 
-- enqueueing garden ticks
-- the normal wake transaction
-- duplicate-wake tests
-- water, harvest, or abstention behavior
-- per-wake action budget ledgers and savepoint failure handling
-- post-wake checkpoint stabilization
-- checkpoint repair or retention pruning
-- rollback
-- JSONL export
-- all 41 protected evaluations
+Merged through PR #15.
+
+- idempotent enqueueing of uniquely identified `synthetic:garden_tick` inputs through the administrative Python API
+- one canonical enqueue event for first receipt only
+- no hidden clock read on duplicate input replay
+- fail-fast wake ownership through a fresh SQLite connection and `BEGIN IMMEDIATE`
+- mutable-state validation only after lock acquisition
+- immediate non-queued rejection of a competing wake
+- one oldest eligible tick claimed inside the transaction
+- rollback of incomplete claim state
+- one fully deterministic sorted garden observation
+
+`WakeTransaction` remains deliberately rollback-only. No normal wake can commit yet.
 
 No live human, fixture, or model caregiver is connected.
 
+## Integration repair record
+
+PR #15 was accidentally merged before its required foundation in PR #14. The repository temporarily contained Slice 2 modules without the Slice 1 package body.
+
+The repair was:
+
+1. merge PR #14 into the then-current `main`, preserving the already merged Slice 2 files
+2. add a clean-checkout GitHub Actions workflow in PR #16
+3. run installation, compilation, all protected tests, and real CLI smoke checks against the combined tree
+4. repair one stale checkpoint-corruption test fixture so it isolates digest corruption instead of failing earlier on the intentionally protected directory-name invariant
+5. correct the CI smoke expectation from two genesis events to the canonical three events after stable checkpoint registration
+
+This was an integration-order defect, not an accepted contract change.
+
 ## Verified implementation results
 
-The final local equivalent of the branch was validated with:
+GitHub Actions now provides the clean-checkout source of truth for each push to `main` and each pull request.
 
-- `16 passed` under pytest
-- successful `python -m compileall` for `src` and `tests`
-- successful editable package installation in a clean virtual environment with no project dependencies
-- successful real CLI smoke run for `init` and `status`
+The repaired combined foundation passed:
 
-No GitHub Actions workflow exists yet, so these results are local validation rather than remote CI.
+- package installation on Python 3.12
+- `python -m compileall -q src tests`
+- **23 protected tests**
+- real `sudachi init` CLI execution
+- real `sudachi status` CLI execution
+- stable genesis checkpoint identity checks
+- protected initial garden-state checks
 
-Two implementation defects were caught before handoff:
+Earlier local checks also caught and repaired:
 
-1. refusing duplicate initialization originally consumed an unnecessary fake-clock reading; initialization now checks existence before reading time
-2. read-only SQLite URI construction originally risked misinterpreting `?` or `#` in filesystem paths; it now uses `Path.as_uri()` and has a regression test
-
-Checkpoint validation was also strengthened to verify budget configuration, snapshot method, database filename, manifest status, directory name, pending lineage, and protected byte limits.
+- an unnecessary fake-clock read during duplicate initialization rejection
+- unsafe manual construction of read-only SQLite URIs when paths contain `?` or `#`
+- incomplete checkpoint manifest and byte-limit validation
 
 ## Accepted Phase 1 baseline
 
@@ -90,21 +115,21 @@ Checkpoint validation was also strengthened to verify budget configuration, snap
 ### Time
 
 - all time access is injected
-- real clock in operation, fake clock in deterministic tests
+- real clock in operation and explicit fake readings in deterministic tests
 - UTC epoch microseconds and monotonic nanoseconds
 - current time is not a seed, identifier, or tie breaker
 
 ### Locking
 
-- each normal wake will use a fresh connection
+- each normal wake uses a fresh connection
 - fail-fast `BEGIN IMMEDIATE` occurs before mutable state is read
 - a competing wake is rejected rather than queued
-- no PID file, lease row, or stale wall-time lock
+- no PID file, lease row, or wall-time stale-lock authority
 
 ### Checkpoints
 
 - genesis and every committed wake establish an exact pending boundary
-- no later wake advances until the boundary is stable
+- no later wake advances until that boundary is stable
 - checkpoints are immutable SQLite backups with deterministic manifests
 - invalid or incomplete artifacts are never registered stable
 - rollback will preserve the abandoned future and create a new lineage generation
@@ -118,7 +143,7 @@ Genesis state:
 - one water unit
 - zero harvested fruit
 
-The protected policy will water the lexicographically first executable dry plot, otherwise harvest the first executable fruit, otherwise abstain.
+The protected policy waters the lexicographically first executable dry plot, otherwise harvests the first executable fruit, otherwise abstains.
 
 ### Concrete budgets
 
@@ -128,27 +153,28 @@ The protected policy will water the lexicographically first executable dry plot,
 - twelve semantic wake steps
 - bounded canonical records, monotonic time, database bytes, checkpoint bytes, working set, retention, and consecutive failures
 
-## Current issue map
-
-- **Issue #1 — closed:** Phase 0 contract freeze.
-- **Issue #2 — closed:** Copilot architecture review.
-- **Issue #3 — open and active:** caregiver withdrawal, prior work, novelty, human-caregiver, and model-provider research.
-- **Issue #13 — open and active:** Phase 1 SUDACHI-0 metabolism implementation.
-
-Always verify current GitHub state.
-
 ## Exact next implementation task
 
-After the genesis slice is merged:
+Create a new branch from current `main` and implement **Slice 3: the first canonical water wake**.
 
-1. create a new branch from current `main`
-2. implement idempotent enqueueing of uniquely identified `synthetic:garden_tick` events
-3. implement fail-fast `BEGIN IMMEDIATE` wake acquisition before any mutable read
-4. add real competing-connection tests proving one winner and one non-queued busy rejection
-5. build one stable sorted garden observation inside the acquired transaction
-6. update `docs/PHASE1_TEST_MATRIX.md` and Issue #13
+The slice must:
 
-Do not add water or harvest mutation until enqueue, acquisition, and observation boundaries are protected by tests.
+1. wire garden-tick enqueueing into the primary CLI
+2. load protected per-wake budget counters
+3. claim one oldest tick under the existing fail-fast wake transaction
+4. produce the deterministic full observation
+5. select `water_plot(bed-a)` through the fixed protected policy
+6. reserve action-attempt and mutation budgets before state change
+7. execute the transition inside a SQLite savepoint
+8. independently evaluate the observed result
+9. consume the claimed tick
+10. append the bounded lifecycle event and usage records
+11. commit one exact checkpoint-pending boundary
+12. create, validate, publish, and register the stable post-wake checkpoint
+13. return the organism to sleeping state and terminate
+14. prove the complete wake with protected tests and CI
+
+Do not implement harvest, objective-complete abstention, rollback, caregiver consultation, learning, or generic planning in Slice 3.
 
 ## First complete Phase 1 CLI target
 
@@ -160,6 +186,17 @@ sudachi status
 sudachi checkpoint repair
 sudachi rollback
 ```
+
+Only `init` and `status` are currently wired to the primary CLI. Slice 2 enqueueing exists as a protected Python administrative API.
+
+## Current issue map
+
+- **Issue #1 — closed:** Phase 0 contract freeze.
+- **Issue #2 — closed:** Copilot architecture review.
+- **Issue #3 — open and active:** caregiver withdrawal, prior work, novelty, human-caregiver, and model-provider research.
+- **Issue #13 — open and active:** Phase 1 SUDACHI-0 metabolism implementation.
+
+Always verify current GitHub state.
 
 ## Current research direction
 
@@ -199,16 +236,17 @@ No live caregiver may be connected merely because an interface can be written.
 7. `docs/ROADMAP.md`
 8. `docs/IMPLEMENTATION_DISCIPLINE.md`
 9. `docs/PHASE1_TEST_MATRIX.md`
-10. research and provider documents
-11. `AGENTS.md`
-12. this file
-13. current issues and pull requests
+10. `docs/phase1/SLICE2_INBOX_WAKE.md`
+11. research and provider documents
+12. `AGENTS.md`
+13. this file
+14. current issues, pull requests, and CI state
 
 ## End-of-session protocol
 
 Before ending substantial work:
 
-1. run relevant protected tests and report exact results
+1. run relevant protected tests in CI and report exact results
 2. update contract or ADRs before implementing changed invariants
 3. update the test matrix, issue, and pull-request status
 4. update this file with true state, failures, and one exact next action
