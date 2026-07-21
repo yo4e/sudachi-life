@@ -16,7 +16,7 @@ from .actions import (
 from .budgets import WakeBudgetLedger
 from .checkpoints import CheckpointResult, create_and_register_lifecycle_checkpoint
 from .clock import Clock, RealClock
-from .constants import ACTIVE_DATABASE_MAX_BYTES
+from .constants import ACTIVE_DATABASE_MAX_BYTES, CONSECUTIVE_FAILURE_LIMIT
 from .evaluation import GardenEvaluation, evaluate_garden_decision
 from .errors import SchemaValidationError
 from .paths import OrganismPaths
@@ -179,6 +179,47 @@ def _completion_payload(decision: GardenDecision) -> dict[str, Any]:
     }
 
 
+def _next_failure_streak(
+    decision: GardenDecision,
+    evaluation: GardenEvaluation,
+    current: int,
+) -> int:
+    """Classify the implemented Slice 6 outcomes without crossing maintenance scope."""
+
+    if current < 0:
+        raise SchemaValidationError("canonical failure streak is negative")
+
+    if isinstance(decision, GardenAbstention):
+        if decision.reason == "objective_already_complete":
+            if not evaluation.success:
+                raise SchemaValidationError(
+                    "justified objective-complete abstention evaluated as failure"
+                )
+            updated = 0
+        elif decision.reason == "no_applicable_action":
+            if evaluation.success:
+                raise SchemaValidationError(
+                    "no-applicable-action abstention evaluated as success"
+                )
+            updated = current + 1
+        else:
+            raise SchemaValidationError(
+                f"failure-streak classification is not implemented for {decision.reason}"
+            )
+    else:
+        if not evaluation.success:
+            raise SchemaValidationError(
+                "mutating action failure classification is not implemented yet"
+            )
+        updated = 0
+
+    if updated >= CONSECUTIVE_FAILURE_LIMIT:
+        raise SchemaValidationError(
+            "maintenance threshold entry is not implemented in Slice 6"
+        )
+    return updated
+
+
 def perform_garden_wake(
     runtime_root: Path | str,
     organism_id: str,
@@ -195,7 +236,8 @@ def perform_garden_wake(
     try:
         started = clock.read()
         organism = wake.connection.execute(
-            "SELECT organism_id, lineage_generation FROM organism WHERE singleton_id = 1"
+            "SELECT organism_id, lineage_generation, consecutive_failures "
+            "FROM organism WHERE singleton_id = 1"
         ).fetchone()
         if organism is None:
             raise SchemaValidationError("canonical organism state is missing")
@@ -251,6 +293,31 @@ def perform_garden_wake(
             ledger=ledger,
         )
 
+        failure_streak_before = int(organism["consecutive_failures"])
+        failure_streak_after = _next_failure_streak(
+            decision, evaluation, failure_streak_before
+        )
+        if failure_streak_after != failure_streak_before:
+            failure_reason = (
+                decision.reason
+                if isinstance(decision, GardenAbstention)
+                else "successful_action"
+            )
+            _event(
+                wake,
+                organism_id=organism_id_value,
+                lineage_generation=lineage_generation,
+                wall_time_utc_us=started.wall_time_utc_us,
+                event_type="failure_streak_updated",
+                payload={
+                    "before": failure_streak_before,
+                    "after": failure_streak_after,
+                    "reason": failure_reason,
+                    "maintenance_threshold": CONSECUTIVE_FAILURE_LIMIT,
+                },
+                ledger=ledger,
+            )
+
         consumed = wake.connection.execute(
             "UPDATE inbox_event SET consumed = 1 "
             "WHERE inbox_id = ? AND claimed_lifecycle_number = ? AND consumed = 0",
@@ -300,11 +367,16 @@ def perform_garden_wake(
             UPDATE organism
             SET lifecycle_number = ?, status = 'checkpoint_pending', checkpoint_pending = 1,
                 pending_checkpoint_generation = lineage_generation,
-                pending_checkpoint_event_sequence = ?, consecutive_failures = 0,
+                pending_checkpoint_event_sequence = ?, consecutive_failures = ?,
                 maintenance_reason = NULL, last_wake_wall_time_utc_us = ?
             WHERE singleton_id = 1
             """,
-            (wake.lifecycle_number, boundary, started.wall_time_utc_us),
+            (
+                wake.lifecycle_number,
+                boundary,
+                failure_streak_after,
+                started.wall_time_utc_us,
+            ),
         )
         validate_canonical_state(wake.connection, expect_checkpoint_pending=True)
         page_count = wake.connection.execute("PRAGMA page_count").fetchone()[0]

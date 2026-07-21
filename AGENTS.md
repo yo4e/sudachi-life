@@ -42,23 +42,25 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–5 establish:
+Slices 1–6 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
-- stable genesis, water, harvest, and abstention checkpoints
+- stable genesis, water, harvest, justified-abstention, and blocked-abstention checkpoints
 - idempotent synthetic garden ticks
 - fail-fast wake ownership and deterministic observation
 - fixed-policy `water_plot(bed-a)` and `harvest_plot(bed-b)` wakes
 - justified `objective_already_complete` abstention with zero action and mutation cost
-- independent transition, abstention, and objective evaluation
-- the complete canonical three-wake run with exact pending boundaries and return to sleep
+- classified `no_applicable_action` abstention when the objective is incomplete but no protected mutation is executable
+- independent transition and abstention evaluation
+- explicit failure-streak accounting below the maintenance threshold
+- the complete canonical three-wake run plus one protected blocked-state fixture
 
-After PR #19 is merged, the exact next implementation slice is **Slice 6: classified `no_applicable_action` abstention and failure-streak accounting**.
+After PR #20 is merged, the exact next implementation slice is **Slice 7: resource-aware harvest fallback and failure-streak reset**.
 
-It must use an explicit protected test fixture with an incomplete objective and no executable mutating action, commit the specific abstention, increment the failure streak exactly once, checkpoint the outcome, and return to sleep below the maintenance threshold.
+It must use an explicit protected fixture with an incomplete objective, a dry living plot, no water, one harvestable fruit, and `consecutive_failures = 1`; prove that the fixed policy skips impossible watering, selects `harvest_plot`, makes positive progress, resets the failure streak to zero, checkpoints the outcome, and returns to sleep.
 
-Do not add budget-exhaustion handling, action-failure injection, maintenance threshold entry, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 6.
+Do not add budget-exhaustion handling, injected action failure, maintenance-threshold entry, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 7.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
