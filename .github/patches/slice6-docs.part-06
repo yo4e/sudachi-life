@@ -1,1 +1,0 @@
-tected fixture with a dry plot, no water, one harvestable fruit, and failure streak 1. The fixed policy must skip impossible watering, harvest the fruit, independently prove positive progress, reset the failure streak to zero, checkpoint, and sleep.

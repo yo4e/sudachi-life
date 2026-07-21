@@ -1,6 +1,6 @@
 # SUDACHI Project Handoff
 
-Last updated: July 21, 2026
+Last updated: July 22, 2026
 
 ## Cold-start summary
 
@@ -59,7 +59,7 @@ Merged through PR #18:
 
 ### Slice 5 — objective-complete abstention
 
-Implemented and verified in PR #19:
+Merged through PR #19:
 
 - the third canonical tick observes `objective_complete = true`
 - a dedicated abstention decision records `objective_already_complete`
@@ -69,25 +69,35 @@ Implemented and verified in PR #19:
 - the organism returns to `sleeping` with failure streak zero
 - the complete canonical water, harvest, abstention run is protected
 
-No live human, fixture, or model caregiver is connected.
+### Slice 6 — classified no-applicable-action abstention
+
+Implemented and verified in PR #20:
+
+- a protected administrative fixture creates an incomplete objective with a dry sprout, no water, and no harvestable fruit
+- the fixed policy selects typed `no_applicable_action` before entering any mutating executor
+- one input and one observation are consumed; action attempts and environment mutations remain zero
+- the independent evaluator proves that the objective remains incomplete, no protected action is executable, unresolved needs remain unchanged, and canonical environment state does not move
+- `consecutive_failures` advances exactly once from zero to one
+- the protected maintenance threshold remains three and is not entered
+- the committed pending boundary is event sequence 16 and administrative stabilization is event sequence 17
+- the organism returns to `sleeping`
+
+The fixture is test administration, not a live caregiver. No human, model, or fixture caregiver participates in action selection.
 
 ## Verified implementation results
 
-GitHub Actions passed on PR #19 with Python 3.12:
+GitHub Actions passed on PR #20 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **28 protected tests**
+- **30 protected tests**
 - installed genesis CLI smoke test
-- protected three-wake CLI path: water, harvest, justified abstention, checkpoint, and sleep
+- all earlier canonical water, harvest, and completion-abstention behavior remains protected
+- the blocked-state fixture completes typed abstention, one failure increment, checkpoint stabilization, and sleep
 
-A separate clean local virtual environment also completed:
+The source-tree local run also passed **30 tests** and compileall. A separate local clean editable install could not resolve the `hatchling` build dependency from the execution environment's package mirror; GitHub Actions independently completed the clean install, so the repository result is verified without treating the local mirror failure as success.
 
-```text
-init -> tick-1 / water -> tick-2 / harvest -> tick-3 / completion abstention -> status
-```
-
-Final canonical values were:
+Canonical three-wake values remain:
 
 - `lifecycle_number = 3`
 - `environment_step = 2`
@@ -98,6 +108,20 @@ Final canonical values were:
 - `objective_complete = true`
 - `latest_stable_event_sequence = 34`
 - `event_count = 35`
+- `status = sleeping`
+
+The isolated Slice 6 blocked fixture finishes with:
+
+- `lifecycle_number = 1`
+- `environment_step = 0`
+- `bed-a.moisture = 0`
+- `bed-b.fruit = 0`
+- `water_units = 0`
+- `harvested_fruit = 0`
+- `objective_complete = false`
+- `consecutive_failures = 1`
+- `latest_stable_event_sequence = 16`
+- `event_count = 17`
 - `status = sleeping`
 
 ## Integration repair record
@@ -118,21 +142,21 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #19 is merged, create a new branch from current `main` and implement **Slice 6: classified `no_applicable_action` abstention and failure-streak accounting**.
+After PR #20 is merged, create a new branch from current `main` and implement **Slice 7: resource-aware harvest fallback and failure-streak reset**.
 
 The slice must:
 
-1. use an explicit protected fixture with an incomplete objective and no executable mutating action
+1. use an explicit protected fixture with an incomplete objective, a dry living plot, zero water, one harvestable fruit, and `consecutive_failures = 1`
 2. claim one tick and build one complete observation
-3. select typed `no_applicable_action` abstention before entering the executor
-4. consume one input and one observation but zero action attempts and mutations
-5. independently prove that environment state did not change
-6. increment `consecutive_failures` exactly once
-7. commit and stabilize an exact checkpoint boundary
-8. return to sleep below the maintenance threshold
-9. prove the outcome in protected tests and CI
+3. prove that watering is impossible because the water resource is absent
+4. select `harvest_plot` as the next executable protected action
+5. consume one input, one observation, one action attempt, and one environment mutation
+6. independently prove positive progress and the exact harvest transition
+7. reset `consecutive_failures` from one to zero
+8. commit and stabilize an exact checkpoint boundary
+9. return to sleep and prove the result in protected tests and CI
 
-Do not add budget exhaustion, action-failure injection, maintenance threshold entry, rollback, caregiver consultation, learning, or generic planning in Slice 6.
+Do not add budget exhaustion, injected action failure, maintenance-threshold entry, rollback, caregiver consultation, learning, or generic planning in Slice 7.
 
 ## Current issue map
 
