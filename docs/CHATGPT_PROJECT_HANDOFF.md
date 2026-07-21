@@ -43,7 +43,7 @@ SUDACHI must not be flattened into a generic autonomous-agent framework or a vir
 
 ## Current project state
 
-- The seed documentation exists.
+- Seed documentation and implementation guardrails exist.
 - Minimal Organism Contract v0.1 is still a draft.
 - No executable organism exists yet.
 - No live human or model caregiver is connected.
@@ -55,13 +55,12 @@ SUDACHI must not be flattened into a generic autonomous-agent framework or a vir
   - `docs/research/PARENT_MODEL_STRATEGY.md`
   - `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
 
-Current issue roles at this handoff:
+Current issue roles:
 
 - Issue #1: active Phase 0 architecture decisions and ADR work; implementation-critical.
 - Issue #2: closed Copilot architecture review record.
 - Issue #3: active caregiver-withdrawal, prior-work, novelty, and model-provider research.
 - Issue #4: closed accidental placeholder; irrelevant.
-- PR #5: open draft containing the initial research and continuity updates.
 
 Always verify current GitHub state because issue and PR roles may change after this note.
 
@@ -69,14 +68,7 @@ Always verify current GitHub state because issue and PR roles may change after t
 
 The human caregiver is the leading candidate for the first live developmental experiment because it avoids per-call API cost and premature provider selection.
 
-This is not a novelty claim. Existing research already covers:
-
-- human feedback, reward, correction, demonstration, and preferences
-- natural-language interactive task teaching
-- developmental robots learning with caregivers
-- agents that request help under novelty or risk
-- methods that reduce human intervention burden
-- virtual pets and artificial creatures shaped by owner interaction
+This is not a novelty claim. Existing research already covers human feedback, demonstration, language teaching, developmental caregivers, assistance requesting, intervention reduction, virtual pets, and persistent learning creatures.
 
 The stronger candidate for novelty testing is the longitudinal integration:
 
@@ -90,26 +82,25 @@ Human time is not free. Future experiments must measure caregiver minutes, consu
 
 ## Exact restart point
 
-For implementation planning, resume with Issue #1 and draft ADR 0001 for state and event storage.
+For implementation planning, resume with Issue #1 and draft `docs/decisions/0001-state-and-event-storage.md`.
 
-Create and resolve ADRs for:
+Then resolve:
 
-1. state and event storage
-2. clock injection and determinism
-3. runtime locking and duplicate wakes
-4. checkpoints and rollback
-5. the seed synthetic environment
-6. whether energy is independent state or only a presentation of concrete budgets
+1. clock injection and determinism
+2. runtime locking and duplicate wakes
+3. checkpoints and rollback
+4. the seed synthetic environment
+5. whether energy is independent state or only a presentation of concrete budgets
 
-Then:
+After the six ADRs:
 
-1. review the Minimal Organism Contract for contradictions
+1. review Minimal Organism Contract v0.1 for contradictions
 2. confirm protected and mutable boundaries
 3. confirm fixed Phase 1 evaluations
 4. update `docs/HANDOFF.md`
 5. only then create the Python package skeleton and deterministic first lifecycle
 
-Do not silently decide unresolved architecture inside implementation code.
+Do not silently decide unresolved architecture inside implementation code. Follow `docs/IMPLEMENTATION_DISCIPLINE.md`.
 
 Issue #3 research may proceed in parallel. Write research findings into the repository with dated primary sources. Do not treat preliminary similarities or negative searches as proof of novelty.
 
@@ -125,14 +116,7 @@ Before a live human caregiver is connected, define:
 - controls for hidden experimenter work, inconsistency, misleading advice, and caregiver overfitting
 - privacy, consent, and later human-subject research requirements
 
-Before a live commercial model caregiver is connected, complete the provider review covering:
-
-- consumer chat product versus official API boundaries
-- current terms and usage policies
-- unattended and automated calls
-- transformation of outputs into transient advice, retained memory, deterministic artifacts, synthetic data, distillation data, or training data
-- privacy, retention, deletion, cost, rate limits, reliability, provenance, and branding
-- provider-independent fallbacks and no-caregiver baselines
+Before a live commercial model caregiver is connected, complete the provider review covering product and API boundaries, current terms, automation, output transformations, data handling, cost, reliability, provenance, and no-caregiver fallbacks.
 
 Do not infer permission for model-weight distillation from output ownership. Model-development uses remain disabled until the exact provider, product, model, and intended transformation are explicitly approved in a dated ADR.
 
@@ -140,10 +124,10 @@ Candidate novelty claims remain hypotheses until the prior-work review is substa
 
 ## Session hygiene
 
-After a substantial work session:
+After substantial work, follow the restart checklist in `docs/IMPLEMENTATION_DISCIPLINE.md`:
 
 - update `docs/HANDOFF.md`
-- update the relevant issue checklist or status
+- update relevant issue checklists or status
 - record decisions as ADRs rather than leaving them only in chat
 - keep repository changes in English
 - leave one exact next action
