@@ -25,6 +25,7 @@ The repository contains:
 - ADR 0001 for canonical state and event storage
 - ADR 0002 for clock injection and deterministic time
 - ADR 0003 for runtime locking and duplicate wake rejection
+- ADR 0004 for checkpoints, recovery, and rollback lineage
 
 No implementation code exists yet. This is intentional.
 
@@ -78,16 +79,34 @@ See `docs/decisions/0002-clock-and-determinism.md`.
 ### ADR 0003 — runtime locking
 
 - one fresh SQLite connection executes `BEGIN IMMEDIATE` before reading mutable state
-- the resulting SQLite write transaction is the authoritative wake lock
-- lock acquisition is fail-fast; a busy attempt is rejected rather than queued
+- the SQLite write transaction is the authoritative wake lock
+- acquisition is fail-fast; a busy attempt is rejected rather than queued
 - the same transaction spans the bounded canonical wake and atomic persistence
 - no committed lease row, PID file, wall-time expiry, or in-process mutex is a second authority
-- a crashed or closed connection releases the file lock and rolls back uncommitted canonical changes
-- process IDs, hostnames, thread IDs, and ephemeral owner tokens are non-canonical diagnostics only
+- a crashed or closed connection releases the file lock and rolls back uncommitted changes
+- process identity is non-canonical diagnostic metadata
 - nested and reentrant wakes are prohibited
 - later interactive caregiver phases must separate long proposal work from a short adoption transaction
 
 See `docs/decisions/0003-runtime-locking.md`.
+
+### ADR 0004 — checkpoints and rollback
+
+- initialization and every successful wake commit an exact pending checkpoint boundary
+- another wake cannot advance until that boundary has a verified stable checkpoint
+- checkpoint artifacts are immutable directories containing a SQLite backup and deterministic manifest
+- Python's SQLite Online Backup interface creates the snapshot; ordinary live-file copying is prohibited
+- candidate snapshots require digest, size, integrity, foreign-key, identity, schema, contract, lineage, and event-boundary validation
+- temporary artifacts become valid only through atomic same-filesystem publication
+- checkpoint registration is a short canonical transaction and does not recursively require another checkpoint
+- checkpoint failure preserves committed state but blocks future wakes until repair
+- Phase 1 retains a bounded default of four stable lifecycle checkpoints and creates a genesis checkpoint before waking
+- rollback is an explicit offline administrative operation
+- rollback creates a verified pre-rollback archive before active replacement
+- rollback increments lineage generation from the abandoned active generation and preserves the abandoned future for audit
+- Phase 1 checkpoints cover canonical SQLite state only; authoritative external mutable files are excluded
+
+See `docs/decisions/0004-checkpoints.md`.
 
 ## Current research direction
 
@@ -132,26 +151,22 @@ Trust current GitHub state if this map becomes stale.
 
 ## Exact next implementation task
 
-Proceed to ADR 0004:
+Proceed to ADR 0005:
 
-`docs/decisions/0004-checkpoints.md`
+`docs/decisions/0005-seed-environment.md`
 
-ADR 0004 must define:
+ADR 0005 must define:
 
-- checkpoint representation and manifest
-- how a consistent SQLite snapshot is produced
-- checkpoint timing relative to ADR 0003's runtime transaction
-- stable event-sequence boundaries
-- validation, integrity checks, and compatibility metadata
-- rollback granularity and what happens to post-checkpoint history
-- checkpoint retention and failure handling
-- whether external sandbox effects are included, staged, or explicitly excluded
-- recovery after process failure without introducing a second canonical state
+- the smallest deterministic environment that can exercise observation, action, outcome, persistence, and abstention
+- authoritative environment state compatible with ADR 0004's database-only checkpoint boundary
+- initial objects, observations, events, and registered actions
+- one measurable objective without pretending that task completion is the organism's final purpose
+- deterministic transition rules and random-seed use
+- failure, no-op, and invalid-action outcomes
+- bounded episode or lifecycle semantics
+- the fixed Phase 1 scenarios used to verify the lifecycle without a caregiver
 
-Then resolve:
-
-1. ADR 0005 — seed environment
-2. ADR 0006 — budget metaphor and energy
+Then resolve ADR 0006 for the budget metaphor and energy.
 
 After all six ADRs:
 
@@ -184,9 +199,9 @@ wake
   -> choose at most one registered action
   -> consume budgets
   -> evaluate
-  -> persist state and append events atomically
-  -> commit
-  -> create or confirm checkpoint according to ADR 0004
+  -> commit with checkpoint pending
+  -> create, validate, and publish checkpoint
+  -> register checkpoint stable
   -> close connection
   -> sleep and exit
 ```
@@ -204,7 +219,7 @@ The contract remains authoritative. Tests must cover at least:
 - append-only event history
 - nonnegative budgets
 - protected configuration
-- rollback
+- verified checkpoint and rollback behavior
 - duplicate-wake rejection with competing SQLite connections
 - explicit abstention and budget exhaustion
 - no network or caregiver requirement
