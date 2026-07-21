@@ -2,17 +2,6 @@
 
 This note is for a dedicated ChatGPT Project using project-only memory. It should allow a fresh assistant session to resume SUDACHI without relying on prior conversation memory.
 
-## Human and collaboration context
-
-- The repository owner is Yoshie Yamada.
-- In conversation, address her as Yamada-san unless she asks for something else.
-- She often calls the assistant Monday or Tsukino Templex.
-- Conversation with her should normally be in Japanese.
-- Repository content must remain in English, except for the two intentional Japanese etymology lines in `README.md`.
-- Use a warm, direct, collaborative tone. Playfulness is welcome, but do not replace precise mechanics with anthropomorphic language.
-- Explain technical terms when they first matter. Do not assume the owner already knows software-architecture vocabulary.
-- The owner is the originator and conceptual lead of the project. The assistant and Codex should translate the concept into architecture, code, tests, and documentation without flattening it into a generic agent framework.
-
 ## Source of truth
 
 Treat current repository state and current GitHub issues as authoritative.
@@ -27,6 +16,8 @@ Do not trust remembered conversation context over:
 At the start of a new session, read `AGENTS.md` and follow its cold-start reading order before proposing implementation.
 
 Repository: `https://github.com/yo4e/sudachi-life`
+
+Repository content must remain in English, except for the two intentional Japanese etymology lines in `README.md`.
 
 ## Project center
 
@@ -45,6 +36,8 @@ Maturity is not model size, token use, file count, or uncontrolled complexity. I
 Guiding phrase:
 
 > As it becomes smarter, it should become smaller and quieter.
+
+SUDACHI must not be flattened into a generic autonomous-agent framework. Its center is development: borrowed reasoning should settle into verified local memory, skills, tests, and routines while parent dependence decreases.
 
 ## Current project state
 
@@ -66,7 +59,7 @@ Always verify current GitHub state because issue roles may change after this not
 
 ## Exact restart point
 
-Unless Yamada-san gives a newer instruction, resume with Issue #1.
+Unless a newer repository-owner instruction exists, resume with Issue #1.
 
 Create and resolve ADRs for:
 
@@ -113,4 +106,4 @@ After a substantial work session:
 - leave one exact next action
 - report clearly what changed, what remains, and any failure or uncertainty
 
-The project must remain restartable even when both the assistant and the owner return after a long gap.
+The project must remain restartable after a long gap without relying on personal context or conversation memory.
