@@ -20,42 +20,43 @@ Read these files in order:
 6. `docs/ARCHITECTURE.md`
 7. `docs/ROADMAP.md`
 8. `docs/IMPLEMENTATION_DISCIPLINE.md`
-9. `docs/RESEARCH_QUESTIONS.md`
-10. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-11. `docs/research/INITIAL_EVIDENCE_MAP.md`
-12. `docs/research/PARENT_MODEL_STRATEGY.md`
-13. `docs/research/HUMAN_CAREGIVER_HYPOTHESIS.md`
+9. `docs/PHASE1_TEST_MATRIX.md`
+10. implemented notes in `docs/phase1/`
+11. `docs/RESEARCH_QUESTIONS.md`
+12. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+13. research notes in `docs/research/`
 14. `docs/HANDOFF.md`
+15. current issues, pull requests, and CI state
 
-Then inspect current open issues and pull requests and confirm which work streams are active.
-
-Current issue roles after Contract v0.2 reconciliation:
-
-- **#1** — Phase 0 seed architecture and contract freeze; close when the reconciliation PR is merged
-- **#2** — completed Copilot architecture review record; closed
-- **#3** — active caregiver-withdrawal, prior-work, novelty, human-caregiver, and model-provider research
-- **#4** — accidental placeholder; closed and irrelevant
-
-If repository state and this list disagree, trust current GitHub state and update `docs/HANDOFF.md`.
+Current GitHub state outranks this file when they disagree. Repair stale continuity documents before broad implementation.
 
 Do not infer the project only from the latest issue or code fragment. SUDACHI is a developmental artificial-life experiment, not a generic autonomous-agent framework or virtual-pet presentation layer.
 
+## Current work streams
+
+- **Issue #1 — closed:** Phase 0 contract and ADR freeze.
+- **Issue #3 — open:** caregiver withdrawal, prior work, novelty, human-caregiver, and provider research.
+- **Issue #13 — open:** deterministic Phase 1 metabolism implementation.
+
+No research result authorizes a live caregiver during Phase 1.
+
 ## Immediate restart point
 
-After the Contract v0.2 reconciliation PR is merged, begin Phase 1 implementation from the contract rather than redesigning it.
+Slices 1–3 establish:
 
-The first implementation slice is:
+- a canonical SQLite organism body
+- injected time and protected concrete budgets
+- a stable genesis checkpoint
+- idempotent synthetic garden ticks
+- fail-fast wake ownership and deterministic observation
+- the first complete canonical `water_plot(bed-a)` wake
+- independent evaluation, an exact pending boundary, a lifecycle checkpoint, and return to sleep
 
-1. create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
-2. encode protected Contract v0.2 tests before broad organism behavior
-3. implement canonical SQLite initialization and schema validation
-4. implement injected real and fake clocks
-5. create a stable genesis checkpoint
-6. expose the minimal `sudachi init` and `sudachi status` commands
+After PR #17 is merged, the exact next implementation slice is **Slice 4: the canonical harvest wake**.
 
-Do not begin with a caregiver, chat interface, model adapter, memory system, skill system, or general agent loop.
+It must reuse the existing lifecycle boundaries, choose `harvest_plot(bed-b)` through the fixed policy, independently verify objective completion, checkpoint the committed boundary, and return to sleep.
 
-Issue #3 research may continue in parallel. Research findings must be written to the repository with dated primary sources. Research does not authorize connecting a live human or model caregiver.
+Do not add objective-complete abstention, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 4.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
@@ -65,11 +66,11 @@ For Phase 1, use this precedence:
 
 1. Minimal Organism Contract v0.2
 2. accepted ADRs 0001–0006
-3. protected tests
+3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
 4. `docs/HANDOFF.md`
 5. explanatory architecture and roadmap documents
 
-When sources conflict, stop and repair the documentation or contract. Do not choose a private interpretation in code.
+When sources conflict, stop and repair the documentation, test, or contract. Do not choose a private interpretation in code.
 
 Ordinary module names and private helpers do not require an ADR when they preserve every contract invariant.
 
