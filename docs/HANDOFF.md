@@ -26,6 +26,7 @@ The repository contains:
 - ADR 0002 for clock injection and deterministic time
 - ADR 0003 for runtime locking and duplicate wake rejection
 - ADR 0004 for checkpoints, recovery, and rollback lineage
+- ADR 0005 for the deterministic seed garden
 
 No implementation code exists yet. This is intentional.
 
@@ -101,12 +102,27 @@ See `docs/decisions/0003-runtime-locking.md`.
 - checkpoint registration is a short canonical transaction and does not recursively require another checkpoint
 - checkpoint failure preserves committed state but blocks future wakes until repair
 - Phase 1 retains a bounded default of four stable lifecycle checkpoints and creates a genesis checkpoint before waking
-- rollback is an explicit offline administrative operation
-- rollback creates a verified pre-rollback archive before active replacement
-- rollback increments lineage generation from the abandoned active generation and preserves the abandoned future for audit
-- Phase 1 checkpoints cover canonical SQLite state only; authoritative external mutable files are excluded
+- rollback is an explicit offline administrative operation with a verified pre-rollback archive
+- rollback increments lineage generation and preserves the abandoned future for audit
+- Phase 1 checkpoints cover canonical SQLite state only
 
 See `docs/decisions/0004-checkpoints.md`.
+
+### ADR 0005 — seed environment
+
+- Phase 1 uses `seed-garden-v1`, a fully observable two-plot virtual garden stored entirely in SQLite
+- initial state contains a dry sprout in `bed-a`, one mature fruit in `bed-b`, and one water unit
+- the fixed objective requires watering the sprout and harvesting one fruit
+- the only normal external trigger is a uniquely identified `synthetic:garden_tick`
+- one wake processes at most one tick and performs at most one mutating action
+- registered mutating actions are `water_plot` and `harvest_plot`
+- the fixed policy waters the lexicographically first executable dry living plot, otherwise harvests the first executable mature fruit, otherwise abstains
+- invalid actions are rejected atomically without incrementing the environment step
+- there is no randomness, autonomous ecology, hidden state, mood, or natural-language parsing in Phase 1
+- observations, transitions, objectives, and action schemas are protected and versioned
+- the canonical run waters, harvests, then records post-completion abstention across three wakes
+
+See `docs/decisions/0005-seed-environment.md`.
 
 ## Current research direction
 
@@ -151,30 +167,29 @@ Trust current GitHub state if this map becomes stale.
 
 ## Exact next implementation task
 
-Proceed to ADR 0005:
+Proceed to ADR 0006:
 
-`docs/decisions/0005-seed-environment.md`
+`docs/decisions/0006-budget-metaphor.md`
 
-ADR 0005 must define:
+ADR 0006 must define:
 
-- the smallest deterministic environment that can exercise observation, action, outcome, persistence, and abstention
-- authoritative environment state compatible with ADR 0004's database-only checkpoint boundary
-- initial objects, observations, events, and registered actions
-- one measurable objective without pretending that task completion is the organism's final purpose
-- deterministic transition rules and random-seed use
-- failure, no-op, and invalid-action outcomes
-- bounded episode or lifecycle semantics
-- the fixed Phase 1 scenarios used to verify the lifecycle without a caregiver
+- the concrete Phase 1 budget counters
+- whether budgets reset per wake, persist across wakes, or have both layers
+- exact costs for observation, action attempts, environment writes, events, checkpoint work, and abstention
+- how monotonic wall-time limits interact with deterministic counters
+- budget reservation before mutation and reconciliation after outcome
+- exhaustion behavior and nonnegative invariants
+- whether “energy” exists as independent mutable state or only as a derived presentation
+- how caregiver consultations remain exactly zero in Phase 1
 
-Then resolve ADR 0006 for the budget metaphor and energy.
+After ADR 0006:
 
-After all six ADRs:
-
-1. review Minimal Organism Contract v0.1 for contradictions
+1. review Minimal Organism Contract v0.1 for contradictions against ADRs 0001–0006
 2. confirm protected and mutable boundaries
-3. confirm fixed Phase 1 evaluations
-4. update this handoff
-5. create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
+3. confirm and normalize the fixed Phase 1 evaluations
+4. update affected architecture and roadmap language
+5. update this handoff
+6. only then create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
 
 Do not implement unresolved semantics. Follow `docs/IMPLEMENTATION_DISCIPLINE.md`.
 
@@ -184,7 +199,7 @@ Possible minimal CLI:
 
 ```text
 sudachi init
-sudachi enqueue synthetic:file_changed
+sudachi enqueue synthetic:garden_tick --id tick-1
 sudachi wake --seed 1
 sudachi status
 ```
@@ -194,11 +209,12 @@ Lifecycle:
 ```text
 wake
   -> acquire SQLite write transaction
-  -> validate state
-  -> read bounded input
-  -> choose at most one registered action
-  -> consume budgets
-  -> evaluate
+  -> validate state and checkpoint readiness
+  -> read one garden tick
+  -> produce a full sorted garden observation
+  -> choose at most one registered action or abstain
+  -> reserve and consume concrete budgets
+  -> execute and evaluate atomically
   -> commit with checkpoint pending
   -> create, validate, and publish checkpoint
   -> register checkpoint stable
@@ -210,15 +226,18 @@ Do not call a caregiver yet.
 
 ## Initial fixed evaluation themes
 
-The contract remains authoritative. Tests must cover at least:
+The contract remains authoritative until the post-ADR review. Tests must cover at least:
 
-- deterministic results for identical declared inputs, including fake-clock readings
-- bounded steps and monotonic elapsed time
-- sandboxed effects
+- deterministic garden results for identical declared inputs
+- bounded counters and monotonic elapsed time
+- one tick and at most one action per wake
+- stable observation and tie-break ordering
+- invalid-action atomic rejection
+- duplicate external-event idempotency
 - no silent state corruption
 - append-only event history
 - nonnegative budgets
-- protected configuration
+- protected environment and configuration
 - verified checkpoint and rollback behavior
 - duplicate-wake rejection with competing SQLite connections
 - explicit abstention and budget exhaustion
