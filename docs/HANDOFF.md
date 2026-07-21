@@ -4,7 +4,7 @@ Last updated: July 21, 2026
 
 ## Current state
 
-The repository now contains the founding concept, origin record, roadmap, initial architecture, the first draft of the Minimal Organism Contract v0.1, and a deferred prior-work research plan.
+The repository now contains the founding concept, origin record, roadmap, initial architecture, the first draft of the Minimal Organism Contract v0.1, a deferred prior-work research plan, and a provider/compliance review backlog for any future live parent model.
 
 No implementation code exists yet. This is intentional. The next step is to close the remaining architectural decisions with short decision records, then implement the Python skeleton for SUDACHI-0.
 
@@ -25,6 +25,7 @@ No implementation code exists yet. This is intentional. The next step is to clos
 - SUDACHI-0 will not initially be allowed to rewrite its own source code
 - Repository language: English, except for the two Japanese etymology lines intentionally preserved in `README.md`
 - Prior-work research is recorded but intentionally deferred; it does not block deterministic Phase 1
+- No live commercial parent may be connected until current provider terms, product boundaries, automation rules, data practices, output-use rules, and operational constraints have been reviewed
 
 ## Reading order when resuming
 
@@ -34,8 +35,9 @@ No implementation code exists yet. This is intentional. The next step is to clos
 4. `docs/ROADMAP.md`
 5. `docs/ARCHITECTURE.md`
 6. `docs/RESEARCH_QUESTIONS.md`
-7. `AGENTS.md`
-8. this file
+7. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+8. `AGENTS.md`
+9. this file
 
 ## Next concrete task
 
@@ -68,13 +70,22 @@ Current recommendations:
 
 After the ADRs are accepted, create `pyproject.toml`, `src/sudachi_life/`, and `tests/`.
 
-## Deferred prior-work review
+## Deferred research reviews
 
-The questions and search plan are recorded in `docs/RESEARCH_QUESTIONS.md` and tracked by Issue #3.
+The prior-work questions and search plan are recorded in `docs/RESEARCH_QUESTIONS.md` and tracked by Issue #3.
 
-Do not claim novelty yet. The future review should map artificial life, developmental AI, teacher-student withdrawal, distillation, agent skill compilation, continual learning, memory consolidation and forgetting, resource-rational intelligence, safe self-improvement, and identity or lineage in digital organisms.
+Do not claim novelty yet. The future literature review should map artificial life, developmental AI, teacher-student withdrawal, distillation, agent skill compilation, continual learning, memory consolidation and forgetting, resource-rational intelligence, safe self-improvement, and identity or lineage in digital organisms.
 
-Begin that review before connecting a live parent model or publishing a strong originality claim. It does not block the Phase 0 ADRs or deterministic Phase 1 implementation.
+The separate provider and compliance checklist is recorded in `docs/PARENT_MODEL_PROVIDER_REVIEW.md`. Before connecting ChatGPT, an OpenAI API model, or any other live commercial parent, verify:
+
+- the distinction between an interactive product and an official programmatic API
+- current terms and usage policies
+- automation and unattended-call rules
+- whether outputs may be transformed into skills, code, memory, distillation data, or training data
+- data retention, privacy, and deletion controls
+- credentials, costs, rate limits, reliability, and provider-independent fallback behavior
+
+Begin both reviews before connecting a live parent model or publishing strong originality or provider-permission claims. They do not block the Phase 0 ADRs or deterministic Phase 1 implementation.
 
 ## First implementation target
 
@@ -153,6 +164,8 @@ The center is development, not task completion.
 Knowledge borrowed from the parent should settle into the body. The organism should gradually do more without asking, consolidate memory and skills, and carry itself into another day within finite resources. Making that process observable is the core of SUDACHI.
 
 The Minimal Organism Contract has a first draft. Close its open decisions with ADRs before implementing the minimal CLI and first lifecycle.
+
+Do not connect a named live provider merely because an adapter can be written. Verify permission and operational constraints first.
 
 Do not make it large merely because expansion is easy.
 
