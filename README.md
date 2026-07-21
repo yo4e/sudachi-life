@@ -82,6 +82,7 @@ The language model is an organ, not the whole organism.
 
 - [`AGENTS.md`](AGENTS.md) — instructions for future AI collaborators
 - [`docs/ORIGIN_JA.md`](docs/ORIGIN_JA.md) — origin, intent, and founding conversation in Japanese
+- [`docs/MINIMAL_ORGANISM_CONTRACT.md`](docs/MINIMAL_ORGANISM_CONTRACT.md) — draft contract for the smallest valid SUDACHI-0
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — proposed system architecture
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased development plan
 - [`docs/HANDOFF_JA.md`](docs/HANDOFF_JA.md) — current state and exact restart point
@@ -96,9 +97,9 @@ This is not a translation hierarchy. English keeps the project interoperable; Ja
 
 ## Status
 
-**Seed phase — repository established on 2026-07-21.**
+**Seed phase — repository established and Minimal Organism Contract v0.1 drafted on 2026-07-21.**
 
-No organism has been implemented yet. The next task is to freeze the minimal organism contract and build one deterministic lifecycle cycle before connecting any language model.
+No organism has been implemented yet. The next task is to resolve the contract’s open design decisions, record them as short decision documents, and then build one deterministic lifecycle cycle before connecting any language model.
 
 ## Japanese summary
 
