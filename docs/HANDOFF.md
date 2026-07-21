@@ -10,27 +10,7 @@ SUDACHI is a developmental artificial-life experiment built around this candidat
 
 A future caregiver may be human, deterministic, model-based, hybrid, or absent. Phase 1 has no caregiver.
 
-Successful assistance should eventually settle into verified local artifacts. Maturity is retained capability under declining caregiver access and bounded total cost, not model size, simulated affection, or uncontrolled complexity.
-
-The repository records source and developmental decisions. One SQLite database is the canonical runtime body of each organism.
-
-## Current state
-
-Phase 0 architecture is frozen in:
-
-- Minimal Organism Contract v0.2
-- ADRs 0001–0006
-- aligned Architecture and Roadmap documents
-- protected and mutable authority rules in Contract §12
-- 41 fixed Phase 1 evaluations in Contract §15
-
-No implementation code exists yet.
-
-Active work streams:
-
-1. Issue #1 closes when the Contract v0.2 reconciliation pull request merges.
-2. Phase 1 implementation may begin immediately after that merge.
-3. Issue #3 research continues in parallel without authorizing a live caregiver.
+One SQLite database is the canonical runtime body of each organism. The repository records source, contract, decisions, tests, and developmental history.
 
 ## Normative authority
 
@@ -38,139 +18,137 @@ For Phase 1, use this precedence:
 
 1. Minimal Organism Contract v0.2
 2. accepted ADRs 0001–0006
-3. protected tests
+3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
 4. this handoff
 5. explanatory architecture and roadmap documents
 
 When sources conflict, stop and repair the contract or documentation. Do not choose private semantics in code.
 
-## Accepted Phase 1 decisions
+## Current state
 
-### Canonical state and events — ADR 0001
+Phase 0 is complete. Issue #1 is closed.
 
-- one SQLite database per organism is the sole canonical live store
-- state, budget ledger, inbox state, outcomes, events, provenance, and checkpoint registration share that authority
-- logically related wake changes commit in one transaction
-- event sequence, not timestamp, defines order
-- canonical events are append-only
-- JSONL is deterministic non-canonical export only
-- local single-host filesystem is the Phase 1 boundary
+Issue #13 tracks Phase 1 implementation. The first implementation slice exists on the `agent/phase1-genesis` branch and includes:
 
-### Time — ADR 0002
+- Python package configuration and CLI entry point
+- protected contract, schema, environment, and budget constants
+- injected real and deterministic fake clocks
+- validated runtime paths and organism identifiers
+- canonical SQLite schema initialization
+- protected `seed-garden-v1` genesis state
+- exact protected budget configuration in canonical state
+- append-only event triggers
+- immutable genesis checkpoint creation through SQLite backup
+- checkpoint manifest, digest, integrity, foreign-key, identity, version, lineage, and event-boundary validation
+- checkpoint publication and registration
+- `sudachi init`
+- `sudachi status`
+- an explicit mapping from Contract v0.2 §15 evaluations to implemented or planned tests
+
+The slice does **not** yet implement:
+
+- enqueueing garden ticks
+- the normal wake transaction
+- duplicate-wake tests
+- water, harvest, or abstention behavior
+- per-wake action budget ledgers and savepoint failure handling
+- post-wake checkpoint stabilization
+- checkpoint repair or retention pruning
+- rollback
+- JSONL export
+- all 41 protected evaluations
+
+No live human, fixture, or model caregiver is connected.
+
+## Verified implementation results
+
+The final local equivalent of the branch was validated with:
+
+- `16 passed` under pytest
+- successful `python -m compileall` for `src` and `tests`
+- successful editable package installation in a clean virtual environment with no project dependencies
+- successful real CLI smoke run for `init` and `status`
+
+No GitHub Actions workflow exists yet, so these results are local validation rather than remote CI.
+
+Two implementation defects were caught before handoff:
+
+1. refusing duplicate initialization originally consumed an unnecessary fake-clock reading; initialization now checks existence before reading time
+2. read-only SQLite URI construction originally risked misinterpreting `?` or `#` in filesystem paths; it now uses `Path.as_uri()` and has a regression test
+
+Checkpoint validation was also strengthened to verify budget configuration, snapshot method, database filename, manifest status, directory name, pending lineage, and protected byte limits.
+
+## Accepted Phase 1 baseline
+
+### Canonical body
+
+- one SQLite database per organism
+- canonical events are append-only and ordered by integer sequence
+- JSONL is non-canonical export only
+- local single-host filesystem boundary
+
+### Time
 
 - all time access is injected
-- clock readings contain UTC epoch microseconds and monotonic nanoseconds
-- real operation uses a real clock; tests use explicit fake readings
-- unexpected clock reads fail deterministic tests
-- wall time may repeat or regress without reordering events
+- real clock in operation, fake clock in deterministic tests
+- UTC epoch microseconds and monotonic nanoseconds
 - current time is not a seed, identifier, or tie breaker
 
-### Runtime locking — ADR 0003
+### Locking
 
-- each wake uses a fresh SQLite connection
+- each normal wake will use a fresh connection
 - fail-fast `BEGIN IMMEDIATE` occurs before mutable state is read
-- the write transaction is the authoritative wake lock
 - a competing wake is rejected rather than queued
-- no PID file, lease row, or wall-time stale-lock rule is authoritative
-- nested and hidden write connections are prohibited
+- no PID file, lease row, or stale wall-time lock
 
-### Checkpoints and rollback — ADR 0004
+### Checkpoints
 
-- initialization and every committed wake create an exact pending checkpoint boundary
+- genesis and every committed wake establish an exact pending boundary
 - no later wake advances until the boundary is stable
 - checkpoints are immutable SQLite backups with deterministic manifests
-- validation includes digest, size, integrity, foreign keys, identity, versions, lineage, and event boundary
-- publication is atomic on one filesystem
-- checkpoint failure leaves committed state pending and blocks later wakes
-- Phase 1 retains four stable lifecycle checkpoints by default
-- rollback creates a pre-rollback archive and new lineage generation
-- the abandoned future remains auditable
+- invalid or incomplete artifacts are never registered stable
+- rollback will preserve the abandoned future and create a new lineage generation
 
-### Seed garden — ADR 0005
+### Seed garden
 
-`seed-garden-v1` begins with:
+Genesis state:
 
 - `bed-a`: dry sprout
 - `bed-b`: mature with one fruit
 - one water unit
 - zero harvested fruit
 
-The protected objective is to water the dry living plot and harvest one fruit.
+The protected policy will water the lexicographically first executable dry plot, otherwise harvest the first executable fruit, otherwise abstain.
 
-One uniquely identified `synthetic:garden_tick` permits at most one mutation.
+### Concrete budgets
 
-Registered actions:
-
-- `water_plot`
-- `harvest_plot`
-
-The fixed policy waters the lexicographically first executable dry plot, otherwise harvests the first executable fruit, otherwise abstains.
-
-There is no randomness, hidden state, natural-language parsing, autonomous ecology, mood, or caregiver.
-
-### Budgets and energy — ADR 0006
-
-- no scalar energy exists in Phase 1
-- one wake permits one input, one observation, one action attempt, and one successful mutation
-- caregiver, network, subprocess, and external mutable-write budgets are zero
+- no scalar energy
+- one input, one observation, one action attempt, and one successful mutation per accepted wake
+- zero caregiver, network, subprocess, and authoritative external-write capability
 - twelve semantic wake steps
-- sixteen canonical wake records with terminal capacity reserved
-- 2000 ms normal work deadline and 250 ms cleanup grace
-- 5000 ms checkpoint deadline
-- explicit database, checkpoint, working-set, retention, and failure limits
-- budget is reserved before mutation
-- recoverable action failure uses a savepoint so partial mutation disappears while attempt cost remains
-- three classified consecutive failures enter maintenance
+- bounded canonical records, monotonic time, database bytes, checkpoint bytes, working set, retention, and consecutive failures
 
-## Accepted Contract v0.2 boundary
+## Current issue map
 
-### Protected from organism and caregiver
+- **Issue #1 — closed:** Phase 0 contract freeze.
+- **Issue #2 — closed:** Copilot architecture review.
+- **Issue #3 — open and active:** caregiver withdrawal, prior work, novelty, human-caregiver, and model-provider research.
+- **Issue #13 — open and active:** Phase 1 SUDACHI-0 metabolism implementation.
 
-Contract, ADRs, validators, canonical schemas, fixed evaluations, permissions, action definitions, evaluator, garden fixture and objective, budget defaults, append-only enforcement, clock boundary, checkpoint and rollback machinery, source code, and migration rules.
-
-### Mutable through bounded runtime
-
-Lifecycle counters and allowed status, queue claim state, event additions, garden moisture and fruit, inventory, objective status, budget ledger, failure streak, maintenance reason, and checkpoint references.
-
-### Administrative only
-
-Initialization, input enqueue, status inspection, checkpoint repair and pruning, maintenance, rollback, quarantine, migration, and export.
-
-Administration is not organism autonomy and must be reported separately.
-
-### Fixed evaluations
-
-Contract §15 defines 41 protected evaluations covering:
-
-- deterministic inputs and clocks
-- bounded lifecycle and hard-zero capabilities
-- canonical seed-garden behavior
-- budget reservation and failure handling
-- atomic SQLite storage, append-only events, and locking
-- checkpoint publication, repair, retention, rollback, and lineage
-- protected authority and administrative separation
-
-A test mapping must show where every numbered evaluation is enforced.
+Always verify current GitHub state.
 
 ## Exact next implementation task
 
-After the Contract v0.2 reconciliation pull request merges:
+After the genesis slice is merged:
 
-1. close Issue #1
-2. create a Phase 1 implementation branch
-3. create `pyproject.toml`, `src/sudachi_life/`, and `tests/`
-4. create a visible mapping from all 41 fixed evaluations to protected tests
-5. implement the smallest vertical slice:
-   - protected version constants and schema definitions
-   - SQLite organism initialization
-   - state and schema validation
-   - injected real and fake clocks
-   - genesis checkpoint creation and validation
-   - `sudachi init`
-   - `sudachi status`
-6. run tests locally and report exact results
+1. create a new branch from current `main`
+2. implement idempotent enqueueing of uniquely identified `synthetic:garden_tick` events
+3. implement fail-fast `BEGIN IMMEDIATE` wake acquisition before any mutable read
+4. add real competing-connection tests proving one winner and one non-queued busy rejection
+5. build one stable sorted garden observation inside the acquired transaction
+6. update `docs/PHASE1_TEST_MATRIX.md` and Issue #13
 
-Do not implement the full wake, garden, or rollback in the first commit merely to make the repository look complete. Build small verified slices.
+Do not add water or harvest mutation until enqueue, acquisition, and observation boundaries are protected by tests.
 
 ## First complete Phase 1 CLI target
 
@@ -183,49 +161,19 @@ sudachi checkpoint repair
 sudachi rollback
 ```
 
-Complete wake:
-
-```text
-wake
-  -> acquire fail-fast SQLite write transaction
-  -> validate state and checkpoint readiness
-  -> load protected concrete budgets
-  -> claim one garden tick
-  -> build one full sorted observation
-  -> choose water, harvest, or abstention
-  -> reserve budgets
-  -> execute recoverable action inside a savepoint
-  -> independently evaluate
-  -> append outcomes, events, and ledger
-  -> mark checkpoint pending and commit
-  -> create and validate immutable checkpoint
-  -> register checkpoint stable
-  -> sleep or enter maintenance
-  -> terminate
-```
-
 ## Current research direction
 
 The human caregiver remains the leading candidate for the first live developmental experiment because it avoids per-call API cost and premature provider selection.
 
 This is not a novelty claim. Human teaching, developmental caregivers, intervention reduction, interactive task learning, Tamagotchi, Creatures, and aibo are established precedents.
 
-The strongest current candidate for deeper novelty testing is:
+The strongest current candidate for deeper novelty testing remains:
 
 > finite recorded caregiving -> verified local artifact -> retained capability -> competence-gated withdrawal -> measured independence
 
 The failure mode is **Tamagotchi with Git**: simulated needs, affection, personality, or chat history without retained caregiver-independent competence.
 
-No live human or model caregiver may be connected merely because an interface can be written.
-
-## Issue map
-
-- **Issue #1 — open until Contract v0.2 reconciliation merges:** Phase 0 contract freeze.
-- **Issue #2 — closed:** Copilot architecture review.
-- **Issue #3 — open and active:** caregiver withdrawal, prior work, novelty, human-caregiver, and model-provider research.
-- **Issue #4 — closed and irrelevant:** accidental placeholder.
-
-Trust current GitHub state when this map becomes stale.
+No live caregiver may be connected merely because an interface can be written.
 
 ## Do not add during Phase 1
 
@@ -250,18 +198,19 @@ Trust current GitHub state when this map becomes stale.
 6. `docs/ARCHITECTURE.md`
 7. `docs/ROADMAP.md`
 8. `docs/IMPLEMENTATION_DISCIPLINE.md`
-9. research and provider documents
-10. `AGENTS.md`
-11. this file
-12. current issues and pull requests
+9. `docs/PHASE1_TEST_MATRIX.md`
+10. research and provider documents
+11. `AGENTS.md`
+12. this file
+13. current issues and pull requests
 
 ## End-of-session protocol
 
 Before ending substantial work:
 
-1. run relevant protected tests and report results
-2. update contract or ADRs before implementing any changed invariant
-3. update current issue and pull-request status
+1. run relevant protected tests and report exact results
+2. update contract or ADRs before implementing changed invariants
+3. update the test matrix, issue, and pull-request status
 4. update this file with true state, failures, and one exact next action
 5. ensure `AGENTS.md` points to current work streams
 6. leave no required decision only in chat, model memory, or an uncommitted note
