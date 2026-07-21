@@ -10,7 +10,7 @@ from typing import Sequence
 
 from .errors import SudachiError
 from .inbox import GARDEN_TICK_EVENT_TYPE, enqueue_garden_tick
-from .lifecycle import perform_first_water_wake
+from .lifecycle import perform_garden_wake
 from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
 
@@ -63,7 +63,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             paths = OrganismPaths.build(args.runtime_dir, args.organism_id)
             payload = enqueue_garden_tick(paths, args.external_event_id).as_dict()
         elif args.command == "wake":
-            payload = perform_first_water_wake(
+            payload = perform_garden_wake(
                 args.runtime_dir,
                 args.organism_id,
                 seed=args.seed,
