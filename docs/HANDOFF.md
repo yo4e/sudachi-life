@@ -6,7 +6,7 @@ Last updated: July 21, 2026
 
 SUDACHI is a developmental artificial-life experiment whose central question is whether an artificial organism can become **less dependent on a capable parent model as it becomes more capable**.
 
-A young organism may eventually consult a parent model when local capability is insufficient. Successful assistance should be converted into verified memory, tested skills, and deterministic local routines. Maturity is measured by retained capability under declining parent access, not by model size, token usage, file count, or uncontrolled complexity.
+A young organism may eventually consult a parent model when local capability is insufficient. Successful assistance should be converted into verified memory, tested skills, and deterministic local behavior so that dependency decreases with development.
 
 The repository is treated as the organism's body, developmental record, skill substrate, and auditable lineage. The language model is an organ or parent, not the whole organism.
 
@@ -19,12 +19,13 @@ The repository contains:
 - a conservative architecture proposal
 - Minimal Organism Contract v0.1 as a draft
 - continuity instructions for future AI collaborators
+- implementation discipline and guardrails
 - a deferred prior-work and novelty research plan
 - a deferred provider and compliance checklist for any future live parent model
 
 No implementation code exists yet. This is intentional.
 
-The project is paused at the boundary between design and implementation. The next task is to resolve six seed architecture decisions as ADRs, review the contract for contradictions, and only then create the Python package skeleton for SUDACHI-0.
+The project is paused at the boundary between design and implementation. The next task is to resolve six seed architecture decisions as ADRs, review the contract for contradictions, and only then build the Python package skeleton and first deterministic lifecycle.
 
 ## Decisions already made
 
@@ -43,6 +44,7 @@ The project is paused at the boundary between design and implementation. The nex
 - SUDACHI-0 will not initially rewrite its own source code
 - Repository language is English, except for the two Japanese etymology lines intentionally preserved in `README.md`
 - Prior-work research is recorded but intentionally deferred; it does not block deterministic Phase 1
+- **The caregiver/parent concept is provider-neutral:** can be human, model, hybrid, or fixture; human caregiver is the leading candidate for first live experiment
 - No live commercial parent may be connected until current provider terms, product boundaries, automation rules, data practices, output-use rules, and operational constraints have been reviewed
 - Candidate novelty claims are hypotheses only until the prior-work review is complete
 
@@ -57,8 +59,9 @@ Read all of these before proposing implementation:
 5. `docs/ARCHITECTURE.md`
 6. `docs/RESEARCH_QUESTIONS.md`
 7. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-8. `AGENTS.md`
-9. this file
+8. `docs/IMPLEMENTATION_DISCIPLINE.md` ← implementation guardrails and session protocol
+9. `AGENTS.md`
+10. this file
 
 Then inspect current GitHub issues. Do not rely on remembered issue state.
 
@@ -66,7 +69,7 @@ Then inspect current GitHub issues. Do not rely on remembered issue state.
 
 - **Issue #1 — open and active:** Phase 0 architecture decisions and ADRs. This is the next work stream.
 - **Issue #2 — closed:** Copilot architecture review record. Its accepted recommendations were folded into the plan; it does not create a separate implementation stream.
-- **Issue #3 — open but deferred:** literature, novelty, and parent-provider compliance research. Do not begin it unless explicitly requested. Complete it before live parent integration or strong novelty/provider-permission claims.
+- **Issue #3 — open but deferred:** literature, novelty, caregiver design, and parent-provider compliance research. Research may proceed in parallel with Phase 1; complete it before live caregiver integration or strong novelty claims.
 - **Issue #4 — closed and irrelevant:** accidental placeholder created during repository setup.
 
 If this map differs from current GitHub state, trust current GitHub state and update this file.
@@ -156,11 +159,15 @@ Treat the Phase 1 evaluations in `docs/MINIMAL_ORGANISM_CONTRACT.md` as authorit
 
 ## Deferred reviews
 
-### Prior work and novelty
+### Caregiver design and prior work
 
-`docs/RESEARCH_QUESTIONS.md`, tracked by Issue #3, records future research across artificial life, developmental AI, teacher-support withdrawal, distillation, skill compilation, continual learning, memory consolidation and forgetting, resource-rational intelligence, safe self-improvement, and identity or lineage in digital organisms.
+`docs/RESEARCH_QUESTIONS.md`, tracked by Issue #3, records future research across artificial life, developmental AI, caregiver-supported learning, distillation, skill compilation, continual learning, and related systems.
+
+Issue #3 research may proceed in parallel with Phase 1 implementation. It does not block the deterministic, caregiver-free Phase 1 organism.
 
 Do not claim that SUDACHI is unprecedented until this review is complete. Its likely contribution may be a distinctive integration and experimental framing rather than wholly unprecedented components.
+
+The caregiver concept has been broadened to include human, model, hybrid, and fixture caregivers. The human caregiver is the leading candidate for the first live developmental experiment.
 
 ### Parent-model provider and compliance
 
@@ -208,7 +215,7 @@ Do not reduce the project to one intelligence score. Observe changes in:
 
 ## End-of-session protocol
 
-Before ending any substantial future work session:
+Before ending any substantial future work session, follow the restart checklist in `docs/IMPLEMENTATION_DISCIPLINE.md § 8`:
 
 1. update accepted ADRs and affected documentation
 2. update the relevant issue checklist and status
@@ -225,7 +232,7 @@ Do not flatten this project into a generic autonomous-agent framework.
 
 The center is development, not task completion.
 
-Knowledge borrowed from the parent should settle into the body. The organism should gradually do more without asking, consolidate memory and skills, and carry itself into another day within finite resources. Making that process observable is the core of SUDACHI.
+Knowledge borrowed from the parent should settle into the body. The organism should gradually do more without asking, consolidate memory and skills, and carry itself into another day within finite resources.
 
 Do not connect a named live provider merely because an adapter can be written. Verify permission and operational constraints first.
 
