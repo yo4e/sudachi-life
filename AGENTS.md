@@ -2,6 +2,12 @@
 
 This file is the continuity contract for AI collaborators working on SUDACHI.
 
+## Cold-start rule
+
+Assume you remember nothing about SUDACHI.
+
+Do not rely on conversation memory, prior model context, an issue title, or a single code fragment. Reconstruct the project from the repository before proposing or changing anything.
+
 ## Before doing any work
 
 Read these files in order:
@@ -11,9 +17,34 @@ Read these files in order:
 3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
 4. `docs/ROADMAP.md`
 5. `docs/ARCHITECTURE.md`
-6. `docs/HANDOFF.md`
+6. `docs/RESEARCH_QUESTIONS.md`
+7. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+8. `docs/HANDOFF.md`
+
+Then inspect the current open issues and confirm which issue is active.
+
+Current issue roles at the end of the seed-documentation session:
+
+- **#1** — active Phase 0 architecture decisions and ADR work
+- **#2** — completed Copilot architecture review record; closed
+- **#3** — deferred literature, novelty, and parent-provider compliance research; do not begin unless explicitly requested
+- **#4** — accidental placeholder; closed and irrelevant
+
+If repository state and this list disagree, trust current GitHub state and update `docs/HANDOFF.md`.
 
 Do not infer the project only from the latest issue or code fragment. SUDACHI is a developmental artificial-life experiment, not a generic autonomous-agent framework.
+
+## Immediate restart point
+
+Unless the owner gives a newer instruction, resume at Issue #1:
+
+1. create `docs/decisions/`
+2. resolve ADRs 0001 through 0006
+3. review the Minimal Organism Contract for contradictions
+4. update `docs/HANDOFF.md`
+5. only then create the Python package skeleton
+
+Do not begin with a live language model. Phase 1 must remain deterministic, local, network-free, and parent-free.
 
 ## Project intent
 
@@ -42,7 +73,9 @@ Growth is not the accumulation of text, files, prompts, or model calls.
 7. **No unrestricted network or filesystem access.** Use allowlists and a sandbox. Default to no external writes.
 8. **Do not equate autonomy with continuous execution.** Event-driven or periodic waking is preferred to an unbounded always-on loop.
 9. **Do not anthropomorphize away the mechanics.** Life-like language is welcome, but state, budgets, triggers, and evaluation must remain explicit.
-10. **Update the handoff.** After a substantial change, update `docs/HANDOFF.md` with the current state, decisions, and next concrete action.
+10. **Update the handoff.** After a substantial change, update `docs/HANDOFF.md` with the current state, decisions, issue roles, and next concrete action.
+11. **Verify providers before connection.** Do not assume ChatGPT, the OpenAI API, or another commercial model may be used as a live parent. Complete the provider review and record a dated decision first.
+12. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the deferred prior-work review is completed.
 
 ## Definition of a valid developmental improvement
 
@@ -65,10 +98,12 @@ A change that merely adds complexity is not growth.
 - Store raw events separately from consolidated knowledge.
 - Keep organism state separate from source code.
 - Prefer reproducible experiments with fixed seeds where possible.
+- Do not silently resolve an open architectural choice in implementation code; write or update an ADR first.
+- Before ending a work session, leave the repository restartable without conversation context.
 
 ## Initial boundary
 
-During the seed phase, do not connect a live language model until a deterministic lifecycle cycle, state store, event format, budget mechanism, and evaluator exist. A mocked parent is sufficient for the first implementation.
+During the seed phase, do not connect a live language model until a deterministic lifecycle cycle, state store, event format, budget mechanism, evaluator, sandbox, checkpoint strategy, and provider review exist. A mocked parent is sufficient for testing later consultation plumbing.
 
 ## Commit guidance
 
