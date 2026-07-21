@@ -21,6 +21,7 @@ Read these files in order:
 7. `docs/RESEARCH_QUESTIONS.md`
 8. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
 9. `docs/HANDOFF.md`
+10. `docs/IMPLEMENTATION_DISCIPLINE.md` ← **implementation guardrails and session protocol**
 
 Then inspect the current open issues and confirm which issue is active.
 
@@ -49,7 +50,7 @@ Do not begin with a live language model. Phase 1 must remain deterministic, loca
 
 ## Project intent
 
-SUDACHI begins with access to a capable parent language model and should gradually convert successful assistance into local memory, skills, tests, and routines. The central research question is whether capability can be retained while dependence on the parent model decreases.
+SUDACHI begins with access to a capable parent language model and should gradually convert successful assistance into local memory, skills, tests, and routines. The central research question is whether an artificial organism can become less dependent on its parent as it becomes more capable.
 
 The intended direction is:
 
@@ -75,7 +76,7 @@ Growth is not the accumulation of text, files, prompts, or model calls.
 8. **Do not equate autonomy with continuous execution.** Event-driven or periodic waking is preferred to an unbounded always-on loop.
 9. **Do not anthropomorphize away the mechanics.** Life-like language is welcome, but state, budgets, triggers, and evaluation must remain explicit.
 10. **Update the handoff.** After a substantial change, update `docs/HANDOFF.md` with the current state, decisions, issue roles, and next concrete action.
-11. **Verify providers before connection.** Do not assume ChatGPT, the OpenAI API, or another commercial model may be used as a live parent. Complete the provider review and record a dated decision first.
+11. **Verify providers before connection.** Do not assume ChatGPT, the OpenAI API, or another commercial model may be used as a live parent. Complete the provider review and record a dated decision before any live integration.
 12. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the deferred prior-work review is completed.
 
 ## Definition of a valid developmental improvement
@@ -100,11 +101,11 @@ A change that merely adds complexity is not growth.
 - Keep organism state separate from source code.
 - Prefer reproducible experiments with fixed seeds where possible.
 - Do not silently resolve an open architectural choice in implementation code; write or update an ADR first.
-- Before ending a work session, leave the repository restartable without conversation context.
+- Before ending a work session, follow the restart checklist in `docs/IMPLEMENTATION_DISCIPLINE.md § 8`.
 
 ## Initial boundary
 
-During the seed phase, do not connect a live language model until a deterministic lifecycle cycle, state store, event format, budget mechanism, evaluator, sandbox, checkpoint strategy, and provider review exist. A mocked parent is sufficient for testing later consultation plumbing.
+During the seed phase, do not connect a live language model until a deterministic lifecycle cycle, state store, event format, budget mechanism, evaluator, sandbox, checkpoint strategy, and provider-compliance review have been established and documented.
 
 ## Commit guidance
 
@@ -117,4 +118,4 @@ Use clear conventional prefixes where practical:
 - `experiment:` research setup or results
 - `fix:` bug or broken invariant
 
-The repository is part of the organism’s developmental record. Commit messages should explain why a change exists, not only what file changed.
+The repository is part of the organism's developmental record. Commit messages should explain why a change exists, not only what file changed.
