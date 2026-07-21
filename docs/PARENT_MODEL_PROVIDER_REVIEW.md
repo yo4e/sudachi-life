@@ -1,129 +1,166 @@
-# Parent-Model Provider and Compliance Review
+# Model-Caregiver Provider and Compliance Review
 
-Status: **Backlog only — no provider or policy review has been performed yet.**
+Status: **Active preliminary review — no live provider selected**
 
-This document records the questions that must be answered before SUDACHI connects to a live commercial parent model. It is not a statement that any particular use is currently permitted or prohibited.
+Verified: **2026-07-21**
 
-Provider terms, product capabilities, pricing, and policies change over time. The review must use current first-party documentation and record the date on which each conclusion was verified.
+Tracked by: GitHub Issue #3
+
+This document records the questions that must be answered before SUDACHI connects to a live commercial model caregiver. It is not legal advice and is not a statement that any particular use is currently permitted.
+
+Preliminary findings and dated first-party sources are recorded in [`research/PARENT_MODEL_STRATEGY.md`](research/PARENT_MODEL_STRATEGY.md).
+
+Provider terms, product capabilities, pricing, and policies change. Every provider decision must be re-verified from current first-party documentation and recorded in a dated ADR.
 
 ## Primary question
 
-Can SUDACHI lawfully and practically use ChatGPT or an OpenAI model as a parent that supplies occasional reasoning which may later be converted into local memories, tested skills, rules, or code?
+Can SUDACHI lawfully, ethically, practically, and reproducibly use a particular model product or API as an occasional caregiver, and which transformations of its outputs are permitted?
 
-## Product boundary: ChatGPT versus API
+The architecture must not assume that a model caregiver is canonical. Human, deterministic fixture, local open-weight, hosted model, hybrid, and no-caregiver conditions remain comparison options.
 
-Investigate separately:
+## Product and access boundaries
 
-- interactive use of the ChatGPT product by a human researcher
-- programmatic use through the official OpenAI API
-- whether automated access to the ChatGPT user interface is permitted
-- whether an API-based implementation is required for unattended or scheduled parent consultations
-- whether ChatGPT features such as Projects, custom GPTs, connectors, tasks, or agent capabilities are relevant and permitted for this experiment
-- whether account type, plan, organization, or geographic region changes the available terms or controls
+Investigate each product separately:
 
-Do not treat “ChatGPT” and “an OpenAI API model” as interchangeable products in design documents.
+- consumer chat interfaces used interactively by a human researcher
+- official programmatic APIs
+- local open-weight inference
+- enterprise or organizational offerings with different controls
+- product features such as projects, connectors, tasks, tools, and agent capabilities
+- account plan, organization, geography, and data-control differences
+
+Do not treat a consumer chat product and the provider's API as interchangeable.
+
+Do not automate a consumer interface merely because a human can use it manually.
+
+## Transformation classes
+
+“Use the output” is not one operation. Review each intended transformation separately:
+
+1. **Transient consultation** — advice influences one bounded decision.
+2. **Verified memory** — a derived fact or procedure is retained with provenance and review rules.
+3. **Deterministic artifact** — a response contributes to a tested rule, configuration, program, or skill.
+4. **Synthetic data** — outputs become examples or evaluation material.
+5. **Model development** — outputs, traces, or synthetic data train, fine-tune, imitate, or distill another model.
+
+Output ownership does not automatically authorize every transformation. Model development remains disabled until the exact provider, product, model, terms, and intended use are explicitly approved.
 
 ## Terms and acceptable-use questions
 
 Verify from current official terms and policies:
 
-- whether an autonomous or periodically waking software organism may initiate model calls
-- whether humans must approve each call, action, or derived skill
-- whether account sharing, delegated credentials, or machine-controlled accounts are allowed
-- whether SUDACHI's intended behavior falls within applicable usage policies
-- whether special restrictions apply to self-modifying, self-improving, agentic, or long-running systems
-- whether provider outputs may be transformed into executable code, rules, memories, or a reusable skill library
-- whether outputs may be used for evaluation, fine-tuning, distillation, imitation, or training of another model
-- whether any restriction applies to building systems that reduce dependence on the provider model
+- whether autonomous or periodically waking software may initiate calls
+- whether a human must approve calls, actions, or derived artifacts
+- whether delegated credentials or machine-controlled accounts are allowed
+- whether the intended agentic behavior is permitted
+- whether special restrictions apply to self-improving or long-running systems
+- whether outputs may become code, rules, memories, tests, skills, synthetic data, or training data
+- whether competing-model or competing-product restrictions apply
 - whether publication of prompts, outputs, traces, or experiments requires redaction or permission
-- whether attribution, disclosure, or branding requirements apply
+- whether attribution, disclosure, branding, or provenance requirements apply
 
 ## Data governance and privacy
 
 Determine:
 
-- what prompts, outputs, metadata, and tool traces are retained by the provider
-- whether submitted data may be used to improve provider models, and which controls or account settings affect this
-- whether API and ChatGPT data practices differ
+- what prompts, outputs, metadata, tool traces, and abuse-monitoring records are retained
+- whether submitted data may improve provider models and which settings affect this
+- whether API and consumer-product data practices differ
 - which personal, private, copyrighted, confidential, or credential-bearing data must never be sent
-- whether data residency, regional processing, or organizational controls matter
+- whether data residency or regional processing matters
 - how deletion, export, retention periods, and audit logs work
-- what must be documented in SUDACHI's own privacy and data-handling policy
+- which experiment records SUDACHI must retain locally
 
-The parent adapter must minimize transmitted context and must never send secrets merely because they exist in organism memory.
+A model-caregiver adapter must minimize transmitted context and must never send secrets merely because they exist in organism memory.
 
 ## Output, licensing, and provenance
 
 Investigate:
 
-- ownership and permitted use of model outputs
+- ownership and permitted use of outputs
 - obligations associated with generated code or text
-- treatment of potentially copyrighted or third-party material in outputs
-- whether derived deterministic skills retain provider provenance
-- what records should link a parent response to a proposed and adopted skill
+- treatment of third-party or copyrighted material
+- whether derived deterministic artifacts retain provider provenance
+- what records link a consultation to a proposed and adopted capability
 - whether raw responses may be stored, published, or redistributed
-- how to handle substantially similar or non-unique outputs
+- how to handle non-unique or substantially similar outputs
+- whether license conditions attach to local open-weight model derivatives
 
 ## Operational feasibility
 
 Record current information about:
 
-- supported models and relevant API interfaces
+- exact product, model, version, or snapshot
+- supported interfaces and structured-output features
 - rate limits, quotas, context limits, and concurrency limits
-- pricing and methods for enforcing a hard consultation budget
-- service availability, version changes, model retirement, and reproducibility risks
-- structured outputs, tool calling, sandbox boundaries, and timeout behavior
+- pricing and hard cost controls
+- latency, outages, model retirement, and reproducibility risks
 - authentication and secret storage
+- sandbox, timeout, and tool behavior
 - monitoring, auditability, and incident response
-- fallback behavior when the provider is unavailable or refuses a request
+- fallback behavior when the caregiver is unavailable or refuses a request
 
-SUDACHI must remain able to sleep, abstain, or defer safely when no parent is available.
+SUDACHI must be able to abstain, defer, or sleep safely when no caregiver is available.
+
+Local inference is not automatically free. Hardware memory, energy, setup, maintenance, latency, and license constraints must be counted.
 
 ## Research and publication ethics
 
 Consider:
 
-- whether research review, ethics review, or additional consent is needed for particular experiments or data
-- how to describe the provider's role without implying endorsement
-- how to report model name, version or snapshot, date, parameters, prompts, and costs reproducibly
-- how to distinguish claims about SUDACHI from capabilities supplied by the parent
+- whether research or ethics review is required for the experiment or collected data
+- how to describe a provider's role without implying endorsement
+- how to report product, model, snapshot, date, parameters, prompts, and costs reproducibly
+- how to distinguish SUDACHI's retained capability from capability supplied live by a caregiver
 - how to disclose human intervention and approval gates
+- how to publish examples without exposing private data or prohibited material
 
 ## Provider comparison
 
-The architecture should not assume OpenAI is the only possible parent. Compare at least:
+Compare at least:
 
-- OpenAI API models
-- other hosted commercial model APIs
-- a local open-weight model
-- a deterministic mocked parent
-- no-parent baselines
+- no-caregiver baseline
+- deterministic fixture caregiver
+- human caregiver
+- local open-weight model
+- hosted commercial model API
+- human-AI team
 
-Comparison dimensions should include permission, privacy, reproducibility, cost, capability, latency, reliability, auditability, and ease of replacement.
+Dimensions include:
 
-## Required outputs before live integration
+- permission and license clarity
+- privacy and retention
+- reproducibility
+- cost and required hardware
+- capability and latency
+- reliability and availability
+- auditability and provenance
+- ease of replacement
+- permitted transformation classes
 
-- a dated summary of applicable official terms and policies
-- a clear decision on ChatGPT product use versus official API use
-- an approved parent-adapter operating model
-- a data-flow and retention diagram
-- a credential and secret-handling plan
-- an output-provenance policy
-- a hard cost and rate-limit budget
-- a list of prohibited inputs and actions
-- a provider-independent fallback plan
-- an ADR selecting the first live parent provider and explaining why
+## Required outputs before live model integration
+
+- dated summary of applicable official terms and policies
+- exact product, access method, and model identifier
+- approved caregiver-adapter operating model
+- allowed and prohibited transformation classes
+- data-flow and retention description
+- credential and secret-handling plan
+- output-provenance policy
+- hard cost, call, token, and rate-limit budgets
+- prohibited inputs and actions
+- provider-independent fallback and no-caregiver baseline
+- ADR selecting the first live model caregiver and explaining why
 
 ## Timing
 
-Complete this review before:
+Complete the relevant review before:
 
-- connecting any live commercial parent model
-- automating parent consultations
-- storing or publishing live parent outputs
-- attempting distillation, fine-tuning, or systematic imitation from provider outputs
-- making public claims that SUDACHI is permitted to operate with a named provider
+- connecting a live commercial model caregiver
+- automating model consultations
+- retaining or publishing live model outputs
+- creating deterministic artifacts from provider output when terms are unclear
+- attempting distillation, fine-tuning, imitation, or synthetic-data training
+- making public claims that SUDACHI is permitted to use a named provider
 
-This review does not block the deterministic Phase 1 organism, mocked-parent plumbing, provider-neutral interfaces, or local tests.
-
-Tracked with the broader research backlog in GitHub Issue #3.
+This review does not block Phase 0 ADRs, the deterministic caregiver-free Phase 1 organism, fixture-caregiver plumbing, source-neutral interfaces, or local tests.
