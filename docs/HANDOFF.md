@@ -48,45 +48,56 @@ Merged through PR #17:
 
 ### Slice 4 — canonical harvest wake
 
-Implemented and verified in PR #18:
+Merged through PR #18:
 
 - the fixed policy reuses the same lifecycle and selects `harvest_plot(bed-b)` when no water target remains
 - the executor removes exactly one fruit and increments harvested inventory inside a savepoint
 - the evaluator independently proves the transition and changes objective completion from false to true
 - the second pending boundary is event sequence 24
 - administrative checkpoint stabilization is event sequence 25
-- the organism returns to `sleeping` at lifecycle 2
-- a third mutating wake is rejected and fully rolled back because objective-complete abstention is not implemented yet
+- the protected objective becomes complete and the organism sleeps at lifecycle 2
+
+### Slice 5 — objective-complete abstention
+
+Implemented and verified in PR #19:
+
+- the third canonical tick observes `objective_complete = true`
+- a dedicated abstention decision records `objective_already_complete`
+- zero action attempts and zero environment mutations are consumed
+- the evaluator independently proves that plots, inventory, objective, and environment step remain unchanged
+- lifecycle 3 commits pending boundary 34 and stabilizes at event sequence 35
+- the organism returns to `sleeping` with failure streak zero
+- the complete canonical water, harvest, abstention run is protected
 
 No live human, fixture, or model caregiver is connected.
 
 ## Verified implementation results
 
-GitHub Actions passed on PR #18 with Python 3.12:
+GitHub Actions passed on PR #19 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
 - **28 protected tests**
 - installed genesis CLI smoke test
-- protected two-wake CLI path: water, harvest, completed objective, checkpoint, and sleep
+- protected three-wake CLI path: water, harvest, justified abstention, checkpoint, and sleep
 
 A separate clean local virtual environment also completed:
 
 ```text
-init -> enqueue tick-1 -> wake -> enqueue tick-2 -> wake -> status
+init -> tick-1 / water -> tick-2 / harvest -> tick-3 / completion abstention -> status
 ```
 
 Final canonical values were:
 
-- `lifecycle_number = 2`
+- `lifecycle_number = 3`
 - `environment_step = 2`
 - `bed-a.moisture = 1`
 - `bed-b.fruit = 0`
 - `water_units = 0`
 - `harvested_fruit = 1`
 - `objective_complete = true`
-- `latest_stable_event_sequence = 24`
-- `event_count = 25`
+- `latest_stable_event_sequence = 34`
+- `event_count = 35`
 - `status = sleeping`
 
 ## Integration repair record
@@ -107,24 +118,21 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #18 is merged, create a new branch from current `main` and implement **Slice 5: the canonical objective-complete abstention**.
+After PR #19 is merged, create a new branch from current `main` and implement **Slice 6: classified `no_applicable_action` abstention and failure-streak accounting**.
 
 The slice must:
 
-1. enqueue and claim the third canonical garden tick
-2. build the complete observation showing `objective_complete = true`
-3. select a typed `objective_already_complete` abstention
-4. consume one input and one observation
-5. consume zero action attempts and zero environment mutations
-6. leave plots, inventory, environment step, and objective unchanged
-7. append bounded abstention, evaluation, and budget records
-8. consume the tick and commit an exact pending boundary
-9. create and register a stable checkpoint
-10. reset the justified failure streak to zero
-11. return to sleep and terminate
-12. prove the canonical three-wake run in protected tests and CI
+1. use an explicit protected fixture with an incomplete objective and no executable mutating action
+2. claim one tick and build one complete observation
+3. select typed `no_applicable_action` abstention before entering the executor
+4. consume one input and one observation but zero action attempts and mutations
+5. independently prove that environment state did not change
+6. increment `consecutive_failures` exactly once
+7. commit and stabilize an exact checkpoint boundary
+8. return to sleep below the maintenance threshold
+9. prove the outcome in protected tests and CI
 
-Do not add other failure classes, checkpoint repair, rollback, caregiver consultation, learning, or generic planning in Slice 5.
+Do not add budget exhaustion, action-failure injection, maintenance threshold entry, rollback, caregiver consultation, learning, or generic planning in Slice 6.
 
 ## Current issue map
 

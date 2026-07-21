@@ -42,22 +42,23 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–4 establish:
+Slices 1–5 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
-- stable genesis, water, and harvest checkpoints
+- stable genesis, water, harvest, and abstention checkpoints
 - idempotent synthetic garden ticks
 - fail-fast wake ownership and deterministic observation
 - fixed-policy `water_plot(bed-a)` and `harvest_plot(bed-b)` wakes
-- independent transition and objective evaluation
-- exact pending boundaries and return to sleep
+- justified `objective_already_complete` abstention with zero action and mutation cost
+- independent transition, abstention, and objective evaluation
+- the complete canonical three-wake run with exact pending boundaries and return to sleep
 
-After PR #18 is merged, the exact next implementation slice is **Slice 5: the canonical objective-complete abstention**.
+After PR #19 is merged, the exact next implementation slice is **Slice 6: classified `no_applicable_action` abstention and failure-streak accounting**.
 
-It must consume one third tick, observe the completed objective, record `objective_already_complete` without an action attempt or environment mutation, commit and stabilize a checkpoint, and return to sleep.
+It must use an explicit protected test fixture with an incomplete objective and no executable mutating action, commit the specific abstention, increment the failure streak exactly once, checkpoint the outcome, and return to sleep below the maintenance threshold.
 
-Do not add other abstention classes, failure maintenance, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 5.
+Do not add budget-exhaustion handling, action-failure injection, maintenance threshold entry, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 6.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
