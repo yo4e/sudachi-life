@@ -19,9 +19,11 @@ from .constants import (
     CHECKPOINT_STORE_MAX_BYTES,
     CONTRACT_VERSION,
     ENVIRONMENT_VERSION,
+    PHASE1_BUDGETS,
     RUNTIME_WORKING_SET_MAX_BYTES,
     SCHEMA_VERSION,
 )
+from .clock import Clock
 from .errors import CheckpointError, SchemaValidationError
 from .paths import OrganismPaths
 from .storage import connect_database, validate_canonical_state
@@ -82,8 +84,41 @@ def create_and_register_genesis_checkpoint(
     created_wall_time_utc_us: int,
     event_sequence: int,
 ) -> CheckpointResult:
-    """Create, publish, validate, and register the pending genesis boundary."""
+    return _create_and_register_pending_checkpoint(
+        paths,
+        created_wall_time_utc_us=created_wall_time_utc_us,
+        registered_wall_time_utc_us=created_wall_time_utc_us,
+        event_sequence=event_sequence,
+        provenance="genesis",
+        registration_source="administration:init",
+    )
 
+
+def create_and_register_lifecycle_checkpoint(paths: OrganismPaths, *, clock: Clock) -> CheckpointResult:
+    started = clock.read()
+    return _create_and_register_pending_checkpoint(
+        paths,
+        created_wall_time_utc_us=started.wall_time_utc_us,
+        registered_wall_time_utc_us=None,
+        event_sequence=None,
+        provenance="lifecycle",
+        registration_source="administration:checkpoint",
+        deadline_start_monotonic_ns=started.monotonic_ns,
+        completion_clock=clock,
+    )
+
+
+def _create_and_register_pending_checkpoint(
+    paths: OrganismPaths,
+    *,
+    created_wall_time_utc_us: int,
+    registered_wall_time_utc_us: int | None,
+    event_sequence: int | None,
+    provenance: str,
+    registration_source: str,
+    deadline_start_monotonic_ns: int | None = None,
+    completion_clock: Clock | None = None,
+) -> CheckpointResult:
     paths.checkpoints.mkdir(parents=True, exist_ok=True)
     if paths.checkpoints.is_symlink():
         raise CheckpointError("checkpoint directory may not be a symlink")
@@ -92,29 +127,26 @@ def create_and_register_genesis_checkpoint(
     temp_dir = Path(tempfile.mkdtemp(prefix=".tmp-checkpoint-", dir=paths.checkpoints))
     destination_path = temp_dir / "organism.sqlite3"
     manifest_path = temp_dir / "manifest.json"
-
     try:
         pending = source.execute(
-            """
-            SELECT organism_id, lineage_generation, schema_version, contract_version,
-                   environment_version, budget_config_version,
-                   pending_checkpoint_generation, pending_checkpoint_event_sequence,
-                   checkpoint_pending
-            FROM organism WHERE singleton_id = 1
-            """
+            """SELECT organism_id, lineage_generation, lifecycle_number,
+                      schema_version, contract_version, environment_version,
+                      budget_config_version, pending_checkpoint_generation,
+                      pending_checkpoint_event_sequence, checkpoint_pending
+               FROM organism WHERE singleton_id = 1"""
         ).fetchone()
         if pending is None or pending["checkpoint_pending"] != 1:
-            raise CheckpointError("genesis checkpoint boundary is not pending")
-        if pending["pending_checkpoint_event_sequence"] != event_sequence:
+            raise CheckpointError("checkpoint boundary is not pending")
+        actual_boundary = int(pending["pending_checkpoint_event_sequence"])
+        if event_sequence is not None and actual_boundary != event_sequence:
             raise CheckpointError("pending event boundary changed before checkpoint creation")
-
+        event_sequence = actual_boundary
         destination = sqlite3.connect(destination_path, isolation_level=None)
         try:
             source.backup(destination)
         finally:
             destination.close()
     except Exception:
-        source.close()
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise
     finally:
@@ -123,14 +155,9 @@ def create_and_register_genesis_checkpoint(
     size = destination_path.stat().st_size
     if size > CHECKPOINT_ARTIFACT_MAX_BYTES:
         shutil.rmtree(temp_dir, ignore_errors=True)
-        raise CheckpointError(
-            f"checkpoint database exceeds {CHECKPOINT_ARTIFACT_MAX_BYTES} bytes"
-        )
+        raise CheckpointError(f"checkpoint database exceeds {CHECKPOINT_ARTIFACT_MAX_BYTES} bytes")
     database_sha = _sha256_file(destination_path)
-    checkpoint_id = (
-        f"cp-g{pending['lineage_generation']:06d}-"
-        f"e{event_sequence:012d}-{database_sha[:8]}"
-    )
+    checkpoint_id = f"cp-g{pending['lineage_generation']:06d}-e{event_sequence:012d}-{database_sha[:8]}"
     final_dir = paths.checkpoints / checkpoint_id
     if final_dir.exists():
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -141,6 +168,7 @@ def create_and_register_genesis_checkpoint(
         "checkpoint_id": checkpoint_id,
         "organism_id": pending["organism_id"],
         "lineage_generation": pending["lineage_generation"],
+        "lifecycle_number": pending["lifecycle_number"],
         "schema_version": pending["schema_version"],
         "contract_version": pending["contract_version"],
         "environment_version": pending["environment_version"],
@@ -153,7 +181,7 @@ def create_and_register_genesis_checkpoint(
         "snapshot_method": "python-sqlite3-connection-backup",
         "implementation_version": "0.1.0",
         "status": "published",
-        "provenance": "genesis",
+        "provenance": provenance,
     }
     manifest_bytes = _canonical_json_bytes(manifest)
     manifest_path.write_bytes(manifest_bytes)
@@ -169,19 +197,29 @@ def create_and_register_genesis_checkpoint(
     store_size = _checkpoint_store_size(paths.checkpoints)
     if store_size > CHECKPOINT_STORE_MAX_BYTES:
         raise CheckpointError("checkpoint store exceeds protected Phase 1 limit")
-    working_set = store_size + paths.database.stat().st_size
-    if working_set > RUNTIME_WORKING_SET_MAX_BYTES:
+    if store_size + paths.database.stat().st_size > RUNTIME_WORKING_SET_MAX_BYTES:
         raise CheckpointError("runtime working set exceeds protected Phase 1 limit")
+
+    if completion_clock is not None:
+        completed = completion_clock.read()
+        if deadline_start_monotonic_ns is None:
+            raise CheckpointError("checkpoint deadline start is missing")
+        elapsed_ns = completed.monotonic_ns - deadline_start_monotonic_ns
+        if elapsed_ns < 0:
+            raise CheckpointError("checkpoint monotonic clock moved backward")
+        if elapsed_ns > PHASE1_BUDGETS.checkpoint_wall_time_ms * 1_000_000:
+            raise CheckpointError("checkpoint stabilization deadline exhausted")
+        registered_wall_time_utc_us = completed.wall_time_utc_us
+    if registered_wall_time_utc_us is None:
+        raise CheckpointError("checkpoint registration time is missing")
 
     registration = connect_database(paths.database)
     try:
         registration.execute("BEGIN IMMEDIATE")
         current = registration.execute(
-            """
-            SELECT checkpoint_pending, pending_checkpoint_generation,
-                   pending_checkpoint_event_sequence, lineage_generation
-            FROM organism WHERE singleton_id = 1
-            """
+            """SELECT checkpoint_pending, pending_checkpoint_generation,
+                      pending_checkpoint_event_sequence, lineage_generation
+               FROM organism WHERE singleton_id = 1"""
         ).fetchone()
         if (
             current is None
@@ -190,54 +228,41 @@ def create_and_register_genesis_checkpoint(
             or current["pending_checkpoint_event_sequence"] != event_sequence
         ):
             raise CheckpointError("active pending boundary changed before registration")
-
         registration.execute(
-            """
-            INSERT INTO checkpoint_registry (
-                checkpoint_id, lineage_generation, event_sequence,
-                manifest_sha256, database_sha256, database_size_bytes,
-                created_wall_time_utc_us, registered_wall_time_utc_us, protected
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-            """,
+            """INSERT INTO checkpoint_registry (
+                   checkpoint_id, lineage_generation, event_sequence,
+                   manifest_sha256, database_sha256, database_size_bytes,
+                   created_wall_time_utc_us, registered_wall_time_utc_us, protected
+               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)""",
             (
-                checkpoint_id,
-                pending["lineage_generation"],
-                event_sequence,
-                manifest_sha,
-                database_sha,
-                size,
-                created_wall_time_utc_us,
-                created_wall_time_utc_us,
+                checkpoint_id, pending["lineage_generation"], event_sequence,
+                manifest_sha, database_sha, size, created_wall_time_utc_us,
+                registered_wall_time_utc_us,
             ),
         )
         registration.execute(
-            """
-            UPDATE organism
-            SET status = 'sleeping',
-                checkpoint_pending = 0,
-                pending_checkpoint_generation = NULL,
-                pending_checkpoint_event_sequence = NULL,
-                latest_stable_checkpoint_id = ?,
-                latest_stable_event_sequence = ?,
-                last_sleep_wall_time_utc_us = ?
-            WHERE singleton_id = 1
-            """,
-            (checkpoint_id, event_sequence, created_wall_time_utc_us),
+            """UPDATE organism
+               SET status = 'sleeping', checkpoint_pending = 0,
+                   pending_checkpoint_generation = NULL,
+                   pending_checkpoint_event_sequence = NULL,
+                   latest_stable_checkpoint_id = ?, latest_stable_event_sequence = ?,
+                   last_sleep_wall_time_utc_us = ?
+               WHERE singleton_id = 1""",
+            (checkpoint_id, event_sequence, registered_wall_time_utc_us),
         )
         registration.execute(
-            """
-            INSERT INTO event (
-                organism_id, lineage_generation, lifecycle_number,
-                wall_time_utc_us, event_type, source, payload_json,
-                schema_version, environment_version, budget_config_version
-            )
-            SELECT organism_id, lineage_generation, lifecycle_number, ?,
-                   'checkpoint_stabilized', 'administration:init', ?,
+            """INSERT INTO event (
+                   organism_id, lineage_generation, lifecycle_number,
+                   wall_time_utc_us, event_type, source, payload_json,
                    schema_version, environment_version, budget_config_version
-            FROM organism WHERE singleton_id = 1
-            """,
+               )
+               SELECT organism_id, lineage_generation, lifecycle_number, ?,
+                      'checkpoint_stabilized', ?, ?,
+                      schema_version, environment_version, budget_config_version
+               FROM organism WHERE singleton_id = 1""",
             (
-                created_wall_time_utc_us,
+                registered_wall_time_utc_us,
+                registration_source,
                 json.dumps(
                     {"checkpoint_id": checkpoint_id, "event_sequence": event_sequence},
                     sort_keys=True,
@@ -248,7 +273,8 @@ def create_and_register_genesis_checkpoint(
         validate_canonical_state(registration, expect_checkpoint_pending=False)
         registration.commit()
     except Exception:
-        registration.rollback()
+        if registration.in_transaction:
+            registration.rollback()
         raise
     finally:
         registration.close()
@@ -275,12 +301,10 @@ def validate_checkpoint_directory(
         raise CheckpointError("checkpoint database is missing or unsafe")
     if not manifest_path.is_file() or manifest_path.is_symlink():
         raise CheckpointError("checkpoint manifest is missing or unsafe")
-
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise CheckpointError("checkpoint manifest is not valid JSON") from exc
-
     if expected_manifest is not None and manifest != expected_manifest:
         raise CheckpointError("checkpoint manifest changed during publication")
     if manifest.get("checkpoint_format_version") != CHECKPOINT_FORMAT_VERSION:
@@ -299,9 +323,10 @@ def validate_checkpoint_directory(
         raise CheckpointError("checkpoint snapshot method mismatch")
     if manifest.get("status") != "published":
         raise CheckpointError("checkpoint manifest status mismatch")
+    if manifest.get("provenance") not in {"genesis", "lifecycle"}:
+        raise CheckpointError("checkpoint provenance mismatch")
     if expected_manifest is None and checkpoint_dir.name != manifest.get("checkpoint_id"):
         raise CheckpointError("checkpoint directory name does not match manifest")
-
     size = database_path.stat().st_size
     if size != manifest.get("database_size_bytes"):
         raise CheckpointError("checkpoint database size mismatch")
@@ -323,6 +348,8 @@ def validate_checkpoint_directory(
             raise CheckpointError("checkpoint organism identity mismatch")
         if organism["lineage_generation"] != manifest.get("lineage_generation"):
             raise CheckpointError("checkpoint lineage mismatch")
+        if organism["lifecycle_number"] != manifest.get("lifecycle_number"):
+            raise CheckpointError("checkpoint lifecycle mismatch")
         if organism["budget_config_version"] != manifest.get("budget_config_version"):
             raise CheckpointError("snapshot budget configuration mismatch")
         if organism["pending_checkpoint_generation"] != manifest.get("lineage_generation"):
@@ -335,5 +362,4 @@ def validate_checkpoint_directory(
         raise CheckpointError(str(exc)) from exc
     finally:
         connection.close()
-
     return manifest
