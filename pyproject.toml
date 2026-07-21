@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sudachi-life"
+version = "0.1.0"
+description = "A bounded developmental artificial-life experiment"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "yo4e" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3"]
+
+[project.scripts]
+sudachi = "sudachi_life.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sudachi_life"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["src"]
