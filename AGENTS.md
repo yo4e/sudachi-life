@@ -109,7 +109,7 @@ Growth is not the accumulation of text, files, prompts, simulated needs, persona
 9. **Use concrete budgets.** Phase 1 has no scalar energy and no hidden retries or effects.
 10. **Keep hard-zero capabilities absent.** No caregiver, network, subprocess, or authoritative external-write effect exists in Phase 1.
 11. **Do not equate autonomy with continuous execution.** One bounded wake terminates.
-12. **Do not anthropomize away mechanics.** Life-like language is welcome; state, budgets, triggers, evidence, and evaluation remain explicit.
+12. **Do not anthropomorphize away mechanics.** Life-like language is welcome; state, budgets, triggers, evidence, and evaluation remain explicit.
 13. **Verify model providers before connection.** Complete the provider review and dated decision before any live model caregiver.
 14. **Review human-study boundaries before recruitment.** Consent, privacy, and institutional requirements must be considered before involving additional people.
 15. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the active review is substantially complete.
