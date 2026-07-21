@@ -1,4 +1,4 @@
-"""Complete bounded mutating wakes for the deterministic seed garden."""
+"""Complete bounded wakes for the deterministic seed garden."""
 
 from __future__ import annotations
 
@@ -6,12 +6,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .actions import GardenDecision, execute_garden_action, select_garden_decision
+from .actions import (
+    GardenAbstention,
+    GardenActionDecision,
+    GardenDecision,
+    execute_garden_action,
+    select_garden_decision,
+)
 from .budgets import WakeBudgetLedger
 from .checkpoints import CheckpointResult, create_and_register_lifecycle_checkpoint
 from .clock import Clock, RealClock
 from .constants import ACTIVE_DATABASE_MAX_BYTES
-from .evaluation import GardenEvaluation, evaluate_garden_transition
+from .evaluation import GardenEvaluation, evaluate_garden_decision
 from .errors import SchemaValidationError
 from .paths import OrganismPaths
 from .storage import read_status, validate_canonical_state
@@ -104,6 +110,75 @@ def _event(
     )
 
 
+def _record_decision_and_evaluate(
+    wake: WakeTransaction,
+    *,
+    organism_id: str,
+    lineage_generation: int,
+    wall_time_utc_us: int,
+    decision: GardenDecision,
+    observation,
+    ledger: WakeBudgetLedger,
+) -> GardenEvaluation:
+    if isinstance(decision, GardenActionDecision):
+        _event(
+            wake,
+            organism_id=organism_id,
+            lineage_generation=lineage_generation,
+            wall_time_utc_us=wall_time_utc_us,
+            event_type="action_proposed",
+            payload=decision.as_dict(),
+            ledger=ledger,
+        )
+        execute_garden_action(wake.connection, decision, ledger)
+        _event(
+            wake,
+            organism_id=organism_id,
+            lineage_generation=lineage_generation,
+            wall_time_utc_us=wall_time_utc_us,
+            event_type="action_completed",
+            payload={**decision.as_dict(), "success": True},
+            ledger=ledger,
+        )
+    else:
+        _event(
+            wake,
+            organism_id=organism_id,
+            lineage_generation=lineage_generation,
+            wall_time_utc_us=wall_time_utc_us,
+            event_type="action_abstained",
+            payload=decision.as_dict(),
+            ledger=ledger,
+        )
+
+    evaluation = evaluate_garden_decision(wake.connection, observation, decision)
+    _event(
+        wake,
+        organism_id=organism_id,
+        lineage_generation=lineage_generation,
+        wall_time_utc_us=wall_time_utc_us,
+        event_type="evaluation_completed",
+        payload=evaluation.as_dict(),
+        ledger=ledger,
+    )
+    return evaluation
+
+
+def _completion_payload(decision: GardenDecision) -> dict[str, Any]:
+    if isinstance(decision, GardenAbstention):
+        return {
+            "outcome": "abstention",
+            "reason": decision.reason,
+            "input_consumed": True,
+        }
+    return {
+        "outcome": "action_success",
+        "action_id": decision.action_id,
+        "plot_id": decision.plot_id,
+        "input_consumed": True,
+    }
+
+
 def perform_garden_wake(
     runtime_root: Path | str,
     organism_id: str,
@@ -111,7 +186,7 @@ def perform_garden_wake(
     seed: int,
     clock: Clock | None = None,
 ) -> WakeResult:
-    """Perform one fixed-policy mutating wake and stabilize its checkpoint."""
+    """Perform one fixed-policy wake and stabilize its checkpoint."""
 
     clock = clock or RealClock()
     paths = OrganismPaths.build(runtime_root, organism_id)
@@ -122,11 +197,15 @@ def perform_garden_wake(
         organism = wake.connection.execute(
             "SELECT organism_id, lineage_generation FROM organism WHERE singleton_id = 1"
         ).fetchone()
+        if organism is None:
+            raise SchemaValidationError("canonical organism state is missing")
+        organism_id_value = str(organism["organism_id"])
+        lineage_generation = int(organism["lineage_generation"])
         ledger = WakeBudgetLedger.load(wake.connection)
         _event(
             wake,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
+            organism_id=organism_id_value,
+            lineage_generation=lineage_generation,
             wall_time_utc_us=started.wall_time_utc_us,
             event_type="wake_accepted",
             payload={"seed": seed},
@@ -137,8 +216,8 @@ def perform_garden_wake(
         ledger.consume("input_events")
         _event(
             wake,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
+            organism_id=organism_id_value,
+            lineage_generation=lineage_generation,
             wall_time_utc_us=started.wall_time_utc_us,
             event_type="input_claimed",
             payload={
@@ -153,8 +232,8 @@ def perform_garden_wake(
         ledger.consume("observations")
         _event(
             wake,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
+            organism_id=organism_id_value,
+            lineage_generation=lineage_generation,
             wall_time_utc_us=started.wall_time_utc_us,
             event_type="observation_created",
             payload=observation.as_dict(),
@@ -162,35 +241,13 @@ def perform_garden_wake(
         )
 
         decision = select_garden_decision(observation)
-        _event(
+        evaluation = _record_decision_and_evaluate(
             wake,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
+            organism_id=organism_id_value,
+            lineage_generation=lineage_generation,
             wall_time_utc_us=started.wall_time_utc_us,
-            event_type="action_proposed",
-            payload=decision.as_dict(),
-            ledger=ledger,
-        )
-
-        execute_garden_action(wake.connection, decision, ledger)
-        _event(
-            wake,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
-            wall_time_utc_us=started.wall_time_utc_us,
-            event_type="action_completed",
-            payload={**decision.as_dict(), "success": True},
-            ledger=ledger,
-        )
-
-        evaluation = evaluate_garden_transition(wake.connection, observation, decision)
-        _event(
-            wake,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
-            wall_time_utc_us=started.wall_time_utc_us,
-            event_type="evaluation_completed",
-            payload=evaluation.as_dict(),
+            decision=decision,
+            observation=observation,
             ledger=ledger,
         )
 
@@ -204,16 +261,11 @@ def perform_garden_wake(
 
         _event(
             wake,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
+            organism_id=organism_id_value,
+            lineage_generation=lineage_generation,
             wall_time_utc_us=started.wall_time_utc_us,
             event_type="lifecycle_completed",
-            payload={
-                "outcome": "action_success",
-                "action_id": decision.action_id,
-                "plot_id": decision.plot_id,
-                "input_consumed": True,
-            },
+            payload=_completion_payload(decision),
             ledger=ledger,
         )
 
@@ -225,8 +277,8 @@ def perform_garden_wake(
         ledger.reserve_record(2)
         _append_event_sql(
             wake.connection,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
+            organism_id=organism_id_value,
+            lineage_generation=lineage_generation,
             lifecycle_number=wake.lifecycle_number,
             wall_time_utc_us=finished.wall_time_utc_us,
             event_type="budget_ledger",
@@ -235,8 +287,8 @@ def perform_garden_wake(
         )
         boundary = _append_event_sql(
             wake.connection,
-            organism_id=organism["organism_id"],
-            lineage_generation=organism["lineage_generation"],
+            organism_id=organism_id_value,
+            lineage_generation=lineage_generation,
             lifecycle_number=wake.lifecycle_number,
             wall_time_utc_us=finished.wall_time_utc_us,
             event_type="checkpoint_pending",
@@ -293,6 +345,4 @@ def perform_first_water_wake(
 ) -> WakeResult:
     """Compatibility entry point retained for the canonical first wake tests."""
 
-    return perform_garden_wake(
-        runtime_root, organism_id, seed=seed, clock=clock
-    )
+    return perform_garden_wake(runtime_root, organism_id, seed=seed, clock=clock)
