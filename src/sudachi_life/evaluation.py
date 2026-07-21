@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import sqlite3
 from typing import Any
 
-from .actions import GardenDecision
+from .actions import GardenAbstention, GardenActionDecision, GardenDecision
 from .errors import SchemaValidationError
 from .garden import GardenObservation
 
@@ -79,7 +79,8 @@ def recompute_objective(connection: sqlite3.Connection) -> bool:
 
 def _read_after_state(connection: sqlite3.Connection):
     environment = connection.execute(
-        "SELECT environment_step FROM environment_state WHERE singleton_id = 1"
+        "SELECT environment_step, objective_complete "
+        "FROM environment_state WHERE singleton_id = 1"
     ).fetchone()
     inventory = connection.execute(
         "SELECT water_units, harvested_fruit FROM inventory WHERE singleton_id = 1"
@@ -95,7 +96,7 @@ def _read_after_state(connection: sqlite3.Connection):
     return environment, inventory, plots
 
 
-def _finish_evaluation(
+def _finish_action_evaluation(
     connection: sqlite3.Connection,
     before: GardenObservation,
     *,
@@ -127,7 +128,7 @@ def _finish_evaluation(
 def evaluate_water_transition(
     connection: sqlite3.Connection,
     before: GardenObservation,
-    decision: GardenDecision,
+    decision: GardenActionDecision,
 ) -> GardenEvaluation:
     """Re-read canonical state and independently prove the exact water transition."""
 
@@ -152,7 +153,7 @@ def evaluate_water_transition(
     if after_environment["environment_step"] != before.environment_step + 1:
         raise SchemaValidationError("water_plot did not advance exactly one environment step")
 
-    return _finish_evaluation(
+    return _finish_action_evaluation(
         connection,
         before,
         environment_step_after=int(after_environment["environment_step"]),
@@ -162,7 +163,7 @@ def evaluate_water_transition(
 def evaluate_harvest_transition(
     connection: sqlite3.Connection,
     before: GardenObservation,
-    decision: GardenDecision,
+    decision: GardenActionDecision,
 ) -> GardenEvaluation:
     """Re-read canonical state and independently prove the exact harvest transition."""
 
@@ -195,22 +196,82 @@ def evaluate_harvest_transition(
             "harvest_plot did not advance exactly one environment step"
         )
 
-    return _finish_evaluation(
+    return _finish_action_evaluation(
         connection,
         before,
         environment_step_after=int(after_environment["environment_step"]),
     )
 
 
-def evaluate_garden_transition(
+def evaluate_objective_complete_abstention(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    decision: GardenAbstention,
+) -> GardenEvaluation:
+    """Prove that justified completion abstention leaves canonical environment unchanged."""
+
+    if decision.reason != "objective_already_complete":
+        raise SchemaValidationError("unsupported protected abstention reason")
+    if not before.objective_complete:
+        raise SchemaValidationError(
+            "objective_already_complete abstention requires a complete observation"
+        )
+
+    after_environment, after_inventory, after_plots = _read_after_state(connection)
+    before_plots = {str(plot["plot_id"]): dict(plot) for plot in before.plots}
+    if after_plots != before_plots:
+        raise SchemaValidationError("objective-complete abstention changed garden plots")
+    if after_inventory["water_units"] != before.water_units:
+        raise SchemaValidationError("objective-complete abstention changed water inventory")
+    if after_inventory["harvested_fruit"] != before.harvested_fruit:
+        raise SchemaValidationError("objective-complete abstention changed harvested fruit")
+    if after_environment["environment_step"] != before.environment_step:
+        raise SchemaValidationError("objective-complete abstention changed environment step")
+    if after_environment["objective_complete"] != 1 or not recompute_objective(connection):
+        raise SchemaValidationError(
+            "objective-complete abstention could not independently verify completion"
+        )
+
+    unresolved_before = _unresolved_needs_before(before)
+    unresolved_after = _unresolved_needs(connection)
+    if unresolved_before != 0 or unresolved_after != 0:
+        raise SchemaValidationError(
+            "objective-complete abstention observed unresolved garden needs"
+        )
+
+    return GardenEvaluation(
+        success=True,
+        objective_complete_before=True,
+        objective_complete_after=True,
+        unresolved_needs_before=0,
+        unresolved_needs_after=0,
+        progress="objective_complete_unchanged",
+        environment_step_before=before.environment_step,
+        environment_step_after=int(after_environment["environment_step"]),
+    )
+
+
+def evaluate_garden_decision(
     connection: sqlite3.Connection,
     before: GardenObservation,
     decision: GardenDecision,
 ) -> GardenEvaluation:
     """Dispatch the protected evaluator independently of executor claims."""
 
+    if isinstance(decision, GardenAbstention):
+        return evaluate_objective_complete_abstention(connection, before, decision)
     if decision.action_id == "water_plot":
         return evaluate_water_transition(connection, before, decision)
     if decision.action_id == "harvest_plot":
         return evaluate_harvest_transition(connection, before, decision)
     raise SchemaValidationError(f"no protected evaluator for {decision.action_id}")
+
+
+def evaluate_garden_transition(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    decision: GardenActionDecision,
+) -> GardenEvaluation:
+    """Compatibility entry point for mutating-action evaluation."""
+
+    return evaluate_garden_decision(connection, before, decision)
