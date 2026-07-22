@@ -19,6 +19,7 @@ from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
 from .rollback import prepare_rollback_archive
 from .rollback_candidate import build_restore_candidate
+from .rollback_complete import complete_rollback
 from .rollback_intent import begin_rollback
 from .rollback_replace import replace_active_with_candidate
 from .rollback_transform import transform_restore_candidate
@@ -83,9 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="register exactly one valid published pending checkpoint",
     )
     repair_pending_parser.add_argument("organism_id")
-    repair_pending_parser.add_argument(
-        "--json", action="store_true", dest="as_json"
-    )
+    repair_pending_parser.add_argument("--json", action="store_true", dest="as_json")
 
     export_parser = subparsers.add_parser(
         "export", help="create explicit non-canonical administrative exports"
@@ -100,9 +99,7 @@ def build_parser() -> argparse.ArgumentParser:
     export_events_parser.add_argument(
         "--event-sequence", type=int, required=True, dest="event_sequence"
     )
-    export_events_parser.add_argument(
-        "--json", action="store_true", dest="as_json"
-    )
+    export_events_parser.add_argument("--json", action="store_true", dest="as_json")
 
     rollback_parser = subparsers.add_parser(
         "rollback", help="perform explicit offline rollback administration"
@@ -118,30 +115,22 @@ def build_parser() -> argparse.ArgumentParser:
     rollback_prepare_parser.add_argument(
         "--event-sequence", type=int, required=True, dest="event_sequence"
     )
-    rollback_prepare_parser.add_argument(
-        "--json", action="store_true", dest="as_json"
-    )
+    rollback_prepare_parser.add_argument("--json", action="store_true", dest="as_json")
 
     rollback_begin_parser = rollback_subparsers.add_parser(
         "begin",
         help="adopt one verified pre-rollback archive as durable rollback intent",
     )
     rollback_begin_parser.add_argument("organism_id")
-    rollback_begin_parser.add_argument(
-        "--archive-id", required=True, dest="archive_id"
-    )
-    rollback_begin_parser.add_argument(
-        "--json", action="store_true", dest="as_json"
-    )
+    rollback_begin_parser.add_argument("--archive-id", required=True, dest="archive_id")
+    rollback_begin_parser.add_argument("--json", action="store_true", dest="as_json")
 
     rollback_candidate_parser = rollback_subparsers.add_parser(
         "build-candidate",
         help="construct one verified restore candidate from durable rollback intent",
     )
     rollback_candidate_parser.add_argument("organism_id")
-    rollback_candidate_parser.add_argument(
-        "--json", action="store_true", dest="as_json"
-    )
+    rollback_candidate_parser.add_argument("--json", action="store_true", dest="as_json")
 
     rollback_transform_parser = rollback_subparsers.add_parser(
         "transform-candidate",
@@ -154,9 +143,7 @@ def build_parser() -> argparse.ArgumentParser:
     rollback_transform_parser.add_argument(
         "--reason", required=True, dest="administrative_reason"
     )
-    rollback_transform_parser.add_argument(
-        "--json", action="store_true", dest="as_json"
-    )
+    rollback_transform_parser.add_argument("--json", action="store_true", dest="as_json")
 
     rollback_replace_parser = rollback_subparsers.add_parser(
         "replace-active",
@@ -166,9 +153,17 @@ def build_parser() -> argparse.ArgumentParser:
     rollback_replace_parser.add_argument(
         "--candidate-id", required=True, dest="candidate_id"
     )
-    rollback_replace_parser.add_argument(
-        "--json", action="store_true", dest="as_json"
+    rollback_replace_parser.add_argument("--json", action="store_true", dest="as_json")
+
+    rollback_complete_parser = rollback_subparsers.add_parser(
+        "complete",
+        help="atomically complete one fully validated active rollback replacement",
     )
+    rollback_complete_parser.add_argument("organism_id")
+    rollback_complete_parser.add_argument(
+        "--candidate-id", required=True, dest="candidate_id"
+    )
+    rollback_complete_parser.add_argument("--json", action="store_true", dest="as_json")
 
     return parser
 
@@ -230,29 +225,26 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.organism_id,
                 args.archive_id,
             ).as_dict()
-        elif (
-            args.command == "rollback"
-            and args.rollback_command == "build-candidate"
-        ):
+        elif args.command == "rollback" and args.rollback_command == "build-candidate":
             payload = build_restore_candidate(
                 args.runtime_dir,
                 args.organism_id,
             ).as_dict()
-        elif (
-            args.command == "rollback"
-            and args.rollback_command == "transform-candidate"
-        ):
+        elif args.command == "rollback" and args.rollback_command == "transform-candidate":
             payload = transform_restore_candidate(
                 args.runtime_dir,
                 args.organism_id,
                 args.candidate_id,
                 args.administrative_reason,
             ).as_dict()
-        elif (
-            args.command == "rollback"
-            and args.rollback_command == "replace-active"
-        ):
+        elif args.command == "rollback" and args.rollback_command == "replace-active":
             payload = replace_active_with_candidate(
+                args.runtime_dir,
+                args.organism_id,
+                args.candidate_id,
+            ).as_dict()
+        elif args.command == "rollback" and args.rollback_command == "complete":
+            payload = complete_rollback(
                 args.runtime_dir,
                 args.organism_id,
                 args.candidate_id,
