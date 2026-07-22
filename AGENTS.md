@@ -61,7 +61,7 @@ Do not hide a new architecture inside implementation code. If implementation rev
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Repository state containing this file includes Slices 1–16:
+Primary implementation stream. Repository state containing this file includes Slices 1–17:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -79,8 +79,9 @@ Primary implementation stream. Repository state containing this file includes Sl
 14. classified checkpoint-retention failure
 15. pending checkpoint registration repair
 16. deterministic non-canonical JSONL event export
+17. retained rollback-source validation and verified pre-rollback archive
 
-GitHub Actions for PR #30 passed clean install, compileall, genesis CLI smoke, and **55 protected tests**.
+GitHub Actions for PR #31 passed clean install, compileall, genesis CLI smoke, and **63 protected tests**.
 
 Phase 1 remains incomplete.
 
@@ -117,52 +118,67 @@ The organism runtime must not:
 
 Administration is distinct from organism autonomy. Administrative operations must have narrow typed boundaries and preserve authority separation.
 
-## JSONL export boundary established by Slice 16
+## Non-canonical artifact boundaries
 
-JSONL export is:
+### JSONL export
 
-- explicit administration
-- read-only with respect to SQLite
-- derived from one caller-declared registered stable checkpoint boundary
-- ordered by canonical `event_sequence`
-- canonical JSON with no export-time clock metadata
-- bounded through a temporary file
-- published by same-directory atomic replacement
-- disposable and non-canonical
+JSONL export is explicit administration, read-only with respect to SQLite, derived from one caller-declared registered stable checkpoint boundary, ordered by canonical `event_sequence`, published atomically, disposable, and non-canonical.
 
 There is no JSONL import, lifecycle dual-write, organism-controlled export, or export-triggered canonical event.
 
-## Exact restart point: Slice 17
+### Pre-rollback archive
 
-After reconciling current `main`, Issue #13, and open pull requests, implement only the first rollback foundation accepted by ADR 0004.
+Rollback archive preparation is explicit offline administration.
 
-Required Slice 17 boundary:
+It:
+
+- acquires fail-fast SQLite write ownership to prevent active advancement
+- requires stable active state with no pending checkpoint
+- selects exactly one retained protected checkpoint by event boundary
+- validates identity, active lineage, versions, source boundary, manifest digest, database digest, and snapshot integrity
+- snapshots the complete current active SQLite database through the Online Backup API
+- publishes an immutable `rollback-archives/pre-rb-.../` artifact only after full validation
+- rolls the ownership transaction back without changing canonical state
+- leaves normal wakeability unchanged after success or failure
+
+The archive is not a stable checkpoint, is not in `checkpoint_registry`, and is not pruned by ordinary checkpoint retention.
+
+There is no active replacement, lineage mutation, or rollback-completed event in Slice 17.
+
+## Exact restart point: Slice 18
+
+After reconciling current `main`, Issue #13, and open pull requests, implement only durable adoption of one existing verified pre-rollback archive.
+
+Required Slice 18 boundary:
 
 1. create a new `agent/...` branch from current `main`
-2. add an explicit offline administrative Python API and narrow CLI command for selecting one retained stable checkpoint as rollback source
-3. require stable active state with no pending checkpoint and no normal wake in progress
-4. acquire fail-fast administrative ownership before rollback preparation
-5. validate exactly one selected protected registry row and immutable checkpoint artifact
-6. match organism identity, lineage, contract, schema, environment, budget configuration, event boundary, manifest digest, database digest, and snapshot integrity
-7. reject missing, pruned, foreign, mismatched, unsafe, or invalid sources before any active mutation
-8. create one complete verified pre-rollback archive of the current active database and rollback-relevant metadata through a bounded same-filesystem temporary artifact
-9. publish that archive atomically only after validation
-10. prove archive creation failure leaves active SQLite, lineage, events, inbox, registry, checkpoints, status, and wakeability unchanged
-11. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-12. run GitHub Actions through a pull request
+2. add an explicit offline administrative Python API and narrow CLI command, preferably `rollback begin`, accepting one published archive identifier
+3. acquire fail-fast administrative ownership before reading mutable active state
+4. validate the archive directory, manifest, database digest, snapshot integrity, selected checkpoint, and active-state metadata
+5. require the current active database to match exactly the archive's recorded organism identity, database digest, lineage generation, lifecycle number, status, active event boundary, latest-stable checkpoint, and latest-stable event boundary
+6. reject any state drift, missing archive, foreign archive, mismatched selected checkpoint, unsafe artifact, busy database, pending checkpoint, or repeated incompatible begin before mutation
+7. atomically set protected active status to `rollback_in_progress`
+8. atomically append one typed administrative `rollback_started` fact containing the archive and selected-source identities and the exact pre-rollback active boundary
+9. prove state update and audit event roll back together on failure
+10. prove later normal wakes reject before clock use, input claim, event creation, or environment change
+11. preserve the archive, selected checkpoint, active environment, inbox, registry, and existing event history except for the single typed rollback-start record
+12. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+13. run GitHub Actions through a pull request
 
-Slice 17 must stop before:
+Slice 18 must stop before:
 
+- copying the selected checkpoint into a restore candidate
+- modifying a candidate database
 - active database replacement
 - lineage-generation increment
 - rollback-completed event history
-- final abandoned-future preservation
-- checkpoint deletion or pruning
+- final abandoned-future linkage from the restored branch
+- checkpoint or archive pruning
 - JSONL import
 - caregiver consultation
 - learning, memory, skills, or generic recovery machinery
 
-Do not privately decide the later replacement protocol while implementing the archive foundation.
+Do not privately decide the candidate transformation or replacement protocol while implementing durable rollback intent.
 
 ## End-of-work protocol
 
