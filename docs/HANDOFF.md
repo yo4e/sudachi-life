@@ -148,18 +148,37 @@ Implemented and verified in PR #24:
 
 Maintenance repair and exit are not implemented. The queued second tick remains unclaimed and unconsumed.
 
+### Slice 11 — read-only maintenance inspection
+
+Implemented and verified in PR #25:
+
+- a protected administrative fixture starts in stable `maintenance_required` state with failure streak three and typed reason `consecutive_failure_limit_reached`
+- one uniquely identified garden tick remains queued and unclaimed
+- `inspect_maintenance` opens the canonical database read-only, validates it, and accepts only exact maintenance state
+- `sudachi maintenance inspect <organism_id>` exposes the same explicit administrative boundary
+- the result reports status, maintenance reason, failure streak, latest stable checkpoint identity and boundary, inbox accounting, and exact unconsumed rows
+- the inspection verifies latest checkpoint registry consistency and exact inbox accounting
+- the API has no clock parameter and performs no clock read
+- API and CLI inspection leave every organism file byte-for-byte and metadata-for-metadata unchanged
+- event, inbox, checkpoint registry, maintenance state, and queued input remain unchanged
+- a later normal wake remains rejected with zero clock reads
+- inspection requested against a sleeping organism is rejected through a typed error
+
+Maintenance clear, repair, and rollback are not implemented.
+
 ## Verified implementation results
 
-GitHub Actions passed on PR #24 with Python 3.12:
+GitHub Actions passed on PR #25 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **34 protected tests**
+- **36 protected tests**
 - installed genesis CLI smoke test
 - all earlier canonical water, harvest, abstention, blocked-state, recovery, action-failure, and budget-exhaustion behavior remains protected
 - the maintenance-threshold fixture proves exact failure transition, unchanged environment, checkpoint stabilization, typed maintenance entry, and later normal-wake rejection
+- the maintenance-inspection fixture proves exact reporting, read-only files and canonical rows, typed non-maintenance rejection, and continued normal-wake blocking
 
-The exact local source-tree run also passed **34 tests** and compileall. A separate local editable install could not import `hatchling.build`; GitHub Actions independently completed the clean install, so that local environment failure is not treated as success.
+The exact local source-tree run also passed **36 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
 
 Canonical three-wake values remain:
 
@@ -246,6 +265,23 @@ The isolated Slice 10 maintenance-threshold fixture finishes with:
 - `status = maintenance_required`
 - the second queued tick remains unclaimed and unconsumed
 
+The isolated Slice 11 maintenance-inspection fixture finishes with:
+
+- `lifecycle_number = 0`
+- `environment_step = 0`
+- `bed-a.moisture = 0`
+- `bed-b.fruit = 0`
+- `water_units = 0`
+- `harvested_fruit = 0`
+- `objective_complete = false`
+- `consecutive_failures = 3`
+- `maintenance_reason = consecutive_failure_limit_reached`
+- `latest_stable_event_sequence = 6`
+- `event_count = 8`
+- `status = maintenance_required`
+- one tick remains queued, unclaimed, and unconsumed
+- API and CLI inspection change no organism file or canonical row
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -264,20 +300,20 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #24 is merged, create a new branch from current `main` and implement **Slice 11: protected read-only maintenance inspection**.
+After PR #25 is merged, create a new branch from current `main` and implement **Slice 12: explicit administrative maintenance clear**.
 
 The slice must:
 
-1. use an explicit stable `maintenance_required` fixture with failure streak three and typed reason `consecutive_failure_limit_reached`
-2. expose one explicit administrative inspection boundary rather than a normal organism wake
-3. report canonical status, maintenance reason, failure streak, latest stable checkpoint boundary, and queued-input state
-4. validate the canonical database before reporting
-5. consume zero clock readings and perform zero canonical writes, event additions, input claims, or input consumption
-6. leave maintenance status, failure streak, environment, checkpoint references, and queued inputs unchanged
-7. prove that normal wakes remain rejected
+1. use an explicit stable `maintenance_required` fixture with failure streak three, typed reason `consecutive_failure_limit_reached`, a stable checkpoint, and one queued tick
+2. expose one explicit administrative recovery API and CLI boundary rather than an organism action
+3. require and validate a caller-supplied recovery reason that is recorded canonically
+4. acquire fail-fast SQLite write ownership and validate maintenance state and latest stable checkpoint before change
+5. atomically reset `consecutive_failures` from three to zero, clear `maintenance_reason`, set status to `sleeping`, and append a distinct administrative audit event
+6. preserve plots, inventory, objective, environment step, checkpoint references, and the queued tick during the recovery transaction
+7. prove a later normal wake may claim the queued tick under the unchanged fixed policy
 8. pass protected tests and CI
 
-Do not add maintenance exit, failure-counter clearing, checkpoint repair, lineage rollback, caregiver consultation, learning, or generic planning in Slice 11.
+Do not add environment repair, checkpoint repair, retention pruning, lineage rollback, caregiver consultation, learning, or generic planning in Slice 12.
 
 ## Current issue map
 
