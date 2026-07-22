@@ -1,6 +1,6 @@
 # Phase 1 Slice 12: Explicit Administrative Maintenance Clear
 
-Status: **implemented locally; GitHub validation pending in PR #26**
+Status: **implemented and verified in PR #26**
 
 Tracked by: Issue #13
 
@@ -72,7 +72,7 @@ The blocked fixture produces a classified `no_applicable_action` wake, consumes 
 
 Local source-tree validation completed compileall and **41 protected tests**.
 
-A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success. GitHub Actions must independently complete clean installation and the protected suite before merge.
+A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success. GitHub Actions on Python 3.12 independently completed clean editable installation, compileall, genesis CLI smoke, and **41 protected tests**.
 
 ## Deliberately not implemented
 
@@ -83,4 +83,4 @@ A separate local clean editable install could not resolve `hatchling>=1.25` from
 
 ## Exact next slice
 
-The next slice must be chosen from the remaining Contract v0.2 evaluation matrix only after PR #26 is independently verified and merged. Checkpoint repair and bounded retention are the leading candidate, but the exact scope must be confirmed against current Issue #13 and repository state before implementation.
+After PR #26 is merged, Slice 13 will implement the successful bounded checkpoint-retention path. Starting from the canonical four stable checkpoints, it must create and register one newer stable checkpoint before pruning the oldest eligible checkpoint, retain exactly four artifact directories and registry rows, preserve the newest and latest-stable references, and record pruning administratively. Prune-failure recovery, checkpoint repair, and rollback remain later work.
