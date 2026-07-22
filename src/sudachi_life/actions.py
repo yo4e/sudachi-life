@@ -15,6 +15,33 @@ class ActionRejectedError(SudachiError):
 
 
 @dataclass(frozen=True, slots=True)
+class ProtectedActionFailure:
+    action_id: str
+    action_version: int
+    plot_id: str
+    reason: str
+    injection_point: str
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "action_id": self.action_id,
+            "action_version": self.action_version,
+            "parameters": {"plot_id": self.plot_id},
+            "reason": self.reason,
+            "injection_point": self.injection_point,
+            "success": False,
+        }
+
+
+class InjectedActionFailure(SudachiError):
+    """A protected administrative fixture injected one classified action failure."""
+
+    def __init__(self, failure: ProtectedActionFailure) -> None:
+        super().__init__(failure.reason)
+        self.failure = failure
+
+
+@dataclass(frozen=True, slots=True)
 class GardenActionDecision:
     action_id: str
     action_version: int
@@ -116,6 +143,8 @@ def execute_water_plot(
     connection: sqlite3.Connection,
     decision: GardenActionDecision,
     ledger: WakeBudgetLedger,
+    *,
+    protected_test_failure_after_plot_write: bool = False,
 ) -> None:
     """Validate, reserve, and execute one water transition inside a savepoint."""
 
@@ -147,6 +176,20 @@ def execute_water_plot(
             "UPDATE garden_plot SET moisture = 1 WHERE plot_id = ? AND moisture = 0",
             (decision.plot_id,),
         )
+        if plot_update.rowcount != 1:
+            raise SchemaValidationError(
+                "water_plot partial transition changed an unexpected row count"
+            )
+        if protected_test_failure_after_plot_write:
+            raise InjectedActionFailure(
+                ProtectedActionFailure(
+                    action_id=decision.action_id,
+                    action_version=decision.action_version,
+                    plot_id=decision.plot_id,
+                    reason="protected_test_injected_action_failure",
+                    injection_point="after_plot_write",
+                )
+            )
         inventory_update = connection.execute(
             "UPDATE inventory SET water_units = water_units - 1 "
             "WHERE singleton_id = 1 AND water_units > 0"
@@ -155,11 +198,7 @@ def execute_water_plot(
             "UPDATE environment_state SET environment_step = environment_step + 1 "
             "WHERE singleton_id = 1"
         )
-        if (
-            plot_update.rowcount != 1
-            or inventory_update.rowcount != 1
-            or environment_update.rowcount != 1
-        ):
+        if inventory_update.rowcount != 1 or environment_update.rowcount != 1:
             raise SchemaValidationError("water_plot transition changed an unexpected row count")
         connection.execute("RELEASE SAVEPOINT garden_action")
     except Exception:
@@ -228,11 +267,22 @@ def execute_garden_action(
     connection: sqlite3.Connection,
     decision: GardenActionDecision,
     ledger: WakeBudgetLedger,
+    *,
+    protected_test_failure_after_plot_write: bool = False,
 ) -> None:
     """Dispatch one protected registered mutating garden action."""
 
+    if protected_test_failure_after_plot_write and decision.action_id != "water_plot":
+        raise SchemaValidationError(
+            "protected action-failure injection requires water_plot"
+        )
     if decision.action_id == "water_plot":
-        execute_water_plot(connection, decision, ledger)
+        execute_water_plot(
+            connection,
+            decision,
+            ledger,
+            protected_test_failure_after_plot_write=protected_test_failure_after_plot_write,
+        )
         return
     if decision.action_id == "harvest_plot":
         execute_harvest_plot(connection, decision, ledger)
