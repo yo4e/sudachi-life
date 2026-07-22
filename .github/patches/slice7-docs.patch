@@ -1,0 +1,201 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index a6734e6..0000000 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -44,25 +44,27 @@ No research result authorizes a live caregiver during Phase 1.
+ 
+ ## Immediate restart point
+ 
+-Slices 1–6 establish:
++Slices 1–7 establish:
+ 
+ - a canonical SQLite organism body
+ - injected time and protected concrete budgets
+-- stable genesis, water, harvest, justified-abstention, and blocked-abstention checkpoints
++- stable genesis, water, harvest, justified-abstention, blocked-abstention, and recovery checkpoints
+ - idempotent synthetic garden ticks
+ - fail-fast wake ownership and deterministic observation
+ - fixed-policy `water_plot(bed-a)` and `harvest_plot(bed-b)` wakes
+ - justified `objective_already_complete` abstention with zero action and mutation cost
+ - classified `no_applicable_action` abstention when the objective is incomplete but no protected mutation is executable
+ - independent transition and abstention evaluation
+ - explicit failure-streak accounting below the maintenance threshold
+-- the complete canonical three-wake run plus one protected blocked-state fixture
++- resource-aware harvest fallback when watering is impossible
++- verified failure-streak reset after positive progress
++- the complete canonical three-wake run plus protected blocked-state and recovery fixtures
+ 
+-After PR #20 is merged, the exact next implementation slice is **Slice 7: resource-aware harvest fallback and failure-streak reset**.
++After PR #21 is merged, the exact next implementation slice is **Slice 8: classified action failure and savepoint cost preservation**.
+ 
+-It must use an explicit protected fixture with an incomplete objective, a dry living plot, no water, one harvestable fruit, and `consecutive_failures = 1`; prove that the fixed policy skips impossible watering, selects `harvest_plot`, makes positive progress, resets the failure streak to zero, checkpoints the outcome, and returns to sleep.
++It must inject one protected failure after a registered action begins inside its SQLite savepoint; prove partial environment changes disappear, the action attempt remains charged in the committed classified outcome, no false success is recorded, the failure streak increments exactly once below maintenance, a checkpoint stabilizes the result, and the organism returns to sleep.
+ 
+-Do not add budget-exhaustion handling, injected action failure, maintenance-threshold entry, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 7.
++Do not add budget-exhaustion handling, maintenance-threshold entry, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 8.
+ 
+ Phase 1 remains deterministic, local, network-free, and caregiver-free.
+ 
+diff --git a/docs/HANDOFF.md b/docs/HANDOFF.md
+index 8c74ef2..0000000 100644
+--- a/docs/HANDOFF.md
++++ b/docs/HANDOFF.md
+@@ -73,7 +73,7 @@ Merged through PR #19:
+ 
+ ### Slice 6 — classified no-applicable-action abstention
+ 
+-Implemented and verified in PR #20:
++Merged through PR #20:
+ 
+ - a protected administrative fixture creates an incomplete objective with a dry sprout, no water, and no harvestable fruit
+ - the fixed policy selects typed `no_applicable_action` before entering any mutating executor
+@@ -85,17 +85,31 @@ Implemented and verified in PR #20:
+ - the organism returns to `sleeping`
+ 
+ The fixture is test administration, not a live caregiver. No human, model, or fixture caregiver participates in action selection.
++
++### Slice 7 — resource-aware harvest recovery
++
++Implemented and verified in PR #21:
++
++- a protected administrative fixture starts with an incomplete objective, a dry sprout, zero water, one harvestable fruit, and `consecutive_failures = 1`
++- deterministic observation exposes no executable water target and one executable harvest target
++- the fixed policy skips impossible watering and selects `harvest_plot(bed-b)`
++- one input, observation, action attempt, and environment mutation are consumed; all external-capability counters remain zero
++- the independent evaluator proves the exact harvest transition, positive progress, and an objective that correctly remains incomplete
++- unresolved needs decrease from two to one
++- `consecutive_failures` resets exactly once from one to zero
++- the committed pending boundary is event sequence 17 and administrative stabilization is event sequence 18
++- the organism returns to `sleeping`
++
++The recovery fixture is also test administration and does not participate in action selection.
+ 
+ ## Verified implementation results
+ 
+-GitHub Actions passed on PR #20 with Python 3.12:
++GitHub Actions passed on PR #21 with Python 3.12:
+ 
+ - clean editable installation
+ - `python -m compileall -q src tests`
+-- **30 protected tests**
++- **31 protected tests**
+ - installed genesis CLI smoke test
+ - all earlier canonical water, harvest, and completion-abstention behavior remains protected
+ - the blocked-state fixture completes typed abstention, one failure increment, checkpoint stabilization, and sleep
++- the recovery fixture skips impossible watering, harvests, resets the failure streak, checkpoints, and sleeps
+@@ -126,6 +140,20 @@ The isolated Slice 6 blocked fixture finishes with:
+ - `event_count = 17`
+ - `status = sleeping`
+ 
++The isolated Slice 7 recovery fixture finishes with:
++
++- `lifecycle_number = 1`
++- `environment_step = 1`
++- `bed-a.moisture = 0`
++- `bed-b.fruit = 0`
++- `water_units = 0`
++- `harvested_fruit = 1`
++- `objective_complete = false`
++- `consecutive_failures = 0`
++- `latest_stable_event_sequence = 17`
++- `event_count = 18`
++- `status = sleeping`
++
+ ## Integration repair record
+ 
+ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
+@@ -144,21 +172,22 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16
+ 
+ ## Exact next implementation task
+ 
+-After PR #20 is merged, create a new branch from current `main` and implement **Slice 7: resource-aware harvest fallback and failure-streak reset**.
++After PR #21 is merged, create a new branch from current `main` and implement **Slice 8: classified action failure and savepoint cost preservation**.
+ 
+ The slice must:
+ 
+-1. use an explicit protected fixture with an incomplete objective, a dry living plot, zero water, one harvestable fruit, and `consecutive_failures = 1`
+-2. claim one tick and build one complete observation
+-3. prove that watering is impossible because the water resource is absent
+-4. select `harvest_plot` as the next executable protected action
+-5. consume one input, one observation, one action attempt, and one environment mutation
+-6. independently prove positive progress and the exact harvest transition
+-7. reset `consecutive_failures` from one to zero
+-8. commit and stabilize an exact checkpoint boundary
+-9. return to sleep and prove the result in protected tests and CI
++1. use an explicit protected failure-injection fixture with one executable registered action
++2. reserve and charge the action attempt before execution
++3. begin the transition inside the existing SQLite savepoint
++4. inject a classified failure after at least one partial environment write
++5. prove the savepoint removes every partial environment change
++6. commit a failure outcome without recording false action success
++7. preserve the charged action-attempt cost while recording zero successful environment mutations
++8. increment `consecutive_failures` exactly once below the maintenance threshold
++9. commit and stabilize an exact checkpoint boundary
++10. return to sleep and prove the result in protected tests and CI
+ 
+-Do not add budget exhaustion, injected action failure, maintenance-threshold entry, rollback, caregiver consultation, learning, or generic planning in Slice 7.
++Do not add budget exhaustion, maintenance-threshold entry, lineage rollback, caregiver consultation, learning, or generic planning in Slice 8.
+ 
+ ## Current issue map
+ 
+diff --git a/docs/PHASE1_TEST_MATRIX.md b/docs/PHASE1_TEST_MATRIX.md
+index 2423041..0000000 100644
+--- a/docs/PHASE1_TEST_MATRIX.md
++++ b/docs/PHASE1_TEST_MATRIX.md
+@@ -2,13 +2,13 @@
+ # Phase 1 Contract Evaluation Matrix
+ 
+-Status: **Slices 1–6 implemented — Phase 1 incomplete**
++Status: **Slices 1–7 implemented — Phase 1 incomplete**
+ 
+ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
+ 
+ | Contract evaluation | Protected test status |
+ | --- | --- |
+-| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, and the protected blocked-state outcome are covered; full repeated-run equivalence remains planned |
++| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state outcome, and resource-aware recovery outcome are covered; full repeated-run equivalence remains planned |
+ | 2. Unexpected clock reads fail | `tests/test_clock.py::test_unexpected_clock_read_fails`; `tests/test_first_water_success.py` proves the successful wake consumes four declared readings |
+ | 3. Backward wall time does not reorder events | Event sequence is canonical; complete first-wake backward-time scenario remains planned |
+ | 4. Seed does not change seed-garden behavior | Fixed first-water policy ignores the declared seed; explicit comparative test remains planned |
+@@ -21,7 +21,7 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
+ | 11. Second canonical tick harvests `bed-b` | `tests/test_second_harvest_success.py::test_second_wake_harvests_and_completes_objective` |
+ | 12. Third canonical tick abstains after completion | `tests/test_objective_complete_boundary.py::test_third_wake_abstains_after_objective_completion` |
+ | 13. Lexicographic tie breaking | Initial sorted observation and first-water target are covered; altered insertion-order action scenario remains planned |
+-| 14. Resource-aware harvest fallback | Planned |
++| 14. Resource-aware harvest fallback | `tests/test_resource_aware_recovery.py::test_resource_aware_harvest_recovers_and_resets_failure_streak` proves zero water removes all water targets while `bed-b` remains an executable harvest target |
+ | 15. Specific no-applicable-action abstention | `tests/test_no_applicable_action.py::test_no_applicable_action_abstains_and_increments_failure_once`; the companion evaluator test rejects abstention when a protected action is executable |
+ | 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
+ | 17. No negative counters | SQLite constraints and exact action/abstention ledgers cover the canonical path and blocked fixture |
+@@ -28,7 +28,7 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
+ | 18. Action attempt is charged before execution | Implemented in protected action execution; injected action-failure assertion remains planned |
+ | 19. Savepoint removes partial mutation while preserving failure cost | Implemented; explicit protected failure test remains planned |
+ | 20. Budget exhaustion occurs before forbidden mutation | Checkpoint deadline is tested separately; lifecycle budget-exhaustion outcome remains planned |
+-| 21. Failure streak and maintenance threshold | Completion abstention proves the justified zero state; Slice 6 proves one classified increment below threshold; successful reset from a prior failure and threshold entry remain planned |
++| 21. Failure streak and maintenance threshold | Completion abstention proves the justified zero state; Slice 6 proves one classified increment; Slice 7 proves successful reset from one to zero; threshold entry remains planned |
+ | 22. Atomic state/event commit | Genesis transaction and rollback-only wake preparation are protected; injected action-failure lifecycle test remains planned |
+-| 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, and the blocked-state failure sequence are asserted |
++| 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, the blocked-state failure sequence, and the recovery sequence are asserted |
+ | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
+ | 25. JSONL export deterministic and non-canonical | Planned |
+ | 26. Competing wake has one winner and one non-queued rejection | `tests/test_wake.py::test_competing_wake_is_rejected_and_not_queued` |
+@@ -37,17 +37,17 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
+ | 28. Nested wake is rejected | Planned |
+ | 29. Stable genesis checkpoint before wakeable | Initialization and genesis checkpoint tests |
+-| 30. Successful wake commits an exact pending boundary | Water validates 13, harvest 24, completion abstention 34, and the blocked fixture 16 |
++| 30. Successful wake commits an exact pending boundary | Water validates 13, harvest 24, completion abstention 34, blocked fixture 16, and recovery fixture 17 |
+ | 31. No later wake advances while checkpoint is pending | Pending status is preserved by timeout test; explicit second-wake rejection remains planned |
+ | 32. Invalid checkpoint is not stable | Digest and directory-name mismatch tests |
+-| 33. Checkpoint validation covers protected identity and boundary | Genesis plus water, harvest, completion-abstention, and blocked-abstention checkpoint validation |
++| 33. Checkpoint validation covers protected identity and boundary | Genesis plus water, harvest, completion-abstention, blocked-abstention, and recovery checkpoint validation |
+ | 34. Checkpoint failure preserves committed pending state | `tests/test_checkpoint_timeout.py::test_checkpoint_timeout_preserves_committed_pending_boundary` |
+ | 35. Retention is bounded and safe | Limits are stored and publication size is enforced; pruning behavior remains planned |
+ | 36–38. Rollback archive, lineage, and failure recovery | Planned |
+ | 39. Protected authority cannot be modified by organism | Both protected action definitions and independent evaluators are used; broader authority tests remain planned |
+-| 40. No organism-writable external workspace | SQLite-only action/abstention paths plus hard-zero ledgers cover the canonical run and blocked fixture |
++| 40. No organism-writable external workspace | SQLite-only action/abstention paths plus hard-zero ledgers cover the canonical run, blocked fixture, and recovery fixture |
+ | 41. Administration is distinguishable | Input and checkpoint events use administrative sources; lifecycle events use the organism fixed-policy source |
+ 
+-PR #20 passed GitHub Actions on Python 3.12 with **30 protected tests**.
++PR #21 passed GitHub Actions on Python 3.12 with **31 protected tests**.
+ 
+ Every future pull request must update this matrix when it adds or changes protected tests.
