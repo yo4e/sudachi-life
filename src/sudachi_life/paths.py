@@ -46,6 +46,10 @@ class OrganismPaths:
         return self.organism_dir / "rollback-archives"
 
     @property
+    def restore_candidates(self) -> Path:
+        return self.organism_dir / "restore-candidates"
+
+    @property
     def exports(self) -> Path:
         return self.organism_dir / "exports"
 

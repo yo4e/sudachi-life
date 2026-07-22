@@ -18,6 +18,7 @@ from .maintenance_recovery import clear_maintenance
 from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
 from .rollback import prepare_rollback_archive
+from .rollback_candidate import build_restore_candidate
 from .rollback_intent import begin_rollback
 
 
@@ -131,6 +132,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", dest="as_json"
     )
 
+    rollback_candidate_parser = rollback_subparsers.add_parser(
+        "build-candidate",
+        help="construct one verified restore candidate from durable rollback intent",
+    )
+    rollback_candidate_parser.add_argument("organism_id")
+    rollback_candidate_parser.add_argument(
+        "--json", action="store_true", dest="as_json"
+    )
+
     return parser
 
 
@@ -190,6 +200,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.runtime_dir,
                 args.organism_id,
                 args.archive_id,
+            ).as_dict()
+        elif (
+            args.command == "rollback"
+            and args.rollback_command == "build-candidate"
+        ):
+            payload = build_restore_candidate(
+                args.runtime_dir,
+                args.organism_id,
             ).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
