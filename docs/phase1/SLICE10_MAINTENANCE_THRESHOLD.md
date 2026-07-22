@@ -1,6 +1,6 @@
 # Phase 1 Slice 10: Maintenance Threshold Entry
 
-Status: **implemented locally; GitHub validation pending in PR #24**
+Status: **implemented and verified in PR #24**
 
 Tracked by: Issue #13
 
@@ -61,11 +61,13 @@ The queued second tick remains unclaimed and unconsumed.
 
 `tests/test_maintenance_threshold.py::test_third_classified_failure_enters_maintenance_and_blocks_later_wake` protects the fixture, classified abstention, unchanged environment, exact budgets, failure transition, checkpoint snapshot, final maintenance state, typed events, and later wake rejection.
 
-Local source-tree validation completed compileall and **34 protected tests**. A separate local editable install could not import `hatchling.build`; that environment failure is not treated as success. GitHub Actions must independently complete clean installation and the protected suite before merge.
+Local source-tree validation completed compileall and **34 protected tests**. A separate local editable install could not import `hatchling.build`; that environment failure is not treated as success.
+
+GitHub Actions on Python 3.12 independently completed clean editable installation, compileall, genesis CLI smoke, and **34 protected tests**.
 
 ## Deliberately not implemented
 
-- maintenance inspection or repair
+- maintenance inspection beyond existing status reads
 - maintenance exit or failure-counter clearing
 - checkpoint repair or retention pruning
 - lineage rollback
@@ -73,4 +75,4 @@ Local source-tree validation completed compileall and **34 protected tests**. A 
 
 ## Exact next slice
 
-After PR #24 is verified and merged, the next slice should define the smallest explicit administrative maintenance-inspection boundary without clearing maintenance or changing organism capability. The exact slice number and scope must be confirmed against Issue #13 and the remaining Contract v0.2 evaluation matrix before implementation.
+After PR #24 is merged, Slice 11 will add one explicit protected read-only maintenance-inspection boundary. It must report the typed maintenance reason, failure streak, latest stable checkpoint, and queued-input state while performing no clock reads, canonical writes, event additions, input claims, or maintenance clearing. Normal wakes must remain blocked.
