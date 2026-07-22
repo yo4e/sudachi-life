@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–11 implemented — Phase 1 incomplete**
+Status: **Slices 1–12 implemented — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -22,13 +22,13 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 14. Resource-aware harvest fallback | `tests/test_resource_aware_recovery.py::test_resource_aware_harvest_recovers_and_resets_failure_streak` proves zero water removes all water targets while `bed-b` remains an executable harvest target |
 | 15. Specific no-applicable-action abstention | `tests/test_no_applicable_action.py::test_no_applicable_action_abstains_and_increments_failure_once`; the companion evaluator test rejects abstention when a protected action is executable |
 | 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
-| 17. No negative counters | SQLite constraints and exact success, abstention, recovery, action-failure, budget-exhaustion, and maintenance-threshold ledgers cover all implemented paths |
+| 17. No negative counters | SQLite constraints and exact success, abstention, recovery, action-failure, budget-exhaustion, maintenance-threshold, and maintenance-clear transitions cover all implemented paths |
 | 18. Action attempt is charged before execution | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the attempt remains charged after the injected failure |
 | 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the partial plot write disappears while attempt cost remains and successful mutation cost returns to zero |
 | 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves the lifecycle work deadline is detected before action proposal, attempt, mutation reservation, or environment write |
-| 21. Failure streak and maintenance threshold | Completion abstention proves justified zero; Slices 6, 8, and 9 prove classified increments; Slice 7 proves successful reset; `tests/test_maintenance_threshold.py::test_third_classified_failure_enters_maintenance_and_blocks_later_wake` proves exact two-to-three transition and typed maintenance entry; `tests/test_maintenance_inspection.py` proves inspection does not clear maintenance and normal wakes remain blocked |
-| 22. Atomic state/event commit | Genesis transaction, rollback-only wake preparation, and committed classified action-failure, budget-exhaustion, and maintenance-threshold lifecycles are protected |
-| 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, blocked-state, recovery, classified action-failure, classified budget-exhaustion, and maintenance-threshold sequences are asserted |
+| 21. Failure streak and maintenance threshold | Completion abstention proves justified zero; Slices 6, 8, and 9 prove classified increments; Slice 7 proves successful reset; Slice 10 proves exact two-to-three threshold entry; Slice 11 leaves maintenance unchanged; `tests/test_maintenance_clear.py::test_explicit_maintenance_clear_preserves_state_and_allows_queued_wake` proves explicit administrative reset from three to zero and a later classified increment from zero to one |
+| 22. Atomic state/event commit | Genesis transaction, rollback-only wake preparation, and committed classified action-failure, budget-exhaustion, and maintenance-threshold lifecycles are protected; `tests/test_maintenance_clear.py::test_maintenance_clear_rolls_back_when_audit_event_fails` proves maintenance state and audit event commit atomically |
+| 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, blocked-state, recovery, classified action-failure, classified budget-exhaustion, maintenance-threshold, and administrative maintenance-clear sequences are asserted |
 | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
 | 25. JSONL export deterministic and non-canonical | Planned |
 | 26. Competing wake has one winner and one non-queued rejection | `tests/test_wake.py::test_competing_wake_is_rejected_and_not_queued` |
@@ -42,10 +42,10 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 34. Checkpoint failure preserves committed pending state | `tests/test_checkpoint_timeout.py::test_checkpoint_timeout_preserves_committed_pending_boundary` |
 | 35. Retention is bounded and safe | Limits are stored and publication size is enforced; pruning behavior remains planned |
 | 36–38. Rollback archive, lineage, and failure recovery | Planned |
-| 39. Protected authority cannot be modified by organism | Both protected action definitions and independent evaluators are used; maintenance inspection is an explicit administrative API/CLI, opens SQLite read-only, rejects non-maintenance state, and exposes no clear or mutation switch; broader authority tests remain planned |
+| 39. Protected authority cannot be modified by organism | Both protected action definitions and independent evaluators are used; maintenance inspection and clear are explicit administrative API/CLI boundaries; clear requires bounded caller reason, exact protected maintenance state, and fail-fast ownership; broader authority tests remain planned |
 | 40. No organism-writable external workspace | SQLite-only action/abstention/failure/exhaustion paths plus hard-zero ledgers cover the canonical run and all implemented fixtures; maintenance inspection proves every organism file retains identical size, modification time, and SHA-256 digest |
-| 41. Administration is distinguishable | Input and checkpoint events use administrative sources; lifecycle events use the organism fixed-policy source; threshold checkpoint stabilization and `maintenance_entered` remain explicitly administrative; `sudachi maintenance inspect` is a separate read-only administrative command and appends no organism event |
+| 41. Administration is distinguishable | Input and checkpoint events use administrative sources; lifecycle events use the organism fixed-policy source; maintenance inspection is a separate read-only administrative command; maintenance clear records typed `maintenance_cleared` from source `administration:maintenance-clear` |
 
-PR #25 passed GitHub Actions on Python 3.12 with **36 protected tests**.
+PR #26 passed GitHub Actions on Python 3.12 with **41 protected tests**.
 
 Every future pull request must update this matrix when it adds or changes protected tests.

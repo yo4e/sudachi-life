@@ -42,7 +42,7 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–11 establish:
+Slices 1–12 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
@@ -67,13 +67,20 @@ Slices 1–11 establish:
 - canonical maintenance reason, failure streak, latest checkpoint, and queued-input reporting
 - read-only inspection with no clocks, claims, events, canonical writes, file changes, or maintenance clearing
 - typed rejection when inspection is requested outside `maintenance_required`
-- the complete canonical three-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, and maintenance-inspection fixtures
+- explicit administrative `maintenance clear` API and CLI boundaries
+- bounded recovery-reason validation before clock use or canonical mutation
+- fail-fast maintenance-clear ownership and exact protected-state validation
+- atomic `maintenance_required -> sleeping` recovery with failure streak `3 -> 0`
+- typed `maintenance_cleared` audit history with rollback if the audit write fails
+- preservation of environment, checkpoint references, and queued input through maintenance clear
+- later normal-wake processing of the preserved tick under the unchanged fixed policy
+- the complete canonical three-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, and maintenance-clear fixtures
 
-After PR #25 is merged, the exact next implementation slice is **Slice 12: explicit administrative maintenance clear**.
+After PR #26 is merged, the exact next implementation slice is **Slice 13: successful bounded checkpoint retention pruning**.
 
-It must require a recorded recovery reason, acquire fail-fast SQLite write ownership, validate the stable maintenance state and latest checkpoint, atomically reset the failure streak to zero, clear the maintenance reason, restore `sleeping`, append a distinct administrative audit event, preserve the environment, checkpoint references, and queued inputs, and prove a later normal wake may process the queued tick.
+It must start from four stable checkpoints including genesis, create and register one newer stable lifecycle checkpoint, and only then prune the oldest eligible checkpoint so exactly four stable checkpoint artifacts and registry rows remain. It must preserve the newest checkpoint, latest-stable references, active canonical state, and normal wakeability, and record pruning as an explicit administrative fact.
 
-Do not add environment repair, checkpoint repair, retention pruning, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 12.
+Do not add prune-failure recovery, checkpoint repair, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 13.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
