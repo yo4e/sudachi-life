@@ -1,0 +1,31 @@
+name: Apply Slice 13 runtime
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull-request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply exact runtime patch
+        run: |
+          base64 -d .github/patches/slice13-runtime.patch.gz.b64 | gzip -d > /tmp/slice13-runtime.patch
+          patch -p1 < /tmp/slice13-runtime.patch
+          rm .github/patches/slice13-runtime.patch.gz.b64
+          rm .github/workflows/apply-slice13-runtime.yml
+          rm .github/workflows/slice13-source-snapshot.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: implement bounded checkpoint retention"
+          git push
