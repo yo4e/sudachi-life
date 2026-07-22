@@ -9,7 +9,6 @@ import re
 import sqlite3
 from typing import Any
 
-from .checkpoints import validate_checkpoint_directory
 from .clock import Clock, RealClock
 from .errors import CheckpointError, OrganismNotFoundError, SchemaValidationError, SudachiError
 from .paths import OrganismPaths
@@ -79,7 +78,68 @@ def _is_busy(exc: sqlite3.OperationalError) -> bool:
     return code in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED} or "locked" in str(exc).lower()
 
 
-def _load_archive(paths: OrganismPaths, archive_id: str) -> tuple[Path, dict[str, Any], str]:
+def _quote_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def _canonical_sqlite_snapshot(connection: sqlite3.Connection) -> dict[str, object]:
+    """Return exact protected schema, table rows, and AUTOINCREMENT state."""
+
+    schema_rows = connection.execute(
+        """SELECT type, name, tbl_name, sql
+           FROM sqlite_master
+           WHERE name NOT LIKE 'sqlite_%'
+           ORDER BY type, name"""
+    ).fetchall()
+    schema = [tuple(row) for row in schema_rows]
+    tables = [str(row[1]) for row in schema_rows if row[0] == "table"]
+    table_rows: dict[str, list[tuple[object, ...]]] = {}
+    for table in tables:
+        quoted = _quote_identifier(table)
+        columns = connection.execute(f"PRAGMA table_info({quoted})").fetchall()
+        primary_key = sorted(
+            (
+                (int(column["pk"]), str(column["name"]))
+                for column in columns
+                if int(column["pk"]) > 0
+            ),
+            key=lambda item: item[0],
+        )
+        if primary_key:
+            order_clause = ", ".join(
+                _quote_identifier(column_name) for _, column_name in primary_key
+            )
+        else:
+            order_clause = "rowid"
+        rows = connection.execute(
+            f"SELECT * FROM {quoted} ORDER BY {order_clause}"
+        ).fetchall()
+        table_rows[table] = [tuple(row) for row in rows]
+
+    has_sequence = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence'"
+    ).fetchone()
+    sequence_rows: list[tuple[object, ...]] = []
+    if has_sequence is not None:
+        sequence_rows = [
+            tuple(row)
+            for row in connection.execute(
+                "SELECT name, seq FROM sqlite_sequence ORDER BY name"
+            ).fetchall()
+        ]
+
+    return {
+        "user_version": int(connection.execute("PRAGMA user_version").fetchone()[0]),
+        "schema": schema,
+        "tables": table_rows,
+        "sqlite_sequence": sequence_rows,
+    }
+
+
+def _load_archive(
+    paths: OrganismPaths,
+    archive_id: str,
+) -> tuple[Path, dict[str, Any], str]:
     if not _ROLLBACK_ARCHIVE_ID_RE.fullmatch(archive_id):
         raise RollbackBeginRejectedError(
             "rollback archive identifier does not match the protected pre-rollback format"
@@ -90,9 +150,10 @@ def _load_archive(paths: OrganismPaths, archive_id: str) -> tuple[Path, dict[str
     archive_dir = archives_dir / archive_id
     manifest = _validate_archive_directory(archive_dir)
     if manifest.get("archive_id") != archive_id:
-        raise RollbackBeginRejectedError("rollback archive identifier does not match manifest")
-    manifest_sha256 = _sha256_file(archive_dir / "manifest.json")
-    return archive_dir, manifest, manifest_sha256
+        raise RollbackBeginRejectedError(
+            "rollback archive identifier does not match manifest"
+        )
+    return archive_dir, manifest, _sha256_file(archive_dir / "manifest.json")
 
 
 def _reject_repeated_begin(
@@ -101,7 +162,7 @@ def _reject_repeated_begin(
     archive_id: str,
 ) -> None:
     row = connection.execute(
-        """SELECT event_sequence, payload_json
+        """SELECT payload_json
            FROM event
            WHERE event_type = 'rollback_started'
              AND lineage_generation = ?
@@ -144,7 +205,7 @@ def _validate_latest_checkpoint(
             "rollback begin requires a latest stable checkpoint"
         )
     row = connection.execute(
-        """SELECT checkpoint_id, lineage_generation, event_sequence, protected
+        """SELECT lineage_generation, event_sequence, protected
            FROM checkpoint_registry WHERE checkpoint_id = ?""",
         (checkpoint_id,),
     ).fetchone()
@@ -161,6 +222,7 @@ def _validate_latest_checkpoint(
 
 def _validate_current_matches_archive(
     connection: sqlite3.Connection,
+    archive_dir: Path,
     paths: OrganismPaths,
     organism: sqlite3.Row,
     manifest: dict[str, Any],
@@ -189,16 +251,14 @@ def _validate_current_matches_archive(
                 f"active state drifted from rollback archive: {key}"
             )
 
-    active_size = paths.database.stat().st_size
-    if active_size != int(manifest.get("database_size_bytes", -1)):
-        raise RollbackBeginRejectedError(
-            "active database size drifted from rollback archive"
-        )
-    active_sha256 = _sha256_file(paths.database)
-    if active_sha256 != manifest.get("database_sha256"):
-        raise RollbackBeginRejectedError(
-            "active database digest drifted from rollback archive"
-        )
+    archived = connect_database(archive_dir / "organism.sqlite3", read_only=True)
+    try:
+        if _canonical_sqlite_snapshot(connection) != _canonical_sqlite_snapshot(archived):
+            raise RollbackBeginRejectedError(
+                "active canonical SQLite content drifted from rollback archive"
+            )
+    finally:
+        archived.close()
 
     source_event_sequence = int(manifest.get("selected_checkpoint_event_sequence", -1))
     selected, selected_manifest = _validate_selected_checkpoint(
@@ -221,13 +281,6 @@ def _validate_current_matches_archive(
             raise RollbackBeginRejectedError(
                 f"selected rollback source drifted from archive: {key}"
             )
-
-    checkpoint_dir = paths.checkpoints / str(selected["checkpoint_id"])
-    checkpoint_manifest = validate_checkpoint_directory(checkpoint_dir)
-    if checkpoint_manifest.get("checkpoint_id") != selected["checkpoint_id"]:
-        raise RollbackBeginRejectedError(
-            "selected rollback checkpoint artifact identity changed"
-        )
     return selected, active_event_sequence
 
 
@@ -291,6 +344,7 @@ def begin_rollback(
             )
         selected, active_event_sequence = _validate_current_matches_archive(
             connection,
+            archive_dir,
             paths,
             organism,
             manifest,
