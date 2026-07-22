@@ -1,6 +1,6 @@
 # Phase 1 Slice 14: Classified Checkpoint-Retention Failure
 
-Status: **implemented locally; GitHub validation pending in PR #28**
+Status: **implemented and verified in PR #28**
 
 Tracked by: Issue #13
 
@@ -83,9 +83,13 @@ Read-only maintenance inspection reports the new typed reason and the exact late
 - maintenance inspection remains read-only and accurate
 - later ordinary wake rejection consumes zero clock readings
 
+## Validation
+
 Local source-tree validation completed compileall and **43 protected tests**.
 
-A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success. GitHub Actions must independently complete clean installation and the protected suite before merge.
+A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success.
+
+GitHub Actions on Python 3.12 independently completed clean editable installation, compileall, genesis CLI smoke, and **43 protected tests**.
 
 ## Deliberately not implemented
 
@@ -97,4 +101,8 @@ A separate local clean editable install could not resolve `hatchling>=1.25` from
 
 ## Exact next slice
 
-The next slice must be selected from the remaining Contract v0.2 evaluation matrix only after PR #28 is independently verified and merged. Checkpoint repair and orphan cleanup are the leading boundary, but the exact scope must be confirmed against current Issue #13 and repository state before implementation.
+After PR #28 is merged, Slice 15 will protect explicit registration repair for one valid immutable checkpoint artifact published before a checkpoint-deadline failure.
+
+It must match exactly one orphan artifact to canonical pending organism identity, lineage, event boundary, versions, digest, and protected configuration; atomically register it, clear pending state, record typed administrative repair history, preserve committed lifecycle and inbox state, and restore normal wakeability.
+
+It must reject missing, ambiguous, mismatched, or invalid artifacts without clearing pending state, and it must not add orphan deletion, retention-failure maintenance clear, lineage rollback, caregiver consultation, learning, memory, or generic planning.
