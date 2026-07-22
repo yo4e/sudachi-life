@@ -12,6 +12,7 @@ from .errors import SudachiError
 from .inbox import GARDEN_TICK_EVENT_TYPE, enqueue_garden_tick
 from .lifecycle import perform_garden_wake
 from .maintenance import inspect_maintenance
+from .maintenance_recovery import clear_maintenance
 from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
 
@@ -57,6 +58,13 @@ def build_parser() -> argparse.ArgumentParser:
     inspect_parser.add_argument("organism_id")
     inspect_parser.add_argument("--json", action="store_true", dest="as_json")
 
+    clear_parser = maintenance_subparsers.add_parser(
+        "clear", help="clear protected maintenance through an audited transaction"
+    )
+    clear_parser.add_argument("organism_id")
+    clear_parser.add_argument("--reason", required=True, dest="recovery_reason")
+    clear_parser.add_argument("--json", action="store_true", dest="as_json")
+
     return parser
 
 
@@ -85,6 +93,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             payload = get_status(args.runtime_dir, args.organism_id).as_dict()
         elif args.command == "maintenance" and args.maintenance_command == "inspect":
             payload = inspect_maintenance(args.runtime_dir, args.organism_id).as_dict()
+        elif args.command == "maintenance" and args.maintenance_command == "clear":
+            payload = clear_maintenance(
+                args.runtime_dir,
+                args.organism_id,
+                args.recovery_reason,
+            ).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
             return 2
