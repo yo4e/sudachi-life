@@ -154,14 +154,12 @@ See `docs/phase1/SLICE19_RESTORE_CANDIDATE_CONSTRUCTION.md`.
 
 ## Validation state
 
-GitHub Actions on Python 3.12 for the PR #33 implementation head completed:
+GitHub Actions on Python 3.12 for the final PR #33 head completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
 - **81 protected tests**
-
-The final continuity head must remain green before merge.
 
 `docs/PHASE1_TEST_MATRIX.md` maps implemented coverage. Phase 1 is incomplete; passing 81 tests does not imply all 41 contract evaluations are complete.
 
