@@ -14,6 +14,7 @@ def _wake_clock(base: int) -> FakeClock:
     return FakeClock(
         [
             ClockReading(base, 10_000_000),
+            ClockReading(base, 15_000_000),
             ClockReading(base + 1, 20_000_000),
             ClockReading(base + 2, 30_000_000),
             ClockReading(base + 3, 40_000_000),
@@ -42,7 +43,7 @@ def test_second_wake_harvests_and_completes_objective(initialized) -> None:
     )
     status = read_status(paths)
 
-    assert second_clock.read_count == 4
+    assert second_clock.read_count == 5
     assert second.decision.action_id == "harvest_plot"
     assert second.decision.as_dict()["parameters"] == {"plot_id": "bed-b"}
     assert second.evaluation.success is True

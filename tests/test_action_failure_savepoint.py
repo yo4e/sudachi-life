@@ -132,6 +132,7 @@ def _wake_clock() -> FakeClock:
     return FakeClock(
         [
             ClockReading(300, 10_000_000),
+            ClockReading(300, 15_000_000),
             ClockReading(301, 20_000_000),
             ClockReading(302, 30_000_000),
             ClockReading(303, 40_000_000),
