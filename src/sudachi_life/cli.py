@@ -10,6 +10,7 @@ from typing import Sequence
 
 from .checkpoint_repair import repair_pending_checkpoint_registration
 from .errors import SudachiError
+from .event_export import export_stable_events
 from .inbox import GARDEN_TICK_EVENT_TYPE, enqueue_garden_tick
 from .lifecycle import perform_garden_wake
 from .maintenance import inspect_maintenance
@@ -81,6 +82,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", dest="as_json"
     )
 
+    export_parser = subparsers.add_parser(
+        "export", help="create explicit non-canonical administrative exports"
+    )
+    export_subparsers = export_parser.add_subparsers(
+        dest="export_command", required=True
+    )
+    export_events_parser = export_subparsers.add_parser(
+        "events", help="export events through one registered stable boundary"
+    )
+    export_events_parser.add_argument("organism_id")
+    export_events_parser.add_argument(
+        "--event-sequence", type=int, required=True, dest="event_sequence"
+    )
+    export_events_parser.add_argument(
+        "--json", action="store_true", dest="as_json"
+    )
+
     return parser
 
 
@@ -122,6 +140,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             payload = repair_pending_checkpoint_registration(
                 args.runtime_dir,
                 args.organism_id,
+            ).as_dict()
+        elif args.command == "export" and args.export_command == "events":
+            payload = export_stable_events(
+                args.runtime_dir,
+                args.organism_id,
+                args.event_sequence,
             ).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
