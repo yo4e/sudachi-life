@@ -1,6 +1,6 @@
 # Phase 1 Slice 9: Classified Lifecycle Budget Exhaustion Before Mutation
 
-Status: **implemented locally; GitHub validation pending in PR #23**
+Status: **implemented and verified in PR #23**
 
 Tracked by: Issue #13
 
@@ -85,7 +85,9 @@ The source-tree canonical sequence remains:
 
 `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` protects the complete fixture, pre-action deadline detection, typed payload, unchanged environment, exact nonnegative ledger, input consumption, failure increment, event sequence, checkpoint manifest, and final sleeping state.
 
-Local source-tree validation completed compileall, the canonical three-wake CLI sequence, and **33 protected tests**. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; that mirror failure is not treated as success. GitHub Actions must independently complete the clean installation and protected suite before this slice is merged.
+Local source-tree validation completed compileall, the canonical three-wake CLI sequence, and **33 protected tests**. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; that mirror failure is not treated as success.
+
+GitHub Actions on Python 3.12 independently completed clean editable installation, compileall, genesis CLI smoke, and **33 protected tests**.
 
 ## Deliberately not implemented
 
@@ -97,4 +99,4 @@ Local source-tree validation completed compileall, the canonical three-wake CLI 
 
 ## Exact next slice
 
-After PR #23 is verified and merged, Slice 10 will start from `consecutive_failures = 2`, commit one further classified failure, stabilize its checkpoint, enter `maintenance_required` at exactly three failures, and reject later normal wakes without advancing.
+After PR #23 is merged, Slice 10 will start from `consecutive_failures = 2`, commit one further classified failure, stabilize its checkpoint, enter `maintenance_required` at exactly three failures, and reject later normal wakes without advancing.
