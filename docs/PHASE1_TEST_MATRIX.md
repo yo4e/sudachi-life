@@ -1,13 +1,13 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–10 implemented — Phase 1 incomplete**
+Status: **Slices 1–11 implemented — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
 | Contract evaluation | Protected test status |
 | --- | --- |
-| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, resource-aware recovery, classified action-failure, classified budget-exhaustion, and maintenance-threshold outcomes are covered; full repeated-run equivalence remains planned |
-| 2. Unexpected clock reads fail | `tests/test_clock.py::test_unexpected_clock_read_fails`; successful wakes now consume five declared readings including the pre-action deadline check; the classified exhausted wake consumes four |
+| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, resource-aware recovery, classified action-failure, classified budget-exhaustion, maintenance-threshold, and exact maintenance-inspection outcomes are covered; full repeated-run equivalence remains planned |
+| 2. Unexpected clock reads fail | `tests/test_clock.py::test_unexpected_clock_read_fails`; successful wakes consume five declared readings including the pre-action deadline check; the classified exhausted wake consumes four; protected maintenance inspection has no clock parameter and its later rejected wake consumes zero |
 | 3. Backward wall time does not reorder events | Event sequence is canonical; complete first-wake backward-time scenario remains planned |
 | 4. Seed does not change seed-garden behavior | Fixed first-water policy ignores the declared seed; explicit comparative test remains planned |
 | 5. One tick/observation/attempt/mutation maximum | water and harvest assert one attempt/mutation; abstentions and maintenance-threshold entry assert zero; classified action failure asserts one attempt and zero successful mutations; classified pre-action exhaustion asserts zero attempts and mutations |
@@ -24,9 +24,9 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
 | 17. No negative counters | SQLite constraints and exact success, abstention, recovery, action-failure, budget-exhaustion, and maintenance-threshold ledgers cover all implemented paths |
 | 18. Action attempt is charged before execution | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the attempt remains charged after the injected failure |
-| 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the partial plot write disappears while attempt cost remains and successful mutation cost returns to zero |
+| 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_failure_cost` proves the partial plot write disappears while attempt cost remains and successful mutation cost returns to zero |
 | 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves the lifecycle work deadline is detected before action proposal, attempt, mutation reservation, or environment write |
-| 21. Failure streak and maintenance threshold | Completion abstention proves justified zero; Slices 6, 8, and 9 prove classified increments; Slice 7 proves successful reset; `tests/test_maintenance_threshold.py::test_third_classified_failure_enters_maintenance_and_blocks_later_wake` proves exact two-to-three transition, typed maintenance entry after checkpoint stabilization, and later normal-wake rejection |
+| 21. Failure streak and maintenance threshold | Completion abstention proves justified zero; Slices 6, 8, and 9 prove classified increments; Slice 7 proves successful reset; `tests/test_maintenance_threshold.py::test_third_classified_failure_enters_maintenance_and_blocks_later_wake` proves exact two-to-three transition and typed maintenance entry; `tests/test_maintenance_inspection.py` proves inspection does not clear maintenance and normal wakes remain blocked |
 | 22. Atomic state/event commit | Genesis transaction, rollback-only wake preparation, and committed classified action-failure, budget-exhaustion, and maintenance-threshold lifecycles are protected |
 | 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, blocked-state, recovery, classified action-failure, classified budget-exhaustion, and maintenance-threshold sequences are asserted |
 | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
@@ -42,10 +42,10 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 34. Checkpoint failure preserves committed pending state | `tests/test_checkpoint_timeout.py::test_checkpoint_timeout_preserves_committed_pending_boundary` |
 | 35. Retention is bounded and safe | Limits are stored and publication size is enforced; pruning behavior remains planned |
 | 36–38. Rollback archive, lineage, and failure recovery | Planned |
-| 39. Protected authority cannot be modified by organism | Both protected action definitions and independent evaluators are used; broader authority tests remain planned |
-| 40. No organism-writable external workspace | SQLite-only action/abstention/failure/exhaustion paths plus hard-zero ledgers cover the canonical run and all implemented fixtures |
-| 41. Administration is distinguishable | Input and checkpoint events use administrative sources; lifecycle events use the organism fixed-policy source; threshold checkpoint stabilization and `maintenance_entered` remain explicitly administrative |
+| 39. Protected authority cannot be modified by organism | Both protected action definitions and independent evaluators are used; maintenance inspection is an explicit administrative API/CLI, opens SQLite read-only, rejects non-maintenance state, and exposes no clear or mutation switch; broader authority tests remain planned |
+| 40. No organism-writable external workspace | SQLite-only action/abstention/failure/exhaustion paths plus hard-zero ledgers cover the canonical run and all implemented fixtures; maintenance inspection proves every organism file retains identical size, modification time, and SHA-256 digest |
+| 41. Administration is distinguishable | Input and checkpoint events use administrative sources; lifecycle events use the organism fixed-policy source; threshold checkpoint stabilization and `maintenance_entered` remain explicitly administrative; `sudachi maintenance inspect` is a separate read-only administrative command and appends no organism event |
 
-PR #24 passed GitHub Actions on Python 3.12 with **34 protected tests**.
+PR #25 passed GitHub Actions on Python 3.12 with **36 protected tests**.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
