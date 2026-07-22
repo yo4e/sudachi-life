@@ -42,7 +42,7 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–13 establish:
+Slices 1–14 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
@@ -79,13 +79,17 @@ Slices 1–13 establish:
 - genesis preservation and oldest-eligible non-genesis pruning
 - matching artifact and registry removal with typed `checkpoint_pruned` audit history
 - exact retained-checkpoint and byte accounting with normal wakeability preserved
-- the complete canonical four-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, maintenance-clear, and checkpoint-retention fixtures
+- classified retention-pruning failure after artifact staging and before registry mutation
+- exact staged-artifact restoration with all five stable checkpoints retained and validated
+- typed `checkpoint_retention_pruning_failed` maintenance warning without false pruning success
+- later normal-wake rejection without clock reads after retention failure
+- the complete canonical four-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, maintenance-clear, checkpoint-retention, and retention-failure fixtures
 
-After PR #27 is merged, the exact next implementation slice is **Slice 14: classified checkpoint-retention pruning failure**.
+After PR #28 is merged, the exact next implementation slice is **Slice 15: explicit pending-checkpoint orphan registration repair**.
 
-It must inject one protected deterministic pruning failure only after the newer checkpoint is stable, preserve the newly stable latest checkpoint, restore or expose the staged older artifact without false successful pruning, keep registry and filesystem state auditable, enter an explicit typed maintenance warning, block later normal wakes, and pass protected tests and CI.
+It must start from the protected checkpoint-deadline fixture after the committed boundary and immutable artifact exist but before registration, acquire fail-fast administrative ownership, identify exactly one valid published orphan matching the pending lineage and event boundary, fully validate it, atomically register it as latest stable, clear pending state, append typed repair audit history, preserve canonical lifecycle and inbox state, and restore normal wakeability.
 
-Do not add checkpoint repair, orphan cleanup, maintenance clear for this new reason, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 14.
+Do not add ambiguous-orphan cleanup, checkpoint deletion, retention-failure maintenance clear, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 15.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
