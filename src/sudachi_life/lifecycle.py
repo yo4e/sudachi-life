@@ -15,13 +15,14 @@ from .actions import (
     execute_garden_action,
     select_garden_decision,
 )
-from .budgets import WakeBudgetLedger
+from .budgets import ProtectedBudgetExhaustion, WakeBudgetLedger
 from .checkpoints import CheckpointResult, create_and_register_lifecycle_checkpoint
 from .clock import Clock, RealClock
 from .constants import ACTIVE_DATABASE_MAX_BYTES, CONSECUTIVE_FAILURE_LIMIT
 from .evaluation import (
     GardenEvaluation,
     evaluate_classified_action_failure,
+    evaluate_classified_budget_exhaustion,
     evaluate_garden_decision,
 )
 from .errors import SchemaValidationError
@@ -38,12 +39,13 @@ class WakeResult:
     seed: int
     decision: GardenDecision
     evaluation: GardenEvaluation
+    budget_exhaustion: ProtectedBudgetExhaustion | None
     budget_ledger: dict[str, Any]
     checkpoint: CheckpointResult
     status: str
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "organism_id": self.organism_id,
             "lifecycle_number": self.lifecycle_number,
             "external_event_id": self.external_event_id,
@@ -55,6 +57,9 @@ class WakeResult:
             "checkpoint_event_sequence": self.checkpoint.event_sequence,
             "status": self.status,
         }
+        if self.budget_exhaustion is not None:
+            payload["budget_exhaustion"] = self.budget_exhaustion.as_dict()
+        return payload
 
 
 def _append_event_sql(
@@ -126,9 +131,34 @@ def _record_decision_and_evaluate(
     observation,
     ledger: WakeBudgetLedger,
     protected_test_failure_after_plot_write: bool,
+    budget_exhaustion: ProtectedBudgetExhaustion | None,
 ) -> tuple[GardenEvaluation, ProtectedActionFailure | None]:
     action_failure: ProtectedActionFailure | None = None
-    if isinstance(decision, GardenActionDecision):
+    if budget_exhaustion is not None:
+        if protected_test_failure_after_plot_write:
+            raise SchemaValidationError(
+                "protected action failure cannot overlap budget exhaustion"
+            )
+        if not isinstance(decision, GardenActionDecision):
+            raise SchemaValidationError(
+                "Slice 9 budget exhaustion requires a mutating decision"
+            )
+        _event(
+            wake,
+            organism_id=organism_id,
+            lineage_generation=lineage_generation,
+            wall_time_utc_us=wall_time_utc_us,
+            event_type="budget_exhausted",
+            payload={
+                **budget_exhaustion.as_dict(),
+                "decision": decision.as_dict(),
+            },
+            ledger=ledger,
+        )
+        evaluation = evaluate_classified_budget_exhaustion(
+            wake.connection, observation, decision, budget_exhaustion
+        )
+    elif isinstance(decision, GardenActionDecision):
         _event(
             wake,
             organism_id=organism_id,
@@ -201,7 +231,18 @@ def _record_decision_and_evaluate(
 def _completion_payload(
     decision: GardenDecision,
     action_failure: ProtectedActionFailure | None,
+    budget_exhaustion: ProtectedBudgetExhaustion | None,
 ) -> dict[str, Any]:
+    if budget_exhaustion is not None:
+        return {
+            "outcome": "budget_exhaustion",
+            "budget_name": budget_exhaustion.budget_name,
+            "attempted_forbidden_operation": (
+                budget_exhaustion.attempted_forbidden_operation
+            ),
+            "reason": budget_exhaustion.reason,
+            "input_consumed": True,
+        }
     if action_failure is not None:
         return {
             "outcome": "action_failure",
@@ -228,13 +269,21 @@ def _next_failure_streak(
     decision: GardenDecision,
     evaluation: GardenEvaluation,
     current: int,
+    *,
+    budget_exhaustion: ProtectedBudgetExhaustion | None,
 ) -> int:
-    """Classify implemented success, abstention, and rolled-back action failure."""
+    """Classify implemented success, abstention, action failure, and exhaustion."""
 
     if current < 0:
         raise SchemaValidationError("canonical failure streak is negative")
 
-    if isinstance(decision, GardenAbstention):
+    if budget_exhaustion is not None:
+        if evaluation.success or evaluation.progress != "budget_exhausted_before_action":
+            raise SchemaValidationError(
+                "budget exhaustion evaluated with an invalid protected classification"
+            )
+        updated = current + 1
+    elif isinstance(decision, GardenAbstention):
         if decision.reason == "objective_already_complete":
             if not evaluation.success:
                 raise SchemaValidationError(
@@ -263,7 +312,7 @@ def _next_failure_streak(
 
     if updated >= CONSECUTIVE_FAILURE_LIMIT:
         raise SchemaValidationError(
-            "maintenance threshold entry is not implemented in Slice 8"
+            "maintenance threshold entry is not implemented in Slice 9"
         )
     return updated
 
@@ -332,36 +381,55 @@ def perform_garden_wake(
         )
 
         decision = select_garden_decision(observation)
+        pre_action = clock.read()
+        budget_exhaustion = None
+        if isinstance(decision, GardenActionDecision):
+            budget_exhaustion = ledger.detect_lifecycle_wall_time_exhaustion(
+                elapsed_monotonic_ns=(
+                    pre_action.monotonic_ns - started.monotonic_ns
+                ),
+                attempted_forbidden_operation="execute_garden_action",
+                environment_step=observation.environment_step,
+            )
+
+        outcome_wall_time_utc_us = (
+            pre_action.wall_time_utc_us
+            if budget_exhaustion is not None
+            else started.wall_time_utc_us
+        )
         evaluation, action_failure = _record_decision_and_evaluate(
             wake,
             organism_id=organism_id_value,
             lineage_generation=lineage_generation,
-            wall_time_utc_us=started.wall_time_utc_us,
+            wall_time_utc_us=outcome_wall_time_utc_us,
             decision=decision,
             observation=observation,
             ledger=ledger,
             protected_test_failure_after_plot_write=protected_test_failure_after_plot_write,
+            budget_exhaustion=budget_exhaustion,
         )
 
         failure_streak_before = int(organism["consecutive_failures"])
         failure_streak_after = _next_failure_streak(
-            decision, evaluation, failure_streak_before
+            decision,
+            evaluation,
+            failure_streak_before,
+            budget_exhaustion=budget_exhaustion,
         )
         if failure_streak_after != failure_streak_before:
-            failure_reason = (
-                decision.reason
-                if isinstance(decision, GardenAbstention)
-                else (
-                    action_failure.reason
-                    if action_failure is not None
-                    else "successful_action"
-                )
-            )
+            if budget_exhaustion is not None:
+                failure_reason = budget_exhaustion.reason
+            elif isinstance(decision, GardenAbstention):
+                failure_reason = decision.reason
+            elif action_failure is not None:
+                failure_reason = action_failure.reason
+            else:
+                failure_reason = "successful_action"
             _event(
                 wake,
                 organism_id=organism_id_value,
                 lineage_generation=lineage_generation,
-                wall_time_utc_us=started.wall_time_utc_us,
+                wall_time_utc_us=outcome_wall_time_utc_us,
                 event_type="failure_streak_updated",
                 payload={
                     "before": failure_streak_before,
@@ -384,17 +452,26 @@ def perform_garden_wake(
             wake,
             organism_id=organism_id_value,
             lineage_generation=lineage_generation,
-            wall_time_utc_us=started.wall_time_utc_us,
+            wall_time_utc_us=outcome_wall_time_utc_us,
             event_type="lifecycle_completed",
-            payload=_completion_payload(decision, action_failure),
+            payload=_completion_payload(
+                decision, action_failure, budget_exhaustion
+            ),
             ledger=ledger,
         )
 
-        finished = clock.read()
-        ledger.finish(
-            semantic_steps_used=12,
-            elapsed_monotonic_ns=finished.monotonic_ns - started.monotonic_ns,
-        )
+        if budget_exhaustion is not None:
+            finished = pre_action
+            ledger.finish_exhausted(
+                semantic_steps_used=12,
+                exhaustion=budget_exhaustion,
+            )
+        else:
+            finished = clock.read()
+            ledger.finish(
+                semantic_steps_used=12,
+                elapsed_monotonic_ns=finished.monotonic_ns - started.monotonic_ns,
+            )
         ledger.reserve_record(2)
         _append_event_sql(
             wake.connection,
@@ -456,6 +533,7 @@ def perform_garden_wake(
         seed=seed,
         decision=decision,
         evaluation=evaluation,
+        budget_exhaustion=budget_exhaustion,
         budget_ledger=ledger.as_dict(),
         checkpoint=checkpoint,
         status=status.status,

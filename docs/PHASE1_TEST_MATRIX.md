@@ -1,19 +1,19 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–8 implemented — Phase 1 incomplete**
+Status: **Slices 1–9 implemented — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
 | Contract evaluation | Protected test status |
 | --- | --- |
-| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, resource-aware recovery, and classified action-failure outcomes are covered; full repeated-run equivalence remains planned |
-| 2. Unexpected clock reads fail | `tests/test_clock.py::test_unexpected_clock_read_fails`; `tests/test_first_water_success.py` proves the successful wake consumes four declared readings |
+| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, resource-aware recovery, classified action-failure, and classified budget-exhaustion outcomes are covered; full repeated-run equivalence remains planned |
+| 2. Unexpected clock reads fail | `tests/test_clock.py::test_unexpected_clock_read_fails`; successful wakes now consume five declared readings including the pre-action deadline check; the classified exhausted wake consumes four |
 | 3. Backward wall time does not reorder events | Event sequence is canonical; complete first-wake backward-time scenario remains planned |
 | 4. Seed does not change seed-garden behavior | Fixed first-water policy ignores the declared seed; explicit comparative test remains planned |
-| 5. One tick/observation/attempt/mutation maximum | water and harvest assert one attempt/mutation; abstentions assert zero; classified action failure asserts one attempt and zero successful mutations |
-| 6. Twelve-step and monotonic deadline | First-water ledger records twelve steps; lifecycle deadline failure history remains planned |
+| 5. One tick/observation/attempt/mutation maximum | water and harvest assert one attempt/mutation; abstentions assert zero; classified action failure asserts one attempt and zero successful mutations; classified pre-action exhaustion asserts zero attempts and mutations |
+| 6. Twelve-step and monotonic deadline | First-water ledger records twelve steps; `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves typed lifecycle deadline exhaustion before action |
 | 7. Cleanup grace is not action time | Planned with classified failure and cleanup tests |
-| 8. Hard-zero external capabilities | water, harvest, both abstentions, recovery, and classified action failure assert zero caregiver, network, subprocess, and external-write consumption |
+| 8. Hard-zero external capabilities | water, harvest, both abstentions, recovery, classified action failure, and classified budget exhaustion assert zero caregiver, network, subprocess, and external-write consumption |
 | 9. No independent energy field | `tests/test_initialization.py::test_canonical_state_has_no_energy_column` |
 | 10. First canonical tick waters `bed-a` | `tests/test_first_water_success.py::test_first_water_wake_commits_evaluates_and_checkpoints` |
 | 11. Second canonical tick harvests `bed-b` | `tests/test_second_harvest_success.py::test_second_wake_harvests_and_completes_objective` |
@@ -22,30 +22,30 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 14. Resource-aware harvest fallback | `tests/test_resource_aware_recovery.py::test_resource_aware_harvest_recovers_and_resets_failure_streak` proves zero water removes all water targets while `bed-b` remains an executable harvest target |
 | 15. Specific no-applicable-action abstention | `tests/test_no_applicable_action.py::test_no_applicable_action_abstains_and_increments_failure_once`; the companion evaluator test rejects abstention when a protected action is executable |
 | 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
-| 17. No negative counters | SQLite constraints and exact success, abstention, recovery, and action-failure ledgers cover all implemented paths |
+| 17. No negative counters | SQLite constraints and exact success, abstention, recovery, action-failure, and budget-exhaustion ledgers cover all implemented paths |
 | 18. Action attempt is charged before execution | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the attempt remains charged after the injected failure |
 | 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the partial plot write disappears while attempt cost remains and successful mutation cost returns to zero |
-| 20. Budget exhaustion occurs before forbidden mutation | Checkpoint deadline is tested separately; lifecycle budget-exhaustion outcome remains planned |
-| 21. Failure streak and maintenance threshold | Completion abstention proves justified zero; Slice 6 and Slice 8 prove classified increments; Slice 7 proves successful reset; threshold entry remains planned |
-| 22. Atomic state/event commit | Genesis transaction, rollback-only wake preparation, and the committed classified action-failure lifecycle are protected |
-| 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, blocked-state, recovery, and classified action-failure sequences are asserted |
+| 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves the lifecycle work deadline is detected before action proposal, attempt, mutation reservation, or environment write |
+| 21. Failure streak and maintenance threshold | Completion abstention proves justified zero; Slices 6, 8, and 9 prove classified increments; Slice 7 proves successful reset; threshold entry remains planned |
+| 22. Atomic state/event commit | Genesis transaction, rollback-only wake preparation, and committed classified action-failure and budget-exhaustion lifecycles are protected |
+| 23. Sequence order is canonical | Genesis, all three canonical lifecycle sequences, blocked-state, recovery, classified action-failure, and classified budget-exhaustion sequences are asserted |
 | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
 | 25. JSONL export deterministic and non-canonical | Planned |
 | 26. Competing wake has one winner and one non-queued rejection | `tests/test_wake.py::test_competing_wake_is_rejected_and_not_queued` |
 | 27. Crash before commit preserves prior state | Transaction/context rollback is covered; process-crash test remains planned |
 | 28. Nested wake is rejected | Planned |
 | 29. Stable genesis checkpoint before wakeable | Initialization and genesis checkpoint tests |
-| 30. Successful wake commits an exact pending boundary | Water validates 13, harvest 24, completion abstention 34, blocked fixture 16, recovery fixture 17, and action-failure fixture 17 |
+| 30. Successful wake commits an exact pending boundary | Water validates 13, harvest 24, completion abstention 34, blocked fixture 16, recovery fixture 17, action-failure fixture 17, and budget-exhaustion fixture 16 |
 | 31. No later wake advances while checkpoint is pending | Pending status is preserved by timeout test; explicit second-wake rejection remains planned |
 | 32. Invalid checkpoint is not stable | Digest and directory-name mismatch tests |
-| 33. Checkpoint validation covers protected identity and boundary | Genesis plus water, harvest, completion-abstention, blocked-abstention, recovery, and action-failure checkpoint validation |
+| 33. Checkpoint validation covers protected identity and boundary | Genesis plus water, harvest, completion-abstention, blocked-abstention, recovery, action-failure, and budget-exhaustion checkpoint validation |
 | 34. Checkpoint failure preserves committed pending state | `tests/test_checkpoint_timeout.py::test_checkpoint_timeout_preserves_committed_pending_boundary` |
 | 35. Retention is bounded and safe | Limits are stored and publication size is enforced; pruning behavior remains planned |
 | 36–38. Rollback archive, lineage, and failure recovery | Planned |
 | 39. Protected authority cannot be modified by organism | Both protected action definitions and independent evaluators are used; broader authority tests remain planned |
-| 40. No organism-writable external workspace | SQLite-only action/abstention/failure paths plus hard-zero ledgers cover the canonical run and all implemented fixtures |
+| 40. No organism-writable external workspace | SQLite-only action/abstention/failure/exhaustion paths plus hard-zero ledgers cover the canonical run and all implemented fixtures |
 | 41. Administration is distinguishable | Input and checkpoint events use administrative sources; lifecycle events use the organism fixed-policy source |
 
-PR #22 passed GitHub Actions on Python 3.12 with **32 protected tests**.
+PR #23 passed GitHub Actions on Python 3.12 with **33 protected tests**.
 
 Every future pull request must update this matrix when it adds or changes protected tests.

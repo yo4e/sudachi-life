@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import sqlite3
 from typing import Any
 
@@ -12,6 +13,8 @@ from .actions import (
     GardenDecision,
     ProtectedActionFailure,
 )
+from .budgets import ProtectedBudgetExhaustion
+from .constants import BUDGET_CONFIG_VERSION, PHASE1_BUDGETS
 from .errors import SchemaValidationError
 from .garden import GardenObservation
 
@@ -263,6 +266,102 @@ def evaluate_classified_action_failure(
         unresolved_needs_before=unresolved_before,
         unresolved_needs_after=unresolved_after,
         progress="action_failed_rolled_back",
+        environment_step_before=before.environment_step,
+        environment_step_after=int(after_environment["environment_step"]),
+    )
+
+
+def evaluate_classified_budget_exhaustion(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    decision: GardenDecision,
+    exhaustion: ProtectedBudgetExhaustion,
+) -> GardenEvaluation:
+    """Prove a typed lifecycle deadline exhaustion preceded all mutation."""
+
+    if exhaustion.budget_name != "lifecycle_wall_time_ms":
+        raise SchemaValidationError("unsupported classified budget-exhaustion name")
+    if exhaustion.reason != "lifecycle_wall_time_exhausted_before_action":
+        raise SchemaValidationError("unsupported classified budget-exhaustion reason")
+    if exhaustion.attempted_forbidden_operation != "execute_garden_action":
+        raise SchemaValidationError("unsupported forbidden operation for budget exhaustion")
+    if exhaustion.state_mutation_occurred:
+        raise SchemaValidationError("budget exhaustion claims an environment mutation occurred")
+    if exhaustion.environment_step != before.environment_step:
+        raise SchemaValidationError("budget exhaustion references the wrong environment boundary")
+    if exhaustion.configured_initial_value <= 0:
+        raise SchemaValidationError("budget exhaustion has an invalid configured limit")
+    if exhaustion.unit != "ms":
+        raise SchemaValidationError("budget exhaustion uses an unsupported unit")
+    if exhaustion.consumed_amount <= exhaustion.configured_initial_value:
+        raise SchemaValidationError("budget exhaustion did not exceed its configured limit")
+    if exhaustion.remaining_amount != 0:
+        raise SchemaValidationError("budget exhaustion has invalid remaining capacity")
+    if exhaustion.observed_elapsed_monotonic_ns <= (
+        exhaustion.configured_initial_value * 1_000_000
+    ):
+        raise SchemaValidationError("budget exhaustion elapsed time did not exceed the limit")
+
+    budget_row = connection.execute(
+        "SELECT config_version, config_json FROM budget_config WHERE singleton_id = 1"
+    ).fetchone()
+    if budget_row is None or budget_row["config_version"] != BUDGET_CONFIG_VERSION:
+        raise SchemaValidationError("budget exhaustion cannot verify protected configuration")
+    try:
+        protected_config = json.loads(budget_row["config_json"])
+    except json.JSONDecodeError as exc:
+        raise SchemaValidationError(
+            "budget exhaustion found invalid protected configuration JSON"
+        ) from exc
+    if protected_config != PHASE1_BUDGETS.as_dict():
+        raise SchemaValidationError(
+            "budget exhaustion observed a changed protected configuration"
+        )
+    if exhaustion.configured_initial_value != int(
+        protected_config["lifecycle_wall_time_ms"]
+    ):
+        raise SchemaValidationError(
+            "budget exhaustion limit does not match protected configuration"
+        )
+
+    if not isinstance(decision, GardenActionDecision):
+        raise SchemaValidationError("Slice 9 budget exhaustion requires a mutating decision")
+    observed = next(
+        (action for action in before.actions if action["action_id"] == decision.action_id),
+        None,
+    )
+    if observed is None or decision.plot_id not in tuple(observed["applicable_targets"]):
+        raise SchemaValidationError("budget exhaustion did not block an executable proposal")
+
+    after_environment, after_inventory, after_plots = _read_after_state(connection)
+    before_plots = {str(plot["plot_id"]): dict(plot) for plot in before.plots}
+    if after_plots != before_plots:
+        raise SchemaValidationError("budget exhaustion changed garden plots")
+    if after_inventory["water_units"] != before.water_units:
+        raise SchemaValidationError("budget exhaustion changed water inventory")
+    if after_inventory["harvested_fruit"] != before.harvested_fruit:
+        raise SchemaValidationError("budget exhaustion changed harvested inventory")
+    if after_environment["environment_step"] != before.environment_step:
+        raise SchemaValidationError("budget exhaustion changed environment step")
+    objective_after = recompute_objective(connection)
+    if (
+        bool(after_environment["objective_complete"]) != before.objective_complete
+        or objective_after != before.objective_complete
+    ):
+        raise SchemaValidationError("budget exhaustion changed objective state")
+
+    unresolved_before = _unresolved_needs_before(before)
+    unresolved_after = _unresolved_needs(connection)
+    if unresolved_after != unresolved_before:
+        raise SchemaValidationError("budget exhaustion changed unresolved needs")
+
+    return GardenEvaluation(
+        success=False,
+        objective_complete_before=before.objective_complete,
+        objective_complete_after=objective_after,
+        unresolved_needs_before=unresolved_before,
+        unresolved_needs_after=unresolved_after,
+        progress="budget_exhausted_before_action",
         environment_step_before=before.environment_step,
         environment_step_after=int(after_environment["environment_step"]),
     )

@@ -13,13 +13,14 @@ def test_first_water_wake_commits_evaluates_and_checkpoints(initialized) -> None
     paths = OrganismPaths.build(runtime_root, initial.organism_id)
     enqueue_garden_tick(paths, "tick-1", clock=FakeClock([ClockReading(200, 2_000_000)]))
     clock = FakeClock([
-        ClockReading(300, 10_000_000), ClockReading(301, 20_000_000),
-        ClockReading(302, 30_000_000), ClockReading(303, 40_000_000),
+        ClockReading(300, 10_000_000), ClockReading(300, 15_000_000),
+        ClockReading(301, 20_000_000), ClockReading(302, 30_000_000),
+        ClockReading(303, 40_000_000),
     ])
     result = perform_first_water_wake(runtime_root, initial.organism_id, seed=1, clock=clock)
     status = read_status(paths)
 
-    assert clock.read_count == 4
+    assert clock.read_count == 5
     assert result.decision.as_dict()["parameters"] == {"plot_id": "bed-a"}
     assert result.evaluation.success is True
     assert result.evaluation.progress == "positive"

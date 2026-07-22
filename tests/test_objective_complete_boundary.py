@@ -14,6 +14,7 @@ def _wake_clock(base: int) -> FakeClock:
     return FakeClock(
         [
             ClockReading(base, 10_000_000),
+            ClockReading(base, 15_000_000),
             ClockReading(base + 1, 20_000_000),
             ClockReading(base + 2, 30_000_000),
             ClockReading(base + 3, 40_000_000),

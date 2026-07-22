@@ -102,7 +102,7 @@ The recovery fixture is also test administration and does not participate in act
 
 ### Slice 8 — classified action failure and savepoint cost preservation
 
-Implemented and verified in PR #22:
+Merged through PR #22:
 
 - a protected administrative fixture exposes exactly one executable `water_plot(bed-a)` action
 - test administration requests one typed failure after the plot row is partially written inside the existing SQLite savepoint
@@ -115,18 +115,34 @@ Implemented and verified in PR #22:
 
 The failure injection is a test-only keyword argument. It is not available through the CLI, inbox, fixed policy, or organism state.
 
+### Slice 9 — classified lifecycle budget exhaustion before mutation
+
+Implemented and verified in PR #23:
+
+- every wake now performs one explicit injected monotonic-time reading after fixed-policy selection and before any action executor is entered
+- a protected administrative fixture exposes exactly one executable `water_plot(bed-a)` action while leaving the protected budget configuration unchanged
+- the fake clock reports 2,001 ms elapsed against the protected 2,000 ms lifecycle work limit
+- the runtime records typed `lifecycle_wall_time_exhausted_before_action` before action proposal, action attempt, mutation reservation, or environment write
+- one input and one observation are consumed; action attempts and successful environment mutations remain zero; all external-capability counters remain zero
+- the independent evaluator re-reads the protected budget configuration and proves plots, inventory, objective, unresolved needs, and environment step are unchanged
+- `consecutive_failures` advances exactly once from zero to one below maintenance threshold three
+- the committed pending boundary is event sequence 16 and administrative stabilization is event sequence 17
+- the organism returns to `sleeping`
+
+The fake clock is a declared deterministic test input. The operational deadline check is part of the normal lifecycle and is not exposed as an organism-controlled switch.
+
 ## Verified implementation results
 
-GitHub Actions passed on PR #22 with Python 3.12:
+GitHub Actions passed on PR #23 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **32 protected tests**
+- **33 protected tests**
 - installed genesis CLI smoke test
-- all earlier canonical water, harvest, abstention, blocked-state, and recovery behavior remains protected
-- the action-failure fixture proves partial savepoint rollback, preserved attempt cost, zero successful mutation cost, one failure increment, checkpoint stabilization, and sleep
+- all earlier canonical water, harvest, abstention, blocked-state, recovery, and action-failure behavior remains protected
+- the budget-exhaustion fixture proves deadline detection before action attempt or mutation, exact nonnegative accounting, one failure increment, checkpoint stabilization, and sleep
 
-The exact local source-tree run also passed **32 tests** and compileall. GitHub Actions independently completed the clean editable installation and protected test run.
+The exact local source-tree run also passed **33 tests**, compileall, and the canonical three-wake CLI sequence with unchanged boundaries 13, 24, and 34 and final event count 35. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
 
 Canonical three-wake values remain:
 
@@ -183,6 +199,20 @@ The isolated Slice 8 action-failure fixture finishes with:
 - `event_count = 18`
 - `status = sleeping`
 
+The isolated Slice 9 budget-exhaustion fixture finishes with:
+
+- `lifecycle_number = 1`
+- `environment_step = 0`
+- `bed-a.moisture = 0`
+- `bed-b.fruit = 0`
+- `water_units = 1`
+- `harvested_fruit = 0`
+- `objective_complete = false`
+- `consecutive_failures = 1`
+- `latest_stable_event_sequence = 16`
+- `event_count = 17`
+- `status = sleeping`
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -201,21 +231,21 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #22 is merged, create a new branch from current `main` and implement **Slice 9: classified budget exhaustion before forbidden mutation**.
+After PR #23 is merged, create a new branch from current `main` and implement **Slice 10: maintenance-threshold entry after the third consecutive classified failure**.
 
 The slice must:
 
-1. use an explicit protected fixture with one executable registered action
-2. create one deterministic exhausted-budget condition without changing the protected budget configuration
-3. detect exhaustion before the prohibited environment write
-4. record a typed budget-exhausted failure without false action completion
-5. prove plots, inventory, objective, and environment step remain unchanged
-6. preserve exact nonnegative budget accounting
-7. increment `consecutive_failures` exactly once below the maintenance threshold
-8. consume the classified input, commit and stabilize an exact checkpoint boundary
-9. return to sleep and prove the result in protected tests and CI
+1. use an explicit protected fixture with `consecutive_failures = 2`, an incomplete objective, and no executable protected mutation
+2. claim one tick, build one complete observation, and classify `no_applicable_action`
+3. consume one input and one observation while action attempts and environment mutations remain zero
+4. independently prove the environment remains unchanged
+5. advance `consecutive_failures` exactly from two to three
+6. commit and stabilize an exact checkpoint boundary
+7. leave the organism in `maintenance_required`, with a typed maintenance reason, rather than `sleeping`
+8. reject a later normal wake without consuming another input or changing the failure counter
+9. prove the result in protected tests and CI
 
-Do not add maintenance-threshold entry, checkpoint repair, lineage rollback, caregiver consultation, learning, or generic planning in Slice 9.
+Do not add maintenance repair, failure-counter clearing, checkpoint repair, lineage rollback, caregiver consultation, learning, or generic planning in Slice 10.
 
 ## Current issue map
 

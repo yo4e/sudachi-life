@@ -15,8 +15,9 @@ def test_checkpoint_timeout_preserves_committed_pending_boundary(initialized) ->
     paths = OrganismPaths.build(runtime_root, initial.organism_id)
     enqueue_garden_tick(paths, "tick-1", clock=FakeClock([ClockReading(200, 2_000_000)]))
     clock = FakeClock([
-        ClockReading(300, 10_000_000), ClockReading(301, 20_000_000),
-        ClockReading(302, 30_000_000), ClockReading(303, 5_030_000_001),
+        ClockReading(300, 10_000_000), ClockReading(300, 15_000_000),
+        ClockReading(301, 20_000_000), ClockReading(302, 30_000_000),
+        ClockReading(303, 5_030_000_001),
     ])
 
     with pytest.raises(CheckpointError, match="deadline"):
