@@ -166,19 +166,37 @@ Implemented and verified in PR #25:
 
 Maintenance clear, repair, and rollback are not implemented.
 
+### Slice 12 — explicit administrative maintenance clear
+
+Implemented and verified in PR #26:
+
+- a stable protected fixture starts in `maintenance_required` with failure streak three, typed reason `consecutive_failure_limit_reached`, stable checkpoint boundary six, and one queued unclaimed tick
+- `clear_maintenance` and `sudachi maintenance clear` expose one explicit administrative recovery boundary
+- the caller must provide a bounded recovery-reason token before any clock read or database mutation
+- the operation acquires fail-fast `BEGIN IMMEDIATE` ownership and validates exact maintenance and checkpoint-registry consistency
+- one injected clock read supplies the administrative audit timestamp
+- one transaction resets the failure streak from three to zero, clears `maintenance_reason`, restores `sleeping`, and appends typed `maintenance_cleared` event nine
+- plots, inventory, objective state, environment step, lifecycle, lineage, latest checkpoint references, checkpoint registry, and queued input remain unchanged
+- forced audit-event failure rolls back the state update and leaves maintenance intact
+- busy, invalid-reason, repeated-clear, and non-maintenance attempts reject without partial state
+- a later normal wake claims the preserved tick under the unchanged policy, classifies `no_applicable_action`, advances failures from zero to one, stabilizes boundary 18, and returns to sleeping at event 19
+
+Environment repair, checkpoint repair, retention pruning, and rollback are not implemented.
+
 ## Verified implementation results
 
-GitHub Actions passed on PR #25 with Python 3.12:
+GitHub Actions passed on PR #26 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **36 protected tests**
+- **41 protected tests**
 - installed genesis CLI smoke test
 - all earlier canonical water, harvest, abstention, blocked-state, recovery, action-failure, and budget-exhaustion behavior remains protected
 - the maintenance-threshold fixture proves exact failure transition, unchanged environment, checkpoint stabilization, typed maintenance entry, and later normal-wake rejection
 - the maintenance-inspection fixture proves exact reporting, read-only files and canonical rows, typed non-maintenance rejection, and continued normal-wake blocking
+- the maintenance-clear fixture proves bounded reason validation, fail-fast ownership, atomic state and audit commit, exact preservation, rollback on audit failure, and later processing of the preserved tick
 
-The exact local source-tree run also passed **36 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
+The exact local source-tree run also passed **41 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
 
 Canonical three-wake values remain:
 
@@ -282,6 +300,25 @@ The isolated Slice 11 maintenance-inspection fixture finishes with:
 - one tick remains queued, unclaimed, and unconsumed
 - API and CLI inspection change no organism file or canonical row
 
+The isolated Slice 12 maintenance-clear fixture immediately after clear has:
+
+- `lifecycle_number = 0`
+- `environment_step = 0`
+- `bed-a.moisture = 0`
+- `bed-b.fruit = 0`
+- `water_units = 0`
+- `harvested_fruit = 0`
+- `objective_complete = false`
+- `consecutive_failures = 0`
+- `maintenance_reason = NULL`
+- `latest_stable_event_sequence = 6`
+- `event_count = 9`
+- `status = sleeping`
+- event nine is typed administrative `maintenance_cleared`
+- the queued tick remains unclaimed and unconsumed
+
+After the preserved tick runs normally, the same fixture finishes with lifecycle one, failure streak one, stable boundary 18, event count 19, status `sleeping`, and the tick consumed. The environment remains blocked and unchanged.
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -300,20 +337,20 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #25 is merged, create a new branch from current `main` and implement **Slice 12: explicit administrative maintenance clear**.
+After PR #26 is merged, create a new branch from current `main` and implement **Slice 13: successful bounded checkpoint retention pruning**.
 
 The slice must:
 
-1. use an explicit stable `maintenance_required` fixture with failure streak three, typed reason `consecutive_failure_limit_reached`, a stable checkpoint, and one queued tick
-2. expose one explicit administrative recovery API and CLI boundary rather than an organism action
-3. require and validate a caller-supplied recovery reason that is recorded canonically
-4. acquire fail-fast SQLite write ownership and validate maintenance state and latest stable checkpoint before change
-5. atomically reset `consecutive_failures` from three to zero, clear `maintenance_reason`, set status to `sleeping`, and append a distinct administrative audit event
-6. preserve plots, inventory, objective, environment step, checkpoint references, and the queued tick during the recovery transaction
-7. prove a later normal wake may claim the queued tick under the unchanged fixed policy
+1. use the canonical three-wake history with four stable checkpoints including genesis
+2. commit and stabilize one further objective-complete abstention checkpoint so a fifth stable checkpoint exists
+3. perform no pruning before the fifth checkpoint is stable and registered
+4. prune the oldest eligible stable checkpoint first under protected retention limit four
+5. remove the pruned immutable artifact and matching registry row while preserving an explicit administrative pruning record
+6. leave exactly four stable checkpoint directories and registry rows
+7. preserve the newest checkpoint, latest-stable references, active canonical state, lineage, and normal wakeability
 8. pass protected tests and CI
 
-Do not add environment repair, checkpoint repair, retention pruning, lineage rollback, caregiver consultation, learning, or generic planning in Slice 12.
+Do not add prune-failure recovery, checkpoint repair, lineage rollback, caregiver consultation, learning, or generic planning in Slice 13.
 
 ## Current issue map
 
