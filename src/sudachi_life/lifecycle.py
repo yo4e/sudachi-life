@@ -10,6 +10,8 @@ from .actions import (
     GardenAbstention,
     GardenActionDecision,
     GardenDecision,
+    InjectedActionFailure,
+    ProtectedActionFailure,
     execute_garden_action,
     select_garden_decision,
 )
@@ -17,7 +19,11 @@ from .budgets import WakeBudgetLedger
 from .checkpoints import CheckpointResult, create_and_register_lifecycle_checkpoint
 from .clock import Clock, RealClock
 from .constants import ACTIVE_DATABASE_MAX_BYTES, CONSECUTIVE_FAILURE_LIMIT
-from .evaluation import GardenEvaluation, evaluate_garden_decision
+from .evaluation import (
+    GardenEvaluation,
+    evaluate_classified_action_failure,
+    evaluate_garden_decision,
+)
 from .errors import SchemaValidationError
 from .paths import OrganismPaths
 from .storage import read_status, validate_canonical_state
@@ -119,7 +125,9 @@ def _record_decision_and_evaluate(
     decision: GardenDecision,
     observation,
     ledger: WakeBudgetLedger,
-) -> GardenEvaluation:
+    protected_test_failure_after_plot_write: bool,
+) -> tuple[GardenEvaluation, ProtectedActionFailure | None]:
+    action_failure: ProtectedActionFailure | None = None
     if isinstance(decision, GardenActionDecision):
         _event(
             wake,
@@ -130,17 +138,43 @@ def _record_decision_and_evaluate(
             payload=decision.as_dict(),
             ledger=ledger,
         )
-        execute_garden_action(wake.connection, decision, ledger)
-        _event(
-            wake,
-            organism_id=organism_id,
-            lineage_generation=lineage_generation,
-            wall_time_utc_us=wall_time_utc_us,
-            event_type="action_completed",
-            payload={**decision.as_dict(), "success": True},
-            ledger=ledger,
-        )
+        try:
+            execute_garden_action(
+                wake.connection,
+                decision,
+                ledger,
+                protected_test_failure_after_plot_write=protected_test_failure_after_plot_write,
+            )
+        except InjectedActionFailure as exc:
+            action_failure = exc.failure
+            _event(
+                wake,
+                organism_id=organism_id,
+                lineage_generation=lineage_generation,
+                wall_time_utc_us=wall_time_utc_us,
+                event_type="action_failed",
+                payload=action_failure.as_dict(),
+                ledger=ledger,
+            )
+            evaluation = evaluate_classified_action_failure(
+                wake.connection, observation, decision, action_failure
+            )
+        else:
+            _event(
+                wake,
+                organism_id=organism_id,
+                lineage_generation=lineage_generation,
+                wall_time_utc_us=wall_time_utc_us,
+                event_type="action_completed",
+                payload={**decision.as_dict(), "success": True},
+                ledger=ledger,
+            )
+            evaluation = evaluate_garden_decision(wake.connection, observation, decision)
     else:
+        if protected_test_failure_after_plot_write:
+            raise SchemaValidationError(
+                "protected action-failure injection requires a mutating action"
+            )
         _event(
             wake,
             organism_id=organism_id,
@@ -150,8 +184,8 @@ def _record_decision_and_evaluate(
             payload=decision.as_dict(),
             ledger=ledger,
         )
+        evaluation = evaluate_garden_decision(wake.connection, observation, decision)
 
-    evaluation = evaluate_garden_decision(wake.connection, observation, decision)
     _event(
         wake,
         organism_id=organism_id,
@@ -161,10 +195,21 @@ def _record_decision_and_evaluate(
         payload=evaluation.as_dict(),
         ledger=ledger,
     )
-    return evaluation
+    return evaluation, action_failure
 
 
-def _completion_payload(decision: GardenDecision) -> dict[str, Any]:
+def _completion_payload(
+    decision: GardenDecision,
+    action_failure: ProtectedActionFailure | None,
+) -> dict[str, Any]:
+    if action_failure is not None:
+        return {
+            "outcome": "action_failure",
+            "action_id": action_failure.action_id,
+            "plot_id": action_failure.plot_id,
+            "reason": action_failure.reason,
+            "input_consumed": True,
+        }
     if isinstance(decision, GardenAbstention):
         return {
             "outcome": "abstention",
@@ -184,7 +229,7 @@ def _next_failure_streak(
     evaluation: GardenEvaluation,
     current: int,
 ) -> int:
-    """Classify the implemented Slice 6 outcomes without crossing maintenance scope."""
+    """Classify implemented success, abstention, and rolled-back action failure."""
 
     if current < 0:
         raise SchemaValidationError("canonical failure streak is negative")
@@ -207,15 +252,18 @@ def _next_failure_streak(
                 f"failure-streak classification is not implemented for {decision.reason}"
             )
     else:
-        if not evaluation.success:
+        if evaluation.success:
+            updated = 0
+        elif evaluation.progress == "action_failed_rolled_back":
+            updated = current + 1
+        else:
             raise SchemaValidationError(
-                "mutating action failure classification is not implemented yet"
+                "mutating action failure has no protected classification"
             )
-        updated = 0
 
     if updated >= CONSECUTIVE_FAILURE_LIMIT:
         raise SchemaValidationError(
-            "maintenance threshold entry is not implemented in Slice 6"
+            "maintenance threshold entry is not implemented in Slice 8"
         )
     return updated
 
@@ -226,6 +274,7 @@ def perform_garden_wake(
     *,
     seed: int,
     clock: Clock | None = None,
+    protected_test_failure_after_plot_write: bool = False,
 ) -> WakeResult:
     """Perform one fixed-policy wake and stabilize its checkpoint."""
 
@@ -283,7 +332,7 @@ def perform_garden_wake(
         )
 
         decision = select_garden_decision(observation)
-        evaluation = _record_decision_and_evaluate(
+        evaluation, action_failure = _record_decision_and_evaluate(
             wake,
             organism_id=organism_id_value,
             lineage_generation=lineage_generation,
@@ -291,6 +340,7 @@ def perform_garden_wake(
             decision=decision,
             observation=observation,
             ledger=ledger,
+            protected_test_failure_after_plot_write=protected_test_failure_after_plot_write,
         )
 
         failure_streak_before = int(organism["consecutive_failures"])
@@ -301,7 +351,11 @@ def perform_garden_wake(
             failure_reason = (
                 decision.reason
                 if isinstance(decision, GardenAbstention)
-                else "successful_action"
+                else (
+                    action_failure.reason
+                    if action_failure is not None
+                    else "successful_action"
+                )
             )
             _event(
                 wake,
@@ -332,7 +386,7 @@ def perform_garden_wake(
             lineage_generation=lineage_generation,
             wall_time_utc_us=started.wall_time_utc_us,
             event_type="lifecycle_completed",
-            payload=_completion_payload(decision),
+            payload=_completion_payload(decision, action_failure),
             ledger=ledger,
         )
 
