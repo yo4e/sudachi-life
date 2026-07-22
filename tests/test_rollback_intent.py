@@ -153,6 +153,7 @@ def test_begin_rollback_atomically_records_intent_and_blocks_normal_wake(
         archive.archive_id,
         clock=clock,
     )
+    started_sequence = archive.active_event_sequence + 1
 
     assert clock.read_count == 1
     assert result.as_dict() == {
@@ -165,8 +166,8 @@ def test_begin_rollback_atomically_records_intent_and_blocks_normal_wake(
         "lifecycle_number": 0,
         "pre_rollback_status": "sleeping",
         "status": "rollback_in_progress",
-        "pre_rollback_event_sequence": 3,
-        "rollback_started_event_sequence": 4,
+        "pre_rollback_event_sequence": archive.active_event_sequence,
+        "rollback_started_event_sequence": started_sequence,
         "latest_stable_checkpoint_id": genesis.checkpoint_id,
         "latest_stable_event_sequence": 2,
     }
@@ -185,7 +186,8 @@ def test_begin_rollback_atomically_records_intent_and_blocks_normal_wake(
     connection = connect_database(paths.database, read_only=True)
     try:
         row = connection.execute(
-            "SELECT * FROM event WHERE event_sequence = 4"
+            "SELECT * FROM event WHERE event_sequence = ?",
+            (started_sequence,),
         ).fetchone()
         assert row["event_type"] == "rollback_started"
         assert row["source"] == "administration:rollback"
@@ -198,7 +200,7 @@ def test_begin_rollback_atomically_records_intent_and_blocks_normal_wake(
             "archive_manifest_sha256": archive.manifest_sha256,
             "latest_stable_checkpoint_id": genesis.checkpoint_id,
             "latest_stable_event_sequence": 2,
-            "pre_rollback_event_sequence": 3,
+            "pre_rollback_event_sequence": archive.active_event_sequence,
             "pre_rollback_lifecycle_number": 0,
             "pre_rollback_lineage_generation": 0,
             "pre_rollback_status": "sleeping",
@@ -253,8 +255,8 @@ def test_rollback_begin_cli_adopts_verified_archive(initialized, capsys) -> None
     payload = json.loads(capsys.readouterr().out)
     assert payload["archive_id"] == archive.archive_id
     assert payload["selected_checkpoint_id"] == genesis.checkpoint_id
-    assert payload["pre_rollback_event_sequence"] == 3
-    assert payload["rollback_started_event_sequence"] == 4
+    assert payload["pre_rollback_event_sequence"] == archive.active_event_sequence
+    assert payload["rollback_started_event_sequence"] == archive.active_event_sequence + 1
     assert payload["status"] == "rollback_in_progress"
     assert read_status(
         OrganismPaths.build(runtime_root, initial.organism_id)
@@ -279,7 +281,7 @@ def test_begin_rollback_rejects_active_drift_before_clock_use(initialized) -> No
 
     with pytest.raises(
         RollbackBeginRejectedError,
-        match="active database .* drifted from rollback archive",
+        match=r"active (state|canonical SQLite content) drifted from rollback archive",
     ):
         begin_rollback(
             runtime_root,
@@ -306,8 +308,10 @@ def test_begin_rollback_rejects_foreign_archive_before_clock_use(initialized) ->
         foreign_genesis.event_sequence,
     )
     paths.rollback_archives.mkdir(mode=0o700, exist_ok=True)
-    copied = paths.rollback_archives / foreign_archive.archive_id
-    shutil.copytree(foreign_archive.archive_dir, copied)
+    shutil.copytree(
+        foreign_archive.archive_dir,
+        paths.rollback_archives / foreign_archive.archive_id,
+    )
     before = _canonical_snapshot(paths)
     clock = FakeClock([])
 
