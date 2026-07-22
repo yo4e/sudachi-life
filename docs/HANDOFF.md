@@ -1,506 +1,317 @@
-# SUDACHI Project Handoff
+# SUDACHI Handoff
 
-Last updated: July 22, 2026
+Updated: **2026-07-22**
 
-## Cold-start summary
+This file is the operational restart point for the repository state that includes Phase 1 Slices 1–16. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
-SUDACHI asks whether a bounded artificial organism can convert external cognitive scaffolding into verified local competence and retain capability while becoming less dependent on that scaffolding.
+## Project thesis
 
-A future caregiver may be human, deterministic, model-based, hybrid, or absent. Phase 1 has no caregiver.
+SUDACHI asks whether a bounded artificial organism can convert finite external cognitive scaffolding into verified local competence and preserve capability while reducing justified caregiver dependence.
 
-One SQLite database is the canonical runtime body. Git and repository documents record source, protected tests, decisions, and developmental history.
+The developmental direction remains:
 
-## Normative authority
+```text
+parent reasoning -> verified experience -> reusable skill -> cheap local behavior
+```
 
-For Phase 1, use this precedence:
+The repository is the organism's auditable body, developmental history, skill base, and lineage record. A language model is a possible future caregiver or organ, not the organism itself.
 
-1. Minimal Organism Contract v0.2
-2. accepted ADRs 0001–0006
-3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
-4. this handoff
-5. explanatory architecture and roadmap documents
+The governing phrase remains:
 
-When sources conflict, stop and repair the contract, test, or documentation. Do not choose private semantics in code.
+> As it becomes smarter, it should become smaller and quieter.
 
-## Current state
+## Normative Phase 1 baseline
 
-Phase 0 is complete. Issue #1 is closed. Issue #13 tracks Phase 1 implementation.
+The accepted implementation authority is:
 
-### Slice 1 — foundation and genesis
+1. `docs/MINIMAL_ORGANISM_CONTRACT.md` v0.2
+2. ADRs 0001–0006 in `docs/decisions/`
+3. protected Phase 1 tests and `docs/PHASE1_TEST_MATRIX.md`
 
-Merged through PR #14: package, canonical SQLite body, injected clocks, protected garden and budgets, append-only events, verified genesis checkpoint, `init`, and `status`.
+Architecture, roadmap, handoff, issue discussion, and code comments explain the baseline but do not override it.
 
-### Slice 2 — inbox, wake ownership, and observation
+No unresolved seed-architecture choice may be invented in implementation code. If code reveals a contradiction with the contract or ADRs, stop and resolve it through repository review.
 
-Merged through PR #15: idempotent garden ticks, fail-fast `BEGIN IMMEDIATE`, non-queued competing-wake rejection, oldest input claim, and deterministic full observation.
+## Accepted architecture
+
+Phase 1 uses:
+
+- one canonical SQLite database per organism
+- append-only canonical event history ordered by integer `event_sequence`
+- injected wall and monotonic clocks
+- fail-fast `BEGIN IMMEDIATE` wake ownership
+- a deterministic two-plot `seed-garden-v1`
+- explicit concrete budgets and no scalar `energy`
+- protected action definitions and independent evaluation
+- exact pending checkpoint boundaries
+- verified immutable SQLite checkpoints
+- bounded checkpoint retention
+- explicit administrative maintenance and repair boundaries
+- non-canonical deterministic JSONL event export
+
+Phase 1 has no caregiver, model adapter, chat interface, network access, subprocess access, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
+
+## Current work streams
+
+### Issue #13 — Phase 1 SUDACHI-0 metabolism
+
+Primary implementation stream. Slices 1–16 are implemented in repository state containing this handoff.
+
+### Issue #3 — prior work and provider review
+
+Research stream. Preliminary evidence and provider-neutral strategy exist, but no strong novelty claim and no live caregiver selection are authorized. This stream does not block deterministic caregiver-free Phase 1 mechanics.
+
+## Implemented Phase 1 slices
+
+### Slice 1 — package, canonical genesis, and stable checkpoint
+
+Established:
+
+- Python 3.12 package and CLI
+- canonical SQLite schema
+- protected constants and validators
+- real and fake clocks
+- deterministic initialization
+- append-only event triggers
+- immutable stable genesis checkpoint
+- initial `init` and `status` commands
+
+### Slice 2 — inbox, wake acquisition, and observation
+
+Established:
+
+- idempotent `synthetic:garden_tick` enqueue
+- fail-fast wake ownership before mutable reads
+- one oldest eligible tick claim
+- rollback-only incomplete wake context
+- deterministic complete sorted garden observation
 
 ### Slice 3 — first canonical water wake
 
-Merged through PR #17:
+Established the complete first lifecycle:
 
-- fixed `water_plot(bed-a)` decision
-- action and mutation reservation before change
-- savepoint execution and independent evaluation
-- exact pending boundary at event sequence 13
-- lifecycle checkpoint stabilization at sequence 14
-- return to `sleeping`
-- checkpoint timeout preserves committed pending state
+- fixed policy chooses `water_plot(bed-a)`
+- action and mutation budgets reserve before change
+- action executes inside a savepoint
+- independent evaluation proves positive progress
+- exact pending boundary `13`
+- stable lifecycle checkpoint and return to sleep
 
 ### Slice 4 — canonical harvest wake
 
-Merged through PR #18:
+Established the second lifecycle:
 
-- the fixed policy reuses the same lifecycle and selects `harvest_plot(bed-b)` when no water target remains
-- the executor removes exactly one fruit and increments harvested inventory inside a savepoint
-- the evaluator independently proves the transition and changes objective completion from false to true
-- the second pending boundary is event sequence 24
-- administrative checkpoint stabilization is event sequence 25
-- the protected objective becomes complete and the organism sleeps at lifecycle 2
+- fixed policy skips unavailable watering
+- chooses `harvest_plot(bed-b)`
+- independent evaluation proves objective completion
+- exact pending boundary `24`
+- stable checkpoint and return to sleep
 
 ### Slice 5 — objective-complete abstention
 
-Merged through PR #19:
+Established the third canonical lifecycle:
 
-- the third canonical tick observes `objective_complete = true`
-- a dedicated abstention decision records `objective_already_complete`
-- zero action attempts and zero environment mutations are consumed
-- the evaluator independently proves that plots, inventory, objective, and environment step remain unchanged
-- lifecycle 3 commits pending boundary 34 and stabilizes at event sequence 35
-- the organism returns to `sleeping` with failure streak zero
-- the complete canonical water, harvest, abstention run is protected
+- typed `objective_already_complete` abstention
+- zero action attempts and zero mutations
+- independent unchanged-state evaluation
+- exact pending boundary `34`
+- stable checkpoint and return to sleep
+
+The canonical three-wake run is deterministic: water, harvest, justified abstention.
 
 ### Slice 6 — classified no-applicable-action abstention
 
-Merged through PR #20:
+Established:
 
-- a protected administrative fixture creates an incomplete objective with a dry sprout, no water, and no harvestable fruit
-- the fixed policy selects typed `no_applicable_action` before entering any mutating executor
-- one input and one observation are consumed; action attempts and environment mutations remain zero
-- the independent evaluator proves that the objective remains incomplete, no protected action is executable, unresolved needs remain unchanged, and canonical environment state does not move
-- `consecutive_failures` advances exactly once from zero to one
-- the protected maintenance threshold remains three and is not entered
-- the committed pending boundary is event sequence 16 and administrative stabilization is event sequence 17
-- the organism returns to `sleeping`
+- protected blocked-state fixture
+- typed `no_applicable_action`
+- unchanged environment
+- one failure-streak increment
+- stable checkpoint below maintenance threshold
 
-The fixture is test administration, not a live caregiver. No human, model, or fixture caregiver participates in action selection.
+### Slice 7 — resource-aware recovery
 
-### Slice 7 — resource-aware harvest recovery
+Established:
 
-Merged through PR #21:
+- unavailable watering does not hide an executable harvest
+- harvest produces positive progress
+- prior failure streak resets to zero
+- stable checkpoint and return to sleep
 
-- a protected administrative fixture starts with an incomplete objective, a dry sprout, zero water, one harvestable fruit, and `consecutive_failures = 1`
-- deterministic observation exposes no executable water target and one executable harvest target
-- the fixed policy skips impossible watering and selects `harvest_plot(bed-b)`
-- one input, observation, action attempt, and environment mutation are consumed; all external-capability counters remain zero
-- the independent evaluator proves the exact harvest transition, positive progress, and an objective that correctly remains incomplete
-- unresolved needs decrease from two to one
-- `consecutive_failures` resets exactly once from one to zero
-- the committed pending boundary is event sequence 17 and administrative stabilization is event sequence 18
-- the organism returns to `sleeping`
+### Slice 8 — classified action failure
 
-The recovery fixture is also test administration and does not participate in action selection.
+Established:
 
-### Slice 8 — classified action failure and savepoint cost preservation
+- protected failure injection after partial plot write
+- savepoint removes partial mutation
+- action attempt cost remains charged
+- successful mutation cost returns to zero
+- typed failure and independent rollback evaluation commit canonically
 
-Merged through PR #22:
+### Slice 9 — classified lifecycle budget exhaustion
 
-- a protected administrative fixture exposes exactly one executable `water_plot(bed-a)` action
-- test administration requests one typed failure after the plot row is partially written inside the existing SQLite savepoint
-- the executor rolls the savepoint back and releases the successful-mutation budget reservation while preserving the charged action attempt
-- the lifecycle records `action_failed`, never records false `action_completed`, and consumes the claimed input
-- the independent evaluator proves plots, inventory, objective, unresolved needs, and environment step are unchanged
-- `consecutive_failures` advances exactly once from zero to one below maintenance threshold three
-- the committed pending boundary is event sequence 17 and administrative stabilization is event sequence 18
-- the organism returns to `sleeping`
+Established:
 
-The failure injection is a test-only keyword argument. It is not available through the CLI, inbox, fixed policy, or organism state.
+- injected monotonic pre-action deadline check
+- typed exhaustion before proposal, attempt, savepoint, or mutation
+- nonnegative exact ledger
+- unchanged environment and stable checkpoint
 
-### Slice 9 — classified lifecycle budget exhaustion before mutation
+### Slice 10 — maintenance threshold
 
-Implemented and verified in PR #23:
+Established:
 
-- every wake now performs one explicit injected monotonic-time reading after fixed-policy selection and before any action executor is entered
-- a protected administrative fixture exposes exactly one executable `water_plot(bed-a)` action while leaving the protected budget configuration unchanged
-- the fake clock reports 2,001 ms elapsed against the protected 2,000 ms lifecycle work limit
-- the runtime records typed `lifecycle_wall_time_exhausted_before_action` before action proposal, action attempt, mutation reservation, or environment write
-- one input and one observation are consumed; action attempts and successful environment mutations remain zero; all external-capability counters remain zero
-- the independent evaluator re-reads the protected budget configuration and proves plots, inventory, objective, unresolved needs, and environment step are unchanged
-- `consecutive_failures` advances exactly once from zero to one below maintenance threshold three
-- the committed pending boundary is event sequence 16 and administrative stabilization is event sequence 17
-- the organism returns to `sleeping`
-
-The fake clock is a declared deterministic test input. The operational deadline check is part of the normal lifecycle and is not exposed as an organism-controlled switch.
-
-### Slice 10 — maintenance-threshold entry
-
-Implemented and verified in PR #24:
-
-- a protected administrative fixture starts from an incomplete blocked garden with `consecutive_failures = 2`
-- two uniquely identified ticks are queued before the threshold wake
-- the first tick is claimed, observed, and classified as `no_applicable_action`
-- one input and one observation are consumed; action attempts, successful environment mutations, and all external-capability counters remain zero
-- the independent evaluator proves the complete environment and unresolved needs remain unchanged
-- `consecutive_failures` advances exactly from two to three
-- the committed pending boundary is event sequence 17
-- checkpoint registration stabilizes event 18, records typed `maintenance_entered` at event 19, and leaves the organism in `maintenance_required`
-- the protected maintenance reason is `consecutive_failure_limit_reached`
-- a later normal wake is rejected before reading the clock, claiming the second tick, appending an event, or changing canonical state
-
-Maintenance repair and exit are not implemented. The queued second tick remains unclaimed and unconsumed.
+- exact failure streak transition `2 -> 3`
+- checkpoint stabilizes before `maintenance_required`
+- typed maintenance reason
+- later normal wake rejects before clock use or input claim
 
 ### Slice 11 — read-only maintenance inspection
 
-Implemented and verified in PR #25:
+Established:
 
-- a protected administrative fixture starts in stable `maintenance_required` state with failure streak three and typed reason `consecutive_failure_limit_reached`
-- one uniquely identified garden tick remains queued and unclaimed
-- `inspect_maintenance` opens the canonical database read-only, validates it, and accepts only exact maintenance state
-- `sudachi maintenance inspect <organism_id>` exposes the same explicit administrative boundary
-- the result reports status, maintenance reason, failure streak, latest stable checkpoint identity and boundary, inbox accounting, and exact unconsumed rows
-- the inspection verifies latest checkpoint registry consistency and exact inbox accounting
-- the API has no clock parameter and performs no clock read
-- API and CLI inspection leave every organism file byte-for-byte and metadata-for-metadata unchanged
-- event, inbox, checkpoint registry, maintenance state, and queued input remain unchanged
-- a later normal wake remains rejected with zero clock reads
-- inspection requested against a sleeping organism is rejected through a typed error
+- explicit administrative `mode=ro` inspection API and CLI
+- exact maintenance, checkpoint, and queued-input report
+- zero clock reads
+- byte-identical organism files before and after inspection
 
-Maintenance clear, repair, and rollback are not implemented.
+### Slice 12 — explicit maintenance clear
 
-### Slice 12 — explicit administrative maintenance clear
+Established:
 
-Implemented and verified in PR #26:
+- bounded caller-supplied recovery reason
+- fail-fast administrative transaction
+- atomic state reset plus `maintenance_cleared` audit event
+- preserved environment, checkpoints, and queued input
+- later normal wake permitted
 
-- a stable protected fixture starts in `maintenance_required` with failure streak three, typed reason `consecutive_failure_limit_reached`, stable checkpoint boundary six, and one queued unclaimed tick
-- `clear_maintenance` and `sudachi maintenance clear` expose one explicit administrative recovery boundary
-- the caller must provide a bounded recovery-reason token before any clock read or database mutation
-- the operation acquires fail-fast `BEGIN IMMEDIATE` ownership and validates exact maintenance and checkpoint-registry consistency
-- one injected clock read supplies the administrative audit timestamp
-- one transaction resets the failure streak from three to zero, clears `maintenance_reason`, restores `sleeping`, and appends typed `maintenance_cleared` event nine
-- plots, inventory, objective state, environment step, lifecycle, lineage, latest checkpoint references, checkpoint registry, and queued input remain unchanged
-- forced audit-event failure rolls back the state update and leaves maintenance intact
-- busy, invalid-reason, repeated-clear, and non-maintenance attempts reject without partial state
-- a later normal wake claims the preserved tick under the unchanged policy, classifies `no_applicable_action`, advances failures from zero to one, stabilizes boundary 18, and returns to sleeping at event 19
+### Slice 13 — successful checkpoint retention
 
-Environment repair, checkpoint repair, retention pruning, and rollback are not implemented.
+Established:
 
-### Slice 13 — successful bounded checkpoint retention pruning
+- checkpoint retention limit four
+- newest checkpoint becomes stable before pruning
+- genesis and latest preservation
+- same-filesystem staging of oldest eligible artifact
+- atomic registry deletion and `checkpoint_pruned` event
+- exact retained artifact and byte accounting
 
-Implemented and verified in PR #27:
+### Slice 14 — classified retention failure
 
-- the canonical three-wake history starts with four stable checkpoints at boundaries 2, 13, 24, and 34
-- a fourth objective-complete abstention wake commits boundary 44 and registers it as the newest stable checkpoint
-- pruning begins only after checkpoint stabilization is recorded at event 45
-- the protected retention transaction validates exact latest-stable identity and requires exactly five registered stable checkpoints
-- genesis is preserved and the oldest eligible non-genesis checkpoint at boundary 13 is selected
-- the selected artifact is staged by same-filesystem atomic rename before canonical registry mutation
-- one matching registry row is deleted and typed `checkpoint_pruned` event 46 records identifier, boundary, lineage, provenance, database bytes, total artifact bytes, retained count, and retained store bytes
-- the staged artifact is removed only after the canonical pruning transaction commits
-- the final retained boundaries are 2, 24, 34, and 44
-- every retained checkpoint validates, no staging directory remains, and normal wake ownership can still be acquired
-- active environment, objective, inventory, lineage, failure streak, latest-stable references, and inbox history remain unchanged
+Established:
 
-Checkpoint repair, orphan cleanup, and rollback are not implemented.
+- deterministic failure after artifact staging and before registry mutation
+- staged artifact restoration
+- no false pruning success
+- five valid artifacts and rows preserved
+- typed maintenance warning and blocked later wakes
 
-### Slice 14 — classified checkpoint-retention pruning failure
+### Slice 15 — pending checkpoint registration repair
 
-Implemented and verified in PR #28:
+Established:
 
-- the canonical fourth wake first publishes and registers boundary 44 and records checkpoint stabilization at event 45
-- a protected test-only failure is injected after boundary-13 artifact staging and before any registry mutation
-- the retention transaction rolls back and restores the staged boundary-13 artifact to its original immutable directory
-- all five checkpoint registry rows and artifacts remain at boundaries 2, 13, 24, 34, and 44
-- the newest checkpoint and exact latest-stable references remain boundary 44
-- every retained checkpoint validates, byte accounting matches, and no pruning staging directory remains
-- no false `checkpoint_pruned` event is recorded
-- one typed `checkpoint_retention_failed` administrative event is recorded at event 46
-- status becomes `maintenance_required` with reason `checkpoint_retention_pruning_failed`
-- active environment, objective, inventory, lineage, failure streak, and inbox history remain unchanged
-- read-only maintenance inspection reports the new reason and exact latest checkpoint
-- a later ordinary wake rejects before reading the clock or changing state
+- explicit administrative repair for exactly one valid published orphan
+- exact matching of identity, lineage, versions, boundary, digests, protected configuration, and snapshot contents
+- atomic registry insertion, pending clear, sleeping restoration, and typed repair event
+- rejection of zero, multiple, foreign, corrupt, busy, or repeated candidates without mutation
+- later normal wakeability
 
-Checkpoint repair, orphan cleanup, maintenance clear for the new reason, and rollback are not implemented.
+### Slice 16 — deterministic non-canonical JSONL event export
 
-### Slice 15 — explicit pending-checkpoint registration repair
+Established:
 
-Implemented and verified in PR #29:
+- explicit Python API `export_stable_events(...)`
+- narrow CLI `sudachi export events <organism_id> --event-sequence <N>`
+- caller-declared registered stable checkpoint boundary
+- active SQLite opened read-only inside one snapshot transaction
+- exact validation of canonical state, registry, immutable checkpoint, lineage, versions, digests, and complete event range
+- manifest plus event records ordered by canonical `event_sequence`
+- canonical JSON serialization with no export-time clock metadata
+- byte-identical repeated output from unchanged canonical state
+- bounded same-directory temporary file
+- validation before same-filesystem atomic replacement
+- preservation of a previous final export on injected partial temporary write failure
+- proof that export creation, modification, deletion, and failure cannot change canonical SQLite, checkpoint registry, checkpoint artifacts, inbox, events, status, or later wakeability
 
-- the protected first-water fixture commits boundary 13 and publishes its immutable lifecycle checkpoint artifact
-- the checkpoint deadline expires one nanosecond beyond the protected 5,000 ms limit before registry insertion, leaving canonical status `checkpoint_pending`, event count 13, and latest stable boundary 2
-- `repair_pending_checkpoint_registration` and `sudachi checkpoint repair-pending` expose one explicit administrative repair boundary
-- the operation acquires fail-fast `BEGIN IMMEDIATE` ownership without claiming input or advancing the environment
-- before any clock read, it requires exact pending identity and boundary, validates the previous stable checkpoint, rejects hidden or unsafe entries, requires exactly one visible unregistered artifact, and validates its identifier, lineage, lifecycle, versions, provenance, digests, protected configuration, and complete committed snapshot contents
-- zero, multiple, foreign-organism, corrupted, repeated, and busy repair attempts reject without clearing pending state or reading the clock
-- one injected administrative clock read supplies the successful registration and audit timestamp
-- one transaction inserts the registry row, advances latest stable to boundary 13, clears pending fields, restores `sleeping`, and appends typed `checkpoint_registration_repaired` event 14
-- no checkpoint artifact is copied, renamed, modified, or deleted; committed lifecycle state, environment, inbox history, genesis, and checkpoint-store bytes remain unchanged
-- a later second tick runs under the unchanged fixed policy, harvests `bed-b`, completes the objective, stabilizes boundary 24 at event 25, and returns to `sleeping`
+JSONL remains disposable and non-canonical. There is no import path and no lifecycle dual-write.
 
-Ambiguous-orphan cleanup, checkpoint deletion, retention-failure maintenance clear, broad repair, and rollback are not implemented.
+See `docs/phase1/SLICE16_JSONL_EVENT_EXPORT.md` for the exact boundary.
 
-## Verified implementation results
+## Validation state
 
-GitHub Actions passed on PR #29 with Python 3.12:
+GitHub Actions on Python 3.12 for PR #30 completed:
 
 - clean editable installation
-- `python -m compileall -q src tests`
-- **50 protected tests**
-- installed genesis CLI smoke test
-- all earlier canonical water, harvest, abstention, blocked-state, recovery, action-failure, and budget-exhaustion behavior remains protected
-- the maintenance-threshold fixture proves exact failure transition, unchanged environment, checkpoint stabilization, typed maintenance entry, and later normal-wake rejection
-- the maintenance-inspection fixture proves exact reporting, read-only files and canonical rows, typed non-maintenance rejection, and continued normal-wake blocking
-- the maintenance-clear fixture proves bounded reason validation, fail-fast ownership, atomic state and audit commit, exact preservation, rollback on audit failure, and later processing of the preserved tick
-- the checkpoint-retention fixture proves no pruning at four, fifth-checkpoint stability before pruning, genesis and latest preservation, oldest-eligible selection, exact artifact and registry removal, explicit byte-accounted audit history, and continued normal wakeability
-- the retention-failure fixture proves fifth-checkpoint stability before failure, staged-artifact restoration, five-row/five-artifact preservation, exact latest references, no false pruning success, typed maintenance warning, read-only inspection, and later zero-clock wake rejection
-- the pending-checkpoint-repair fixture proves exact one-orphan matching, full snapshot validation, zero-clock rejection for missing, ambiguous, foreign, invalid, repeated, and busy cases, atomic registry/pending/audit repair, artifact preservation, and later normal wakeability
+- source and test compilation
+- genesis CLI smoke test
+- **55 protected tests**
 
-The exact local source-tree run also passed **50 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
+`docs/PHASE1_TEST_MATRIX.md` maps the implemented coverage. Phase 1 is still incomplete; passing 55 tests does not imply all 41 contract evaluations are fully satisfied.
 
-Canonical three-wake values remain:
+## Known incomplete Phase 1 work
 
-- `lifecycle_number = 3`
-- `environment_step = 2`
-- `bed-a.moisture = 1`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 1`
-- `objective_complete = true`
-- `latest_stable_event_sequence = 34`
-- `event_count = 35`
-- `status = sleeping`
+Major incomplete areas include:
 
-The isolated Slice 6 blocked fixture finishes with:
+- offline rollback, pre-rollback archive, active replacement, new lineage generation, and abandoned-future preservation
+- complete repeated-run canonical equivalence
+- backward-wall-time ordering scenario
+- explicit seed-independence comparison
+- cleanup-grace boundary coverage
+- altered insertion-order tie-breaking scenario
+- post-action duplicate-input replay scenario
+- process-crash-before-commit test
+- nested-wake rejection
+- explicit second-wake rejection while a prior checkpoint is pending
+- broader protected-authority tests
 
-- `lifecycle_number = 1`
-- `environment_step = 0`
-- `bed-a.moisture = 0`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 0`
-- `objective_complete = false`
-- `consecutive_failures = 1`
-- `latest_stable_event_sequence = 16`
-- `event_count = 17`
-- `status = sleeping`
+Do not weaken existing tests to make these easier.
 
-The isolated Slice 7 recovery fixture finishes with:
+## Exact next task: Slice 17
 
-- `lifecycle_number = 1`
-- `environment_step = 1`
-- `bed-a.moisture = 0`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 1`
-- `objective_complete = false`
-- `consecutive_failures = 0`
-- `latest_stable_event_sequence = 17`
-- `event_count = 18`
-- `status = sleeping`
+Implement only the rollback foundation accepted by ADR 0004:
 
-The isolated Slice 8 action-failure fixture finishes with:
+1. create a new `agent/...` branch from current `main`
+2. add an explicit offline administrative Python boundary and narrow CLI command for selecting one retained stable checkpoint as a rollback source
+3. require the active organism to be stable, closed to normal wake work, and free of a pending checkpoint
+4. acquire fail-fast administrative ownership before any rollback preparation
+5. validate exactly one selected checkpoint registry row and immutable artifact
+6. prove organism identity, source lineage, contract, schema, environment, budget configuration, event boundary, manifest digest, database digest, and snapshot integrity
+7. reject missing, pruned, foreign, mismatched, unsafe, or invalid sources before active mutation
+8. create a complete verified pre-rollback archive of the current active database and current rollback-relevant metadata through a same-filesystem bounded temporary artifact
+9. publish the archive atomically only after full validation
+10. prove archive creation failure leaves active SQLite, current lineage, event history, inbox, registry, checkpoints, status, and wakeability unchanged
+11. update protected tests, `docs/PHASE1_TEST_MATRIX.md`, this handoff, Issue #13, and a dedicated Slice 17 implementation note
+12. run GitHub Actions from a pull request
 
-- `lifecycle_number = 1`
-- `environment_step = 0`
-- `bed-a.moisture = 0`
-- `bed-b.fruit = 0`
-- `water_units = 1`
-- `harvested_fruit = 0`
-- `objective_complete = false`
-- `consecutive_failures = 1`
-- `latest_stable_event_sequence = 17`
-- `event_count = 18`
-- `status = sleeping`
+Slice 17 stops before:
 
-The isolated Slice 9 budget-exhaustion fixture finishes with:
+- replacing the active database
+- incrementing lineage generation
+- writing rollback-completed canonical history
+- preserving the abandoned future through final lineage transition
+- deleting or pruning any checkpoint
+- adding JSONL import
+- adding caregiver consultation, learning, memory, skills, or generic recovery machinery
 
-- `lifecycle_number = 1`
-- `environment_step = 0`
-- `bed-a.moisture = 0`
-- `bed-b.fruit = 0`
-- `water_units = 1`
-- `harvested_fruit = 0`
-- `objective_complete = false`
-- `consecutive_failures = 1`
-- `latest_stable_event_sequence = 16`
-- `event_count = 17`
-- `status = sleeping`
+The purpose is to isolate and protect source selection plus pre-rollback preservation before the destructive replacement boundary is introduced.
 
-The isolated Slice 10 maintenance-threshold fixture finishes with:
+## Restart protocol
 
-- `lifecycle_number = 1`
-- `environment_step = 0`
-- `bed-a.moisture = 0`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 0`
-- `objective_complete = false`
-- `consecutive_failures = 3`
-- `maintenance_reason = consecutive_failure_limit_reached`
-- `latest_stable_event_sequence = 17`
-- `event_count = 19`
-- `status = maintenance_required`
-- the second queued tick remains unclaimed and unconsumed
+At the next session:
 
-The isolated Slice 11 maintenance-inspection fixture finishes with:
+1. read `AGENTS.md`
+2. read this handoff and the normative documents in the required order
+3. inspect current open issues and pull requests
+4. verify that PR #30 is merged or otherwise reconcile repository truth before Slice 17
+5. begin from the exact Slice 17 boundary above
 
-- `lifecycle_number = 0`
-- `environment_step = 0`
-- `bed-a.moisture = 0`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 0`
-- `objective_complete = false`
-- `consecutive_failures = 3`
-- `maintenance_reason = consecutive_failure_limit_reached`
-- `latest_stable_event_sequence = 6`
-- `event_count = 8`
-- `status = maintenance_required`
-- one tick remains queued, unclaimed, and unconsumed
-- API and CLI inspection change no organism file or canonical row
+At the end of substantial work, always leave:
 
-The isolated Slice 12 maintenance-clear fixture immediately after clear has:
+- updated `docs/HANDOFF.md`
+- updated test matrix
+- related Issue checklist or status update
+- durable implementation or decision note
+- tests and CI result
+- exact unfinished work and next action
 
-- `lifecycle_number = 0`
-- `environment_step = 0`
-- `bed-a.moisture = 0`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 0`
-- `objective_complete = false`
-- `consecutive_failures = 0`
-- `maintenance_reason = NULL`
-- `latest_stable_event_sequence = 6`
-- `event_count = 9`
-- `status = sleeping`
-- event nine is typed administrative `maintenance_cleared`
-- the queued tick remains unclaimed and unconsumed
-
-After the preserved tick runs normally, the same fixture finishes with lifecycle one, failure streak one, stable boundary 18, event count 19, status `sleeping`, and the tick consumed. The environment remains blocked and unchanged.
-
-The isolated Slice 13 checkpoint-retention fixture finishes with:
-
-- `lifecycle_number = 4`
-- `environment_step = 2`
-- `bed-a.moisture = 1`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 1`
-- `objective_complete = true`
-- `consecutive_failures = 0`
-- `latest_stable_event_sequence = 44`
-- `event_count = 46`
-- `status = sleeping`
-- retained checkpoint boundaries 2, 24, 34, and 44
-- genesis retained and lifecycle boundary 13 pruned
-- event 46 typed administrative `checkpoint_pruned`
-- no retention staging directory remains
-- normal wake ownership remains available
-
-The isolated Slice 14 checkpoint-retention-failure fixture finishes with:
-
-- `lifecycle_number = 4`
-- `environment_step = 2`
-- `bed-a.moisture = 1`
-- `bed-b.fruit = 0`
-- `water_units = 0`
-- `harvested_fruit = 1`
-- `objective_complete = true`
-- `consecutive_failures = 0`
-- `latest_stable_event_sequence = 44`
-- `event_count = 46`
-- `status = maintenance_required`
-- `maintenance_reason = checkpoint_retention_pruning_failed`
-- retained checkpoint boundaries 2, 13, 24, 34, and 44
-- the staged lifecycle boundary 13 artifact is restored and validates
-- event 46 typed administrative `checkpoint_retention_failed`
-- no false `checkpoint_pruned` event exists
-- no retention staging directory remains
-- later ordinary wake rejection consumes zero clock readings
-
-The isolated Slice 15 pending-checkpoint-repair fixture immediately after repair has:
-
-- `lifecycle_number = 1`
-- `environment_step = 1`
-- `bed-a.moisture = 1`
-- `bed-b.fruit = 1`
-- `water_units = 0`
-- `harvested_fruit = 0`
-- `objective_complete = false`
-- `consecutive_failures = 0`
-- `latest_stable_event_sequence = 13`
-- `event_count = 14`
-- `status = sleeping`
-- registered checkpoint boundaries 2 and 13
-- event 14 typed administrative `checkpoint_registration_repaired`
-- checkpoint artifacts and exact checkpoint-store bytes unchanged
-
-Before repair, the same fixture is committed at boundary 13 with event count 13, status `checkpoint_pending`, latest stable boundary 2, and exactly one valid published but unregistered boundary-13 artifact. Missing, ambiguous, foreign, invalid, repeated, and busy attempts leave that state unchanged with zero clock reads.
-
-After a later second tick, the repaired fixture finishes with lifecycle two, environment step two, harvested fruit one, completed objective, stable boundary 24, event count 25, status `sleeping`, and both ticks consumed.
-
-## Integration repair record
-
-PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
-
-## Accepted Phase 1 baseline
-
-- one canonical SQLite database per organism
-- event sequence, not timestamp, defines canonical order
-- injected wall and monotonic time
-- fail-fast SQLite write ownership
-- one input, observation, action attempt, and successful mutation at most per mutating wake
-- zero caregiver, network, subprocess, and authoritative external-write capability
-- no scalar energy
-- immutable checkpoint after every committed wake before another wake
-- rollback will preserve the abandoned future and create a new lineage generation
-
-## Exact next implementation task
-
-After PR #29 is merged, create a new branch from current `main` and implement **Slice 16: deterministic non-canonical JSONL event export**.
-
-The slice must:
-
-1. start from one declared stable committed organism boundary with no pending checkpoint
-2. expose an explicit administrative read-only export API and narrow CLI command, not an organism action
-3. open canonical SQLite read-only and declare the exact source lineage and event boundary
-4. emit deterministic JSONL ordered by canonical event sequence
-5. identify export format, organism, lineage, schema, contract, and first and last event boundaries
-6. use canonical JSON serialization with no wall-clock-dependent output
-7. write to a bounded temporary file and publish atomically only after complete validation
-8. produce byte-identical output when canonical state is unchanged
-9. prove export creation, deletion, modification, and injected write failure cannot alter canonical SQLite state, checkpoint state, inbox state, or wakeability
-10. pass protected tests and CI
-
-Do not add JSONL import, lifecycle dual-writing, organism-controlled export, rollback, orphan deletion, caregiver consultation, learning, or generic planning in Slice 16.
-
-## Current issue map
-
-- **Issue #1 — closed:** Phase 0 contract freeze.
-- **Issue #2 — closed:** Copilot architecture review.
-- **Issue #3 — open:** caregiver withdrawal, prior work, novelty, human-caregiver, and provider research.
-- **Issue #13 — open:** Phase 1 metabolism implementation.
-
-Always verify current GitHub state.
-
-## Do not add during Phase 1
-
-- a human or model caregiver
-- chat or natural-language action selection
-- network or subprocess access
-- organism-writable external files
-- arbitrary code or shell execution
-- continuous operation
-- learning, memories, skills, consolidation, or fading
-- scalar energy, mood, affection, or personality
-- a generic agent framework
-
-## End-of-session protocol
-
-Before ending substantial work:
-
-1. run relevant protected tests in CI and report exact results
-2. update contract or ADRs before implementing changed invariants
-3. update the test matrix, issue, and pull-request status
-4. update this file with true state, failures, and one exact next action
-5. leave no required decision only in chat or model memory
-
-**As it becomes smarter, it should become smaller and quieter.**
+No critical decision may remain only in chat history.
