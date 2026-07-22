@@ -81,7 +81,7 @@ Primary implementation stream. Repository state containing this file includes Sl
 18. durable rollback intent with atomic `rollback_started`
 19. verified source-restored candidate construction
 
-GitHub Actions for the PR #33 implementation head passed clean install, compileall, genesis CLI smoke, and **81 protected tests**.
+GitHub Actions for the final PR #33 head passed clean install, compileall, genesis CLI smoke, and **81 protected tests**.
 
 Phase 1 remains incomplete.
 
