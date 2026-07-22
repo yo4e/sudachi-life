@@ -20,6 +20,7 @@ from .paths import OrganismPaths
 from .rollback import prepare_rollback_archive
 from .rollback_candidate import build_restore_candidate
 from .rollback_intent import begin_rollback
+from .rollback_replace import replace_active_with_candidate
 from .rollback_transform import transform_restore_candidate
 
 
@@ -157,6 +158,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", dest="as_json"
     )
 
+    rollback_replace_parser = rollback_subparsers.add_parser(
+        "replace-active",
+        help="atomically replace the blocked active database with a verified candidate",
+    )
+    rollback_replace_parser.add_argument("organism_id")
+    rollback_replace_parser.add_argument(
+        "--candidate-id", required=True, dest="candidate_id"
+    )
+    rollback_replace_parser.add_argument(
+        "--json", action="store_true", dest="as_json"
+    )
+
     return parser
 
 
@@ -234,6 +247,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.organism_id,
                 args.candidate_id,
                 args.administrative_reason,
+            ).as_dict()
+        elif (
+            args.command == "rollback"
+            and args.rollback_command == "replace-active"
+        ):
+            payload = replace_active_with_candidate(
+                args.runtime_dir,
+                args.organism_id,
+                args.candidate_id,
             ).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
