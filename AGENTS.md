@@ -34,8 +34,6 @@ Repository state and current GitHub state outrank conversation history.
 
 SUDACHI asks whether a bounded artificial organism can convert finite external cognitive scaffolding into verified local competence and retain capability while requiring less justified caregiver assistance.
 
-Developmental direction:
-
 ```text
 parent reasoning -> verified experience -> reusable skill -> cheap local behavior
 ```
@@ -61,7 +59,7 @@ Do not hide a new architecture inside implementation code. If implementation rev
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Repository state containing this file includes Slices 1–17:
+Primary implementation stream. Repository state containing this file includes Slices 1–18:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -80,8 +78,9 @@ Primary implementation stream. Repository state containing this file includes Sl
 15. pending checkpoint registration repair
 16. deterministic non-canonical JSONL event export
 17. retained rollback-source validation and verified pre-rollback archive
+18. durable rollback intent with atomic `rollback_started`
 
-GitHub Actions for PR #31 passed clean install, compileall, genesis CLI smoke, and **63 protected tests**.
+GitHub Actions for PR #32 passed clean install, compileall, genesis CLI smoke, and **72 protected tests** on the implementation head.
 
 Phase 1 remains incomplete.
 
@@ -93,17 +92,7 @@ Do not connect a human or model caregiver to Phase 1. Do not treat ChatGPT and a
 
 ## Phase 1 invariants
 
-Phase 1 must remain:
-
-- deterministic
-- local
-- network-free
-- subprocess-free
-- caregiver-free
-- bounded
-- auditable
-- SQLite-canonical
-- checkpointed after every committed wake
+Phase 1 remains deterministic, local, network-free, subprocess-free, caregiver-free, bounded, auditable, SQLite-canonical, and checkpointed after every committed wake.
 
 The organism runtime must not:
 
@@ -116,9 +105,9 @@ The organism runtime must not:
 - weaken protected tests or budgets
 - modify protected actions, evaluators, schema, contract, or environment
 
-Administration is distinct from organism autonomy. Administrative operations must have narrow typed boundaries and preserve authority separation.
+Administration is distinct from organism autonomy. Administrative operations have narrow typed boundaries and preserve authority separation.
 
-## Non-canonical artifact boundaries
+## Established non-canonical and rollback boundaries
 
 ### JSONL export
 
@@ -128,57 +117,67 @@ There is no JSONL import, lifecycle dual-write, organism-controlled export, or e
 
 ### Pre-rollback archive
 
-Rollback archive preparation is explicit offline administration.
+Rollback archive preparation:
 
-It:
-
-- acquires fail-fast SQLite write ownership to prevent active advancement
+- acquires fail-fast SQLite ownership
 - requires stable active state with no pending checkpoint
-- selects exactly one retained protected checkpoint by event boundary
-- validates identity, active lineage, versions, source boundary, manifest digest, database digest, and snapshot integrity
-- snapshots the complete current active SQLite database through the Online Backup API
-- publishes an immutable `rollback-archives/pre-rb-.../` artifact only after full validation
-- rolls the ownership transaction back without changing canonical state
-- leaves normal wakeability unchanged after success or failure
+- selects exactly one retained protected checkpoint
+- validates identity, active lineage, versions, boundaries, digests, and integrity
+- snapshots the complete current active SQLite body through the Online Backup API
+- publishes immutable `rollback-archives/pre-rb-.../`
+- rolls back its ownership transaction without changing canonical state
 
-The archive is not a stable checkpoint, is not in `checkpoint_registry`, and is not pruned by ordinary checkpoint retention.
+The archive is not a stable checkpoint and does not participate in ordinary checkpoint retention.
 
-There is no active replacement, lineage mutation, or rollback-completed event in Slice 17.
+### Durable rollback intent
 
-## Exact restart point: Slice 18
+Rollback begin:
 
-After reconciling current `main`, Issue #13, and open pull requests, implement only durable adoption of one existing verified pre-rollback archive.
+- accepts one published archive identifier
+- acquires fail-fast ownership before mutable reads
+- validates the archive database and manifest
+- compares archived and active `user_version`, protected schema, every canonical row, and `sqlite_sequence`
+- revalidates the latest stable checkpoint and immutable selected source
+- rejects drift, foreign or unsafe content, busy or pending state, and repeated begin before mutation
+- changes status to `rollback_in_progress`
+- appends exactly one next-sequence `rollback_started` event in the same transaction
+- blocks later normal wakes before clock use or input claim
 
-Required Slice 18 boundary:
+SQLite backup artifacts are not assumed to have the same raw file bytes as their source. Exact active equality is established by a validated archive digest plus exact canonical SQLite schema, row, and sequence-state comparison.
+
+There is no restore candidate, lineage mutation, active replacement, or rollback completion in Slice 18.
+
+## Exact restart point: Slice 19
+
+After reconciling current `main`, Issue #13, and open pull requests, implement only protected restore-candidate construction required by Contract v0.2 §11.6 and ADR 0004.
+
+Required Slice 19 boundary:
 
 1. create a new `agent/...` branch from current `main`
-2. add an explicit offline administrative Python API and narrow CLI command, preferably `rollback begin`, accepting one published archive identifier
-3. acquire fail-fast administrative ownership before reading mutable active state
-4. validate the archive directory, manifest, database digest, snapshot integrity, selected checkpoint, and active-state metadata
-5. require the current active database to match exactly the archive's recorded organism identity, database digest, lineage generation, lifecycle number, status, active event boundary, latest-stable checkpoint, and latest-stable event boundary
-6. reject any state drift, missing archive, foreign archive, mismatched selected checkpoint, unsafe artifact, busy database, pending checkpoint, or repeated incompatible begin before mutation
-7. atomically set protected active status to `rollback_in_progress`
-8. atomically append one typed administrative `rollback_started` fact containing the archive and selected-source identities and the exact pre-rollback active boundary
-9. prove state update and audit event roll back together on failure
-10. prove later normal wakes reject before clock use, input claim, event creation, or environment change
-11. preserve the archive, selected checkpoint, active environment, inbox, registry, and existing event history except for the single typed rollback-start record
-12. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-13. run GitHub Actions through a pull request
+2. add an explicit offline administrative Python API and narrow CLI command for constructing one restore candidate from the active rollback intent
+3. acquire fail-fast ownership before reading mutable active state
+4. require canonical status `rollback_in_progress`, no pending checkpoint, and exactly one current-lineage `rollback_started` event at the active tip
+5. validate the event payload, referenced archive, archived active future, selected checkpoint registry row, and immutable selected checkpoint artifact
+6. reject missing, foreign, drifted, unsafe, ambiguous, busy, or inconsistent intent before candidate creation
+7. restore the selected checkpoint database into a bounded same-filesystem temporary candidate through SQLite's Online Backup API; do not use naive live-file copy
+8. validate candidate SQLite integrity, foreign keys, protected configuration, organism identity, source lineage, source lifecycle, exact source event boundary, and equality with the selected checkpoint
+9. expose no candidate as valid until complete validation and atomic publication succeed
+10. prove candidate creation or publication failure leaves the active `rollback_in_progress` body, `rollback_started` event, archive, selected checkpoint, inbox, registry, environment, and prior history unchanged
+11. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+12. run GitHub Actions through a pull request
 
-Slice 18 must stop before:
+Slice 19 must stop before:
 
-- copying the selected checkpoint into a restore candidate
-- modifying a candidate database
-- active database replacement
-- lineage-generation increment
-- rollback-completed event history
-- final abandoned-future linkage from the restored branch
-- checkpoint or archive pruning
+- changing the candidate lineage generation
+- appending restored-lineage or rollback-completed history
+- replacing the active database
+- clearing `rollback_in_progress`
+- deleting or pruning checkpoints, archives, or candidates
 - JSONL import
 - caregiver consultation
 - learning, memory, skills, or generic recovery machinery
 
-Do not privately decide the candidate transformation or replacement protocol while implementing durable rollback intent.
+Do not privately decide the later candidate-transformation or active-replacement protocol while implementing source restoration and validation.
 
 ## End-of-work protocol
 
