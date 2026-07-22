@@ -20,6 +20,7 @@ from .paths import OrganismPaths
 from .rollback import prepare_rollback_archive
 from .rollback_candidate import build_restore_candidate
 from .rollback_intent import begin_rollback
+from .rollback_transform import transform_restore_candidate
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -141,6 +142,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", dest="as_json"
     )
 
+    rollback_transform_parser = rollback_subparsers.add_parser(
+        "transform-candidate",
+        help="transform one verified restore candidate into a new-lineage candidate",
+    )
+    rollback_transform_parser.add_argument("organism_id")
+    rollback_transform_parser.add_argument(
+        "--candidate-id", required=True, dest="candidate_id"
+    )
+    rollback_transform_parser.add_argument(
+        "--reason", required=True, dest="administrative_reason"
+    )
+    rollback_transform_parser.add_argument(
+        "--json", action="store_true", dest="as_json"
+    )
+
     return parser
 
 
@@ -208,6 +224,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             payload = build_restore_candidate(
                 args.runtime_dir,
                 args.organism_id,
+            ).as_dict()
+        elif (
+            args.command == "rollback"
+            and args.rollback_command == "transform-candidate"
+        ):
+            payload = transform_restore_candidate(
+                args.runtime_dir,
+                args.organism_id,
+                args.candidate_id,
+                args.administrative_reason,
             ).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
