@@ -1,0 +1,22 @@
+name: Slice 8 source snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+      - name: Archive exact tree
+        run: zip -qr sudachi-slice8-source.zip . -x '.git/*' 'sudachi-slice8-source.zip'
+      - name: Upload source
+        uses: actions/upload-artifact@v4
+        with:
+          name: sudachi-slice8-source
+          path: sudachi-slice8-source.zip
