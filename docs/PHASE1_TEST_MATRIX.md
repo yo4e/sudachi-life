@@ -1,19 +1,19 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–21 implemented — Phase 1 incomplete**
+Status: **Slices 1–22 implemented — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
 | Contract evaluation | Protected test status |
 | --- | --- |
-| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, resource-aware recovery, classified failures, maintenance, byte-identical JSONL export, deterministic rollback candidates, and exact repeated active-replacement recovery are covered; full repeated-run canonical equivalence remains planned |
-| 2. Unexpected clock reads fail | `tests/test_clock.py::test_unexpected_clock_read_fails`; lifecycle clock counts are protected; maintenance inspection, export, rollback archive preparation, source-candidate construction, and active replacement consume no clock; rollback begin and candidate transformation read their declared clock only after complete validation; protected rejection paths consume zero |
+| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, classified failures, maintenance, byte-identical JSONL export, deterministic rollback candidates, exact repeated replacement, and exact repeated completion are covered; full repeated-run canonical equivalence remains planned |
+| 2. Unexpected clock reads fail | Lifecycle clock counts are protected; maintenance inspection, export, archive preparation, source-candidate construction, active replacement, and repeated completion consume no clock; rollback begin, candidate transformation, and first completion read their declared clock only after complete validation; rejection paths consume zero |
 | 3. Backward wall time does not reorder events | Event sequence is canonical; complete first-wake backward-time scenario remains planned |
 | 4. Seed does not change seed-garden behavior | Fixed first-water policy ignores the declared seed; explicit comparative test remains planned |
-| 5. One tick/observation/attempt/mutation maximum | water and harvest assert one attempt/mutation; abstentions and maintenance-threshold entry assert zero; classified action failure asserts one attempt and zero successful mutations; classified pre-action exhaustion asserts zero attempts and mutations |
+| 5. One tick/observation/attempt/mutation maximum | Water and harvest assert one attempt/mutation; abstentions and maintenance-threshold entry assert zero; classified action failure asserts one attempt and zero successful mutations; classified pre-action exhaustion asserts zero attempts and mutations |
 | 6. Twelve-step and monotonic deadline | First-water ledger records twelve steps; `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves typed lifecycle deadline exhaustion before action |
 | 7. Cleanup grace is not action time | Planned with classified failure and cleanup tests |
-| 8. Hard-zero external capabilities | water, harvest, abstentions, recovery, classified failures, and maintenance-threshold entry assert zero caregiver, network, subprocess, and external-write consumption |
+| 8. Hard-zero external capabilities | Water, harvest, abstentions, recovery, classified failures, and maintenance-threshold entry assert zero caregiver, network, subprocess, and external-write consumption |
 | 9. No independent energy field | `tests/test_initialization.py::test_canonical_state_has_no_energy_column` |
 | 10. First canonical tick waters `bed-a` | `tests/test_first_water_success.py::test_first_water_wake_commits_evaluates_and_checkpoints` |
 | 11. Second canonical tick harvests `bed-b` | `tests/test_second_harvest_success.py::test_second_wake_harvests_and_completes_objective` |
@@ -26,26 +26,26 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 18. Action attempt is charged before execution | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` |
 | 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` |
 | 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` |
-| 21. Failure streak and maintenance threshold | Slices 5–12 protect justified zero, classified increments, successful reset, exact threshold entry, inspection, and explicit clear |
-| 22. Atomic state/event commit | Genesis and lifecycle commits are protected; maintenance clear and pending repair are atomic; rollback intent commits status and `rollback_started` together; candidate transformation commits isolated lineage, registry, pending-state, and restoration-event changes together; active replacement adds no event and transfers a fully validated existing SQLite body atomically |
-| 23. Sequence order is canonical | Canonical lifecycles and administrative events are sequence-asserted; the transformed and replaced body preserves every source event and appends `rollback_lineage_prepared` at exactly source boundary plus one |
+| 21. Failure streak and maintenance threshold | Slices 5–12 protect justified zero, classified increments, successful reset, exact threshold entry, inspection, and explicit clear; rollback completion resets restored failure and maintenance state before wakeability |
+| 22. Atomic state/event commit | Genesis and lifecycle commits are protected; maintenance clear and pending repair are atomic; rollback intent commits status and `rollback_started` together; candidate transformation commits isolated lineage and restoration history together; active replacement transfers a validated body atomically; Slice 22 proves `sleeping` and `rollback_completed` commit or roll back together |
+| 23. Sequence order is canonical | Canonical lifecycles and administrative events are sequence-asserted; rollback preserves source history, appends `rollback_lineage_prepared` at source plus one, and appends `rollback_completed` at exactly the next sequence |
 | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
-| 25. JSONL export deterministic and non-canonical | `tests/test_event_export.py` proves declared stable-boundary validation, canonical byte-identical output, atomic publication, isolation, and preserved wakeability |
-| 26. Competing wake has one winner and one non-queued rejection | Wake and every write-owning rollback administrative boundary through active replacement have protected fail-fast competing-writer rejection |
-| 27. Crash before commit preserves prior state | Transaction/context rollback is covered; Slice 21 protects failure immediately before authority transfer and detectable recovery immediately after transfer; process-crash execution remains planned |
+| 25. JSONL export deterministic and non-canonical | `tests/test_event_export.py` proves stable-boundary validation, canonical byte-identical output, atomic publication, isolation, and preserved wakeability |
+| 26. Competing wake has one winner and one non-queued rejection | Wake and every write-owning rollback administrative boundary through completion have protected fail-fast competing-writer rejection |
+| 27. Crash before commit preserves prior state | Transaction/context rollback is covered; Slice 21 protects both sides of authority transfer; Slice 22 protects status/event rollback before completion commit; process-crash execution remains planned |
 | 28. Nested wake is rejected | Planned |
 | 29. Stable genesis checkpoint before wakeable | Initialization and genesis checkpoint tests |
-| 30. Successful wake commits an exact pending boundary | Water, harvest, abstention, blocked, recovery, action-failure, budget-exhaustion, and maintenance-threshold fixture boundaries are asserted |
-| 31. No later wake advances while checkpoint is pending | Pending-state rejection is protected; candidate transformation clears pending only in isolation; Slice 21 keeps the replaced body `rollback_in_progress`, and normal wake rejects before clock or claim |
+| 30. Successful wake commits an exact pending boundary | Canonical wake fixture boundaries are asserted; Slice 22 additionally proves the first post-rollback new-lineage wake commits and stabilizes a new checkpoint |
+| 31. No later wake advances while checkpoint is pending | Pending-state rejection is protected; rollback remains non-wakeable through replacement and becomes wakeable only after atomic completion |
 | 32. Invalid checkpoint is not stable | Digest and directory-name mismatch tests |
-| 33. Checkpoint validation covers protected identity and boundary | Initialization, lifecycle, repair, export, rollback preparation, intent, candidate construction, transformation, and active replacement revalidate their declared checkpoint identity, lineage, registry metadata, digest, and event boundary |
+| 33. Checkpoint validation covers protected identity and boundary | Initialization, lifecycle, repair, export, and all rollback stages revalidate declared checkpoint identity, lineage, registry metadata, digest, and event boundary; first post-rollback checkpoint is new-lineage validated |
 | 34. Checkpoint failure preserves committed pending state | Checkpoint timeout preserves pending state; pending-checkpoint repair proves exact registration repair |
-| 35. Retention is bounded and safe | Successful pruning and classified pruning failure are protected; rollback archives and candidates remain outside ordinary checkpoint retention |
-| 36–38. Rollback archive, lineage, and failure recovery | Partial: Slice 17 preserves the abandoned future. Slice 18 records durable intent. Slice 19 restores an exact source candidate. Slice 20 constructs the new lineage and restoration fact. Slice 21 proves bounded same-filesystem staging, atomic canonical authority transfer, immediate active-candidate equality validation, preserved immutable provenance, pre-transfer failure preservation, recoverable post-transfer interruption, exact repeated recovery, and continued wake blocking. `rollback_completed`, wake enablement, and post-rollback checkpoint/retention policy remain planned |
-| 39. Protected authority cannot be modified by organism | Protected actions and evaluators are used; every implemented rollback operation is an explicit offline administrative boundary; broader authority tests remain planned |
+| 35. Retention is bounded and safe | Ordinary checkpoint pruning and classified pruning failure are protected; rollback artifacts remain protected outside checkpoint retention. A bounded rollback-artifact retention decision is still required before any deletion implementation |
+| 36–38. Rollback archive, lineage, and failure recovery | Slices 17–22 now protect the complete rollback path: abandoned-future archive, durable intent, exact source restoration, new-lineage transformation, atomic active replacement, immediate validation, recoverable post-transfer interruption, atomic `rollback_completed`, restored wakeability, and a first successful new-lineage checkpoint. Long-term rollback-artifact retention remains undecided |
+| 39. Protected authority cannot be modified by organism | Protected actions and evaluators are used; every rollback operation is an explicit offline administrative boundary; broader authority tests remain planned |
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
-| 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records candidate-local `rollback_lineage_prepared`; active replacement creates no new event and preserves the prepared tip |
+| 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback` |
 
-PR #35 passed GitHub Actions on Python 3.12 with **107 protected tests** on the implementation head after correcting one collection-time module-name import.
+PR #36 passed GitHub Actions on Python 3.12 with **115 protected tests** on the implementation head after correcting one completion-boundary exception-classification failure.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
