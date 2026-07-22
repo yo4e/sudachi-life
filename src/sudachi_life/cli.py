@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 from typing import Sequence
 
+from .checkpoint_repair import repair_pending_checkpoint_registration
 from .errors import SudachiError
 from .inbox import GARDEN_TICK_EVENT_TYPE, enqueue_garden_tick
 from .lifecycle import perform_garden_wake
@@ -65,6 +66,21 @@ def build_parser() -> argparse.ArgumentParser:
     clear_parser.add_argument("--reason", required=True, dest="recovery_reason")
     clear_parser.add_argument("--json", action="store_true", dest="as_json")
 
+    checkpoint_parser = subparsers.add_parser(
+        "checkpoint", help="perform explicit administrative checkpoint operations"
+    )
+    checkpoint_subparsers = checkpoint_parser.add_subparsers(
+        dest="checkpoint_command", required=True
+    )
+    repair_pending_parser = checkpoint_subparsers.add_parser(
+        "repair-pending",
+        help="register exactly one valid published pending checkpoint",
+    )
+    repair_pending_parser.add_argument("organism_id")
+    repair_pending_parser.add_argument(
+        "--json", action="store_true", dest="as_json"
+    )
+
     return parser
 
 
@@ -98,6 +114,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.runtime_dir,
                 args.organism_id,
                 args.recovery_reason,
+            ).as_dict()
+        elif (
+            args.command == "checkpoint"
+            and args.checkpoint_command == "repair-pending"
+        ):
+            payload = repair_pending_checkpoint_registration(
+                args.runtime_dir,
+                args.organism_id,
             ).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
