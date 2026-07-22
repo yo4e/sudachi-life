@@ -1,6 +1,7 @@
 """Bounded command-line interface for SUDACHI-0."""
 
 from __future__ import annotations
+
 import argparse
 import json
 from pathlib import Path
@@ -17,6 +18,7 @@ from .maintenance_recovery import clear_maintenance
 from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
 from .rollback import prepare_rollback_archive
+from .rollback_intent import begin_rollback
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -117,6 +119,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", dest="as_json"
     )
 
+    rollback_begin_parser = rollback_subparsers.add_parser(
+        "begin",
+        help="adopt one verified pre-rollback archive as durable rollback intent",
+    )
+    rollback_begin_parser.add_argument("organism_id")
+    rollback_begin_parser.add_argument(
+        "--archive-id", required=True, dest="archive_id"
+    )
+    rollback_begin_parser.add_argument(
+        "--json", action="store_true", dest="as_json"
+    )
+
     return parser
 
 
@@ -170,6 +184,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.runtime_dir,
                 args.organism_id,
                 args.event_sequence,
+            ).as_dict()
+        elif args.command == "rollback" and args.rollback_command == "begin":
+            payload = begin_rollback(
+                args.runtime_dir,
+                args.organism_id,
+                args.archive_id,
             ).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
