@@ -42,7 +42,7 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–9 establish:
+Slices 1–10 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
@@ -60,13 +60,16 @@ Slices 1–9 establish:
 - removal of partial environment change while preserving charged action-attempt cost
 - an explicit pre-action monotonic deadline check for every wake
 - classified lifecycle wall-time exhaustion before action attempt or environment mutation
-- the complete canonical three-wake run plus protected blocked-state, recovery, action-failure, and budget-exhaustion fixtures
+- exact maintenance-threshold entry after the third consecutive classified failure
+- typed `consecutive_failure_limit_reached` maintenance state after checkpoint stabilization
+- later normal-wake rejection without clock reads, event writes, input consumption, or state advancement
+- the complete canonical three-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, and maintenance-threshold fixtures
 
-After PR #23 is merged, the exact next implementation slice is **Slice 10: maintenance-threshold entry after the third consecutive classified failure**.
+After PR #24 is merged, the exact next implementation slice is **Slice 11: protected read-only maintenance inspection**.
 
-It must use an explicit protected fixture at `consecutive_failures = 2`, commit one further classified failure without changing the environment, advance the counter exactly to three, stabilize the exact checkpoint boundary, leave the organism in `maintenance_required` rather than `sleeping`, and prove a later normal wake cannot advance.
+It must inspect a canonical `maintenance_required` organism through an explicit administrative boundary, report the typed maintenance reason, failure streak, latest stable checkpoint, and queued-input state, and prove the inspection performs zero canonical writes, zero event additions, zero clock reads, and no maintenance clearing. Normal wakes must remain blocked.
 
-Do not add maintenance repair, failure-counter clearing, checkpoint repair, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 10.
+Do not add maintenance exit, failure-counter clearing, checkpoint repair, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 11.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 

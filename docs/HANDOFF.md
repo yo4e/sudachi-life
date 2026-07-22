@@ -131,18 +131,35 @@ Implemented and verified in PR #23:
 
 The fake clock is a declared deterministic test input. The operational deadline check is part of the normal lifecycle and is not exposed as an organism-controlled switch.
 
+### Slice 10 — maintenance-threshold entry
+
+Implemented and verified in PR #24:
+
+- a protected administrative fixture starts from an incomplete blocked garden with `consecutive_failures = 2`
+- two uniquely identified ticks are queued before the threshold wake
+- the first tick is claimed, observed, and classified as `no_applicable_action`
+- one input and one observation are consumed; action attempts, successful environment mutations, and all external-capability counters remain zero
+- the independent evaluator proves the complete environment and unresolved needs remain unchanged
+- `consecutive_failures` advances exactly from two to three
+- the committed pending boundary is event sequence 17
+- checkpoint registration stabilizes event 18, records typed `maintenance_entered` at event 19, and leaves the organism in `maintenance_required`
+- the protected maintenance reason is `consecutive_failure_limit_reached`
+- a later normal wake is rejected before reading the clock, claiming the second tick, appending an event, or changing canonical state
+
+Maintenance repair and exit are not implemented. The queued second tick remains unclaimed and unconsumed.
+
 ## Verified implementation results
 
-GitHub Actions passed on PR #23 with Python 3.12:
+GitHub Actions passed on PR #24 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **33 protected tests**
+- **34 protected tests**
 - installed genesis CLI smoke test
-- all earlier canonical water, harvest, abstention, blocked-state, recovery, and action-failure behavior remains protected
-- the budget-exhaustion fixture proves deadline detection before action attempt or mutation, exact nonnegative accounting, one failure increment, checkpoint stabilization, and sleep
+- all earlier canonical water, harvest, abstention, blocked-state, recovery, action-failure, and budget-exhaustion behavior remains protected
+- the maintenance-threshold fixture proves exact failure transition, unchanged environment, checkpoint stabilization, typed maintenance entry, and later normal-wake rejection
 
-The exact local source-tree run also passed **33 tests**, compileall, and the canonical three-wake CLI sequence with unchanged boundaries 13, 24, and 34 and final event count 35. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
+The exact local source-tree run also passed **34 tests** and compileall. A separate local editable install could not import `hatchling.build`; GitHub Actions independently completed the clean install, so that local environment failure is not treated as success.
 
 Canonical three-wake values remain:
 
@@ -213,6 +230,22 @@ The isolated Slice 9 budget-exhaustion fixture finishes with:
 - `event_count = 17`
 - `status = sleeping`
 
+The isolated Slice 10 maintenance-threshold fixture finishes with:
+
+- `lifecycle_number = 1`
+- `environment_step = 0`
+- `bed-a.moisture = 0`
+- `bed-b.fruit = 0`
+- `water_units = 0`
+- `harvested_fruit = 0`
+- `objective_complete = false`
+- `consecutive_failures = 3`
+- `maintenance_reason = consecutive_failure_limit_reached`
+- `latest_stable_event_sequence = 17`
+- `event_count = 19`
+- `status = maintenance_required`
+- the second queued tick remains unclaimed and unconsumed
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -231,21 +264,20 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #23 is merged, create a new branch from current `main` and implement **Slice 10: maintenance-threshold entry after the third consecutive classified failure**.
+After PR #24 is merged, create a new branch from current `main` and implement **Slice 11: protected read-only maintenance inspection**.
 
 The slice must:
 
-1. use an explicit protected fixture with `consecutive_failures = 2`, an incomplete objective, and no executable protected mutation
-2. claim one tick, build one complete observation, and classify `no_applicable_action`
-3. consume one input and one observation while action attempts and environment mutations remain zero
-4. independently prove the environment remains unchanged
-5. advance `consecutive_failures` exactly from two to three
-6. commit and stabilize an exact checkpoint boundary
-7. leave the organism in `maintenance_required`, with a typed maintenance reason, rather than `sleeping`
-8. reject a later normal wake without consuming another input or changing the failure counter
-9. prove the result in protected tests and CI
+1. use an explicit stable `maintenance_required` fixture with failure streak three and typed reason `consecutive_failure_limit_reached`
+2. expose one explicit administrative inspection boundary rather than a normal organism wake
+3. report canonical status, maintenance reason, failure streak, latest stable checkpoint boundary, and queued-input state
+4. validate the canonical database before reporting
+5. consume zero clock readings and perform zero canonical writes, event additions, input claims, or input consumption
+6. leave maintenance status, failure streak, environment, checkpoint references, and queued inputs unchanged
+7. prove that normal wakes remain rejected
+8. pass protected tests and CI
 
-Do not add maintenance repair, failure-counter clearing, checkpoint repair, lineage rollback, caregiver consultation, learning, or generic planning in Slice 10.
+Do not add maintenance exit, failure-counter clearing, checkpoint repair, lineage rollback, caregiver consultation, learning, or generic planning in Slice 11.
 
 ## Current issue map
 
