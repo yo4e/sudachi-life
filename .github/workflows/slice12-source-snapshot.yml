@@ -1,0 +1,24 @@
+name: Slice 12 source snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull-request branch
+        uses: actions/checkout@v4
+      - name: Create source archive
+        run: |
+          tar --exclude=.git --exclude=.github/workflows/slice12-source-snapshot.yml -czf /tmp/sudachi-slice12-source.tar.gz .
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: sudachi-slice12-source
+          path: /tmp/sudachi-slice12-source.tar.gz
+          if-no-files-found: error
