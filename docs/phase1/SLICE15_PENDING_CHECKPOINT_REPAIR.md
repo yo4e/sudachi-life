@@ -1,6 +1,6 @@
 # Phase 1 Slice 15: Pending Checkpoint Registration Repair
 
-Status: **implemented locally; GitHub validation pending in PR #29**
+Status: **implemented and verified in PR #29**
 
 Tracked by: Issue #13
 
@@ -99,7 +99,9 @@ Local source-tree validation completed:
 - `python -m compileall -q src tests`
 - **50 protected tests**
 
-A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success. GitHub Actions must independently complete clean installation and the protected suite before merge.
+A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success.
+
+GitHub Actions on Python 3.12 independently completed clean editable installation, compileall, genesis CLI smoke, and **50 protected tests**.
 
 ## Deliberately out of scope
 
@@ -111,4 +113,8 @@ A separate local clean editable install could not resolve `hatchling>=1.25` from
 
 ## Exact next slice
 
-The next slice must be selected from the remaining Contract v0.2 evaluation matrix only after PR #29 is independently verified and merged. The exact scope must be confirmed against current Issue #13 and repository state before implementation.
+After PR #29 is merged, Slice 16 will protect deterministic non-canonical JSONL event export from one declared stable committed boundary.
+
+It must use an explicit administrative read-only API and narrow CLI command, order records by canonical event sequence, identify export format, organism, lineage, schema, contract, and event boundaries, produce byte-identical output for unchanged canonical state, publish atomically only after complete validation, and prove export creation, deletion, modification, or failure cannot alter canonical SQLite state.
+
+It must not add JSONL import, lifecycle dual-writing, organism-controlled export, rollback, orphan deletion, caregiver consultation, learning, memory, or generic planning.
