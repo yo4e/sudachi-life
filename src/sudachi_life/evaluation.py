@@ -6,7 +6,12 @@ from dataclasses import dataclass
 import sqlite3
 from typing import Any
 
-from .actions import GardenAbstention, GardenActionDecision, GardenDecision
+from .actions import (
+    GardenAbstention,
+    GardenActionDecision,
+    GardenDecision,
+    ProtectedActionFailure,
+)
 from .errors import SchemaValidationError
 from .garden import GardenObservation
 
@@ -199,6 +204,66 @@ def evaluate_harvest_transition(
     return _finish_action_evaluation(
         connection,
         before,
+        environment_step_after=int(after_environment["environment_step"]),
+    )
+
+
+def evaluate_classified_action_failure(
+    connection: sqlite3.Connection,
+    before: GardenObservation,
+    decision: GardenActionDecision,
+    failure: ProtectedActionFailure,
+) -> GardenEvaluation:
+    """Prove that a classified failed action left no partial environment change."""
+
+    if failure.reason != "protected_test_injected_action_failure":
+        raise SchemaValidationError("unsupported classified action-failure reason")
+    if failure.injection_point != "after_plot_write":
+        raise SchemaValidationError("unsupported classified action-failure injection point")
+    if (
+        failure.action_id != decision.action_id
+        or failure.action_version != decision.action_version
+        or failure.plot_id != decision.plot_id
+    ):
+        raise SchemaValidationError("classified action failure does not match its decision")
+
+    observed = next(
+        (action for action in before.actions if action["action_id"] == decision.action_id),
+        None,
+    )
+    if observed is None or decision.plot_id not in tuple(observed["applicable_targets"]):
+        raise SchemaValidationError("classified action failure was not an executable proposal")
+
+    after_environment, after_inventory, after_plots = _read_after_state(connection)
+    before_plots = {str(plot["plot_id"]): dict(plot) for plot in before.plots}
+    if after_plots != before_plots:
+        raise SchemaValidationError("classified action failure left a partial plot mutation")
+    if after_inventory["water_units"] != before.water_units:
+        raise SchemaValidationError("classified action failure changed water inventory")
+    if after_inventory["harvested_fruit"] != before.harvested_fruit:
+        raise SchemaValidationError("classified action failure changed harvested inventory")
+    if after_environment["environment_step"] != before.environment_step:
+        raise SchemaValidationError("classified action failure changed environment step")
+    objective_after = recompute_objective(connection)
+    if (
+        bool(after_environment["objective_complete"]) != before.objective_complete
+        or objective_after != before.objective_complete
+    ):
+        raise SchemaValidationError("classified action failure changed objective state")
+
+    unresolved_before = _unresolved_needs_before(before)
+    unresolved_after = _unresolved_needs(connection)
+    if unresolved_after != unresolved_before:
+        raise SchemaValidationError("classified action failure changed unresolved needs")
+
+    return GardenEvaluation(
+        success=False,
+        objective_complete_before=before.objective_complete,
+        objective_complete_after=objective_after,
+        unresolved_needs_before=unresolved_before,
+        unresolved_needs_after=unresolved_after,
+        progress="action_failed_rolled_back",
+        environment_step_before=before.environment_step,
         environment_step_after=int(after_environment["environment_step"]),
     )
 
