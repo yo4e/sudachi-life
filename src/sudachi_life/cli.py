@@ -11,6 +11,7 @@ from typing import Sequence
 from .errors import SudachiError
 from .inbox import GARDEN_TICK_EVENT_TYPE, enqueue_garden_tick
 from .lifecycle import perform_garden_wake
+from .maintenance import inspect_maintenance
 from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
 
@@ -44,6 +45,18 @@ def build_parser() -> argparse.ArgumentParser:
     status_parser.add_argument("organism_id")
     status_parser.add_argument("--json", action="store_true", dest="as_json")
 
+    maintenance_parser = subparsers.add_parser(
+        "maintenance", help="perform explicit administrative maintenance operations"
+    )
+    maintenance_subparsers = maintenance_parser.add_subparsers(
+        dest="maintenance_command", required=True
+    )
+    inspect_parser = maintenance_subparsers.add_parser(
+        "inspect", help="inspect stable maintenance state without mutation"
+    )
+    inspect_parser.add_argument("organism_id")
+    inspect_parser.add_argument("--json", action="store_true", dest="as_json")
+
     return parser
 
 
@@ -70,6 +83,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             ).as_dict()
         elif args.command == "status":
             payload = get_status(args.runtime_dir, args.organism_id).as_dict()
+        elif args.command == "maintenance" and args.maintenance_command == "inspect":
+            payload = inspect_maintenance(args.runtime_dir, args.organism_id).as_dict()
         else:
             parser.error(f"unknown command: {args.command}")
             return 2

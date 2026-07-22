@@ -42,7 +42,7 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–10 establish:
+Slices 1–11 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
@@ -63,13 +63,17 @@ Slices 1–10 establish:
 - exact maintenance-threshold entry after the third consecutive classified failure
 - typed `consecutive_failure_limit_reached` maintenance state after checkpoint stabilization
 - later normal-wake rejection without clock reads, event writes, input consumption, or state advancement
-- the complete canonical three-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, and maintenance-threshold fixtures
+- explicit administrative `maintenance inspect` API and CLI boundaries
+- canonical maintenance reason, failure streak, latest checkpoint, and queued-input reporting
+- read-only inspection with no clocks, claims, events, canonical writes, file changes, or maintenance clearing
+- typed rejection when inspection is requested outside `maintenance_required`
+- the complete canonical three-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, and maintenance-inspection fixtures
 
-After PR #24 is merged, the exact next implementation slice is **Slice 11: protected read-only maintenance inspection**.
+After PR #25 is merged, the exact next implementation slice is **Slice 12: explicit administrative maintenance clear**.
 
-It must inspect a canonical `maintenance_required` organism through an explicit administrative boundary, report the typed maintenance reason, failure streak, latest stable checkpoint, and queued-input state, and prove the inspection performs zero canonical writes, zero event additions, zero clock reads, and no maintenance clearing. Normal wakes must remain blocked.
+It must require a recorded recovery reason, acquire fail-fast SQLite write ownership, validate the stable maintenance state and latest checkpoint, atomically reset the failure streak to zero, clear the maintenance reason, restore `sleeping`, append a distinct administrative audit event, preserve the environment, checkpoint references, and queued inputs, and prove a later normal wake may process the queued tick.
 
-Do not add maintenance exit, failure-counter clearing, checkpoint repair, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 11.
+Do not add environment repair, checkpoint repair, retention pruning, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 12.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
