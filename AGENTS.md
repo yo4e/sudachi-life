@@ -21,212 +21,160 @@ Read these files in order:
 7. `docs/ROADMAP.md`
 8. `docs/IMPLEMENTATION_DISCIPLINE.md`
 9. `docs/PHASE1_TEST_MATRIX.md`
-10. implemented notes in `docs/phase1/`
+10. implemented notes in `docs/phase1/`, in slice order
 11. `docs/RESEARCH_QUESTIONS.md`
 12. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-13. research notes in `docs/research/`
+13. preliminary notes in `docs/research/`
 14. `docs/HANDOFF.md`
-15. current issues, pull requests, and CI state
+15. current open GitHub issues and pull requests
 
-Current GitHub state outranks this file when they disagree. Repair stale continuity documents before broad implementation.
+Repository state and current GitHub state outrank conversation history.
 
-Do not infer the project only from the latest issue or code fragment. SUDACHI is a developmental artificial-life experiment, not a generic autonomous-agent framework or virtual-pet presentation layer.
+## Core project question
 
-## Current work streams
+SUDACHI asks whether a bounded artificial organism can convert finite external cognitive scaffolding into verified local competence and retain capability while requiring less justified caregiver assistance.
 
-- **Issue #1 — closed:** Phase 0 contract and ADR freeze.
-- **Issue #3 — open:** caregiver withdrawal, prior work, novelty, human-caregiver, and provider research.
-- **Issue #13 — open:** deterministic Phase 1 metabolism implementation.
+Developmental direction:
 
-No research result authorizes a live caregiver during Phase 1.
+```text
+parent reasoning -> verified experience -> reusable skill -> cheap local behavior
+```
 
-## Immediate restart point
+The repository is the organism's auditable body, developmental history, skill base, and lineage record. A model may later be a caregiver or organ; it is not the whole organism.
 
-Slices 1–15 establish:
+> As it becomes smarter, it should become smaller and quieter.
 
-- a canonical SQLite organism body
-- injected time and protected concrete budgets
-- stable genesis, water, harvest, justified-abstention, blocked-abstention, recovery, action-failure, and budget-exhaustion checkpoints
-- idempotent synthetic garden ticks
-- fail-fast wake ownership and deterministic observation
-- fixed-policy `water_plot(bed-a)` and `harvest_plot(bed-b)` wakes
-- justified `objective_already_complete` abstention with zero action and mutation cost
-- classified `no_applicable_action` abstention when the objective is incomplete but no protected mutation is executable
-- independent transition, abstention, rolled-back failure, and budget-exhaustion evaluation
-- explicit failure-streak accounting below the maintenance threshold
-- resource-aware harvest fallback when watering is impossible
-- verified failure-streak reset after positive progress
-- classified injected action failure after a partial savepoint write
-- removal of partial environment change while preserving charged action-attempt cost
-- an explicit pre-action monotonic deadline check for every wake
-- classified lifecycle wall-time exhaustion before action attempt or environment mutation
-- exact maintenance-threshold entry after the third consecutive classified failure
-- typed `consecutive_failure_limit_reached` maintenance state after checkpoint stabilization
-- later normal-wake rejection without clock reads, event writes, input consumption, or state advancement
-- explicit administrative `maintenance inspect` API and CLI boundaries
-- canonical maintenance reason, failure streak, latest checkpoint, and queued-input reporting
-- read-only inspection with no clocks, claims, events, canonical writes, file changes, or maintenance clearing
-- typed rejection when inspection is requested outside `maintenance_required`
-- explicit administrative `maintenance clear` API and CLI boundaries
-- bounded recovery-reason validation before clock use or canonical mutation
-- fail-fast maintenance-clear ownership and exact protected-state validation
-- atomic `maintenance_required -> sleeping` recovery with failure streak `3 -> 0`
-- typed `maintenance_cleared` audit history with rollback if the audit write fails
-- preservation of environment, checkpoint references, and queued input through maintenance clear
-- later normal-wake processing of the preserved tick under the unchanged fixed policy
-- bounded stable-checkpoint retention under protected limit four
-- fifth-checkpoint stabilization before any pruning
-- genesis preservation and oldest-eligible non-genesis pruning
-- matching artifact and registry removal with typed `checkpoint_pruned` audit history
-- exact retained-checkpoint and byte accounting with normal wakeability preserved
-- classified retention-pruning failure after artifact staging and before registry mutation
-- exact staged-artifact restoration with all five stable checkpoints retained and validated
-- typed `checkpoint_retention_pruning_failed` maintenance warning without false pruning success
-- later normal-wake rejection without clock reads after retention failure
-- explicit administrative `checkpoint repair-pending` API and CLI boundaries
-- fail-fast pending-checkpoint repair ownership without input claim or environment advancement
-- exact one-candidate validation against canonical identity, lineage, lifecycle, pending boundary, versions, protected configuration, database digest, manifest digest, and committed snapshot contents
-- typed zero-candidate, ambiguous-candidate, foreign-organism, invalid-artifact, repeated-repair, and busy rejection without clock reads or pending-state changes
-- atomic orphan registration, latest-stable advancement, pending-state clearing, return to `sleeping`, and typed `checkpoint_registration_repaired` audit history
-- preservation of committed lifecycle state, inbox history, previous checkpoint, immutable artifacts, and checkpoint-store bytes through repair
-- later canonical harvest processing at boundary 24 after the repaired boundary 13 becomes stable
-- the complete canonical four-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, maintenance-clear, checkpoint-retention, retention-failure, and pending-checkpoint-repair fixtures
+Do not flatten SUDACHI into a generic autonomous agent, chatbot, virtual pet, or self-modifying loop.
 
-After PR #29 is merged, the exact next implementation slice is **Slice 16: deterministic non-canonical JSONL event export**.
-
-It must export one declared stable committed boundary through an explicit administrative read-only API and narrow CLI command, order records by canonical event sequence, identify organism, lineage, schema, contract, and event boundaries, produce byte-identical output for unchanged canonical state, write through a temporary file and atomic publication, and prove that export creation, deletion, modification, or failure cannot alter canonical SQLite state.
-
-Do not add JSONL import, lifecycle dual-writing, organism-controlled export, rollback, orphan deletion, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 16.
-
-Phase 1 remains deterministic, local, network-free, and caregiver-free.
-
-## Normative implementation authority
+## Normative authority
 
 For Phase 1, use this precedence:
 
 1. Minimal Organism Contract v0.2
 2. accepted ADRs 0001–0006
 3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
-4. `docs/HANDOFF.md`
-5. explanatory architecture and roadmap documents
+4. explicit current repository decisions
 
-When sources conflict, stop and repair the documentation, test, or contract. Do not choose a private interpretation in code.
+Do not hide a new architecture inside implementation code. If implementation reveals a contradiction, stop and resolve the contract or ADR through review before proceeding.
 
-Ordinary module names and private helpers do not require an ADR when they preserve every contract invariant.
+## Current work streams
 
-## Project intent
+### Issue #13 — Phase 1 implementation
 
-SUDACHI may eventually receive assistance from an external caregiver or cognitive-scaffolding source. The caregiver may be human, deterministic, model-based, hybrid, or absent in a control condition.
+Primary implementation stream. Repository state containing this file includes Slices 1–16:
 
-Successful assistance should become verified experience, reusable skills, tests, deterministic routines, or other inspectable local artifacts. The central research question is whether capability can be retained while justified dependence on external scaffolding decreases.
+1. package, schema, initialization, status, genesis checkpoint
+2. inbox, fail-fast wake acquisition, deterministic observation
+3. first canonical water wake
+4. canonical harvest wake
+5. objective-complete abstention
+6. classified no-applicable-action abstention
+7. resource-aware harvest recovery
+8. classified action failure with savepoint rollback
+9. classified lifecycle budget exhaustion
+10. maintenance-threshold entry
+11. read-only maintenance inspection
+12. explicit administrative maintenance clear
+13. successful bounded checkpoint retention
+14. classified checkpoint-retention failure
+15. pending checkpoint registration repair
+16. deterministic non-canonical JSONL event export
 
-The caregiver is a role behind a source-neutral boundary, not a commitment to ChatGPT, another named product, or even an AI model.
+GitHub Actions for PR #30 passed clean install, compileall, genesis CLI smoke, and **55 protected tests**.
 
-The intended direction is:
+Phase 1 remains incomplete.
 
-`external scaffolding -> verified experience -> reusable skill -> cheap local behavior`
+### Issue #3 — prior work and provider review
 
-Growth is not the accumulation of text, files, prompts, simulated needs, personality changes, or model calls.
+Research stream. Preliminary review is active, but no strong novelty claim and no live caregiver selection are authorized.
 
-## Language policy
+Do not connect a human or model caregiver to Phase 1. Do not treat ChatGPT and an API as the same product. Provider permissions, retention, pricing, limits, and transformation classes must be re-verified from current first-party sources before any live integration.
 
-- Write repository content in English, including code, identifiers, documentation, interfaces, tests, decision records, journals, and handoff notes.
-- Preserve only the two Japanese name-etymology lines explicitly marked in `README.md`.
-- Do not add other Japanese text unless the repository owner changes this policy.
+## Phase 1 invariants
 
-## Non-negotiable design rules
+Phase 1 must remain:
 
-1. **Implement the accepted contract.** Do not reopen ADRs through accidental code choices.
-2. **Bound all runtime activity.** Every wake has explicit limits on semantic steps, monotonic time, records, storage, and effects.
-3. **Keep caregiver usage measurable.** Future human minutes, consultations, model calls, clarification, latency, and hidden intervention must not disappear inside helpers or experiment administration.
-4. **Separate proposals from adoption.** Future caregiver responses and self-generated changes are proposals; they never mutate canonical state directly.
-5. **Protect evaluation.** The organism and caregiver cannot alter fixed tests, safety boundaries, or success metrics to improve a score.
-6. **Use one canonical body.** SQLite is the sole live authority; JSONL and rendered views are exports.
-7. **Preserve atomicity and lineage.** State, outcomes, events, checkpoints, and rollback behavior must match ADRs 0001, 0003, and 0004.
-8. **Use injected time.** Runtime code does not call system clocks outside the clock adapter.
-9. **Use concrete budgets.** Phase 1 has no scalar energy and no hidden retries or effects.
-10. **Keep hard-zero capabilities absent.** No caregiver, network, subprocess, or authoritative external-write effect exists in Phase 1.
-11. **Do not equate autonomy with continuous execution.** One bounded wake terminates.
-12. **Do not anthropomorphize away mechanics.** Life-like language is welcome; state, budgets, triggers, evidence, and evaluation remain explicit.
-13. **Verify model providers before connection.** Complete the provider review and dated decision before any live model caregiver.
-14. **Review human-study boundaries before recruitment.** Consent, privacy, and institutional requirements must be considered before involving additional people.
-15. **Do not claim novelty before research.** Candidate novelty statements remain hypotheses until the active review is substantially complete.
-16. **Do not infer distillation permission from output ownership.** Model development remains disabled without exact permission.
-17. **Do not build Tamagotchi with Git.** Presentation is not development without retained caregiver-independent competence.
-18. **Update the handoff.** After substantial work, record the true state, issue roles, failures, and one exact next action.
+- deterministic
+- local
+- network-free
+- subprocess-free
+- caregiver-free
+- bounded
+- auditable
+- SQLite-canonical
+- checkpointed after every committed wake
 
-## Definition of a valid developmental improvement
+The organism runtime must not:
 
-A later change counts as growth only when it does at least one of the following without unacceptable regression:
+- dual-write canonical SQLite and JSONL
+- write authoritative mutable files outside SQLite
+- consult a caregiver
+- execute arbitrary generated code
+- run continuously
+- add unrestricted retries or backtracking
+- weaken protected tests or budgets
+- modify protected actions, evaluators, schema, contract, or environment
 
-- reduces caregiver consultations or time for an existing capability
-- increases successful autonomous duration
-- turns repeated reasoning into a reusable tested skill
-- improves transfer using existing skills
-- improves recovery from failure or misleading advice
-- reduces storage or inference cost while preserving behavior
-- improves correct abstention under uncertainty
+Administration is distinct from organism autonomy. Administrative operations must have narrow typed boundaries and preserve authority separation.
 
-Every claimed caregiver-derived gain identifies:
+## JSONL export boundary established by Slice 16
 
-1. the capability that previously required help
-2. the recorded scaffolding supplied
-3. the verified local artifact or policy change produced
-4. the protected evaluation retained after help is reduced
-5. the reduction in caregiver burden
-6. added storage, computation, retries, complexity, and human labor
+JSONL export is:
 
-A change that merely adds complexity or emotional presentation is not growth.
+- explicit administration
+- read-only with respect to SQLite
+- derived from one caller-declared registered stable checkpoint boundary
+- ordered by canonical `event_sequence`
+- canonical JSON with no export-time clock metadata
+- bounded through a temporary file
+- published by same-directory atomic replacement
+- disposable and non-canonical
 
-## Working method
+There is no JSONL import, lifecycle dual-write, organism-controlled export, or export-triggered canonical event.
 
-- Make small, testable changes.
-- Use branches and pull requests for implementation and substantial research or decisions.
-- Write or select protected tests before broad implementation.
-- Keep organism state separate from source code.
-- Store raw events separately from later consolidated knowledge.
-- Use fixed seeds and fake clocks where declared by the contract.
-- Use real competing SQLite connections for lock tests.
-- Do not weaken a protected test because implementation is difficult.
-- Record implementation discoveries that require contract changes before proceeding.
-- Prefer primary papers, official repositories, and first-party provider documentation for research.
-- Distinguish caregiving, administration, and organism action in records and reports.
-- Follow `docs/IMPLEMENTATION_DISCIPLINE.md` at the end of substantial work.
+## Exact restart point: Slice 17
 
-## Phase 1 boundary
+After reconciling current `main`, Issue #13, and open pull requests, implement only the first rollback foundation accepted by ADR 0004.
 
-Phase 1 implements only the deterministic seed garden metabolism in Contract v0.2.
+Required Slice 17 boundary:
 
-It has:
+1. create a new `agent/...` branch from current `main`
+2. add an explicit offline administrative Python API and narrow CLI command for selecting one retained stable checkpoint as rollback source
+3. require stable active state with no pending checkpoint and no normal wake in progress
+4. acquire fail-fast administrative ownership before rollback preparation
+5. validate exactly one selected protected registry row and immutable checkpoint artifact
+6. match organism identity, lineage, contract, schema, environment, budget configuration, event boundary, manifest digest, database digest, and snapshot integrity
+7. reject missing, pruned, foreign, mismatched, unsafe, or invalid sources before any active mutation
+8. create one complete verified pre-rollback archive of the current active database and rollback-relevant metadata through a bounded same-filesystem temporary artifact
+9. publish that archive atomically only after validation
+10. prove archive creation failure leaves active SQLite, lineage, events, inbox, registry, checkpoints, status, and wakeability unchanged
+11. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+12. run GitHub Actions through a pull request
 
-- one SQLite organism body
-- injected time
-- fail-fast wake locking
-- concrete budgets
-- one garden tick and at most one mutation per wake
-- water, harvest, or abstention
-- protected evaluation
-- a verified checkpoint after every committed wake
-- lineage-preserving rollback
+Slice 17 must stop before:
 
-It does not have:
+- active database replacement
+- lineage-generation increment
+- rollback-completed event history
+- final abandoned-future preservation
+- checkpoint deletion or pruning
+- JSONL import
+- caregiver consultation
+- learning, memory, skills, or generic recovery machinery
 
-- a caregiver of any kind in action selection
-- network or subprocess access
-- an organism-writable external workspace
-- arbitrary code or shell execution
-- learning, memories, skills, personality, mood, or scalar energy
-- continuous execution
+Do not privately decide the later replacement protocol while implementing the archive foundation.
 
-## Commit guidance
+## End-of-work protocol
 
-Use clear conventional prefixes where practical:
+Before ending substantial work:
 
-- `docs:` documentation and decisions
-- `feat:` new organism capability
-- `test:` evaluation or regression tests
-- `refactor:` structural change without intended behavior change
-- `experiment:` research setup or results
-- `fix:` bug or broken invariant
+- update `docs/HANDOFF.md` with the true state and one exact next action
+- update `docs/PHASE1_TEST_MATRIX.md`
+- add or update a durable slice or decision note
+- update the relevant Issue checklist or status
+- report tests and CI honestly
+- report failures, skipped checks, and incomplete work
+- ensure no critical decision exists only in chat or model memory
+- preserve the repository language policy
 
-The repository is part of the organism's developmental record. Commit messages should explain why a change exists, not only what file changed.
+Repository prose, code, issues, ADRs, and tests are written in English. The intentional Japanese lines in `README.md` remain the only standing exception.
