@@ -42,7 +42,7 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–14 establish:
+Slices 1–15 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
@@ -83,13 +83,20 @@ Slices 1–14 establish:
 - exact staged-artifact restoration with all five stable checkpoints retained and validated
 - typed `checkpoint_retention_pruning_failed` maintenance warning without false pruning success
 - later normal-wake rejection without clock reads after retention failure
-- the complete canonical four-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, maintenance-clear, checkpoint-retention, and retention-failure fixtures
+- explicit administrative `checkpoint repair-pending` API and CLI boundaries
+- fail-fast pending-checkpoint repair ownership without input claim or environment advancement
+- exact one-candidate validation against canonical identity, lineage, lifecycle, pending boundary, versions, protected configuration, database digest, manifest digest, and committed snapshot contents
+- typed zero-candidate, ambiguous-candidate, foreign-organism, invalid-artifact, repeated-repair, and busy rejection without clock reads or pending-state changes
+- atomic orphan registration, latest-stable advancement, pending-state clearing, return to `sleeping`, and typed `checkpoint_registration_repaired` audit history
+- preservation of committed lifecycle state, inbox history, previous checkpoint, immutable artifacts, and checkpoint-store bytes through repair
+- later canonical harvest processing at boundary 24 after the repaired boundary 13 becomes stable
+- the complete canonical four-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, maintenance-clear, checkpoint-retention, retention-failure, and pending-checkpoint-repair fixtures
 
-After PR #28 is merged, the exact next implementation slice is **Slice 15: explicit pending-checkpoint orphan registration repair**.
+After PR #29 is merged, the exact next implementation slice is **Slice 16: deterministic non-canonical JSONL event export**.
 
-It must start from the protected checkpoint-deadline fixture after the committed boundary and immutable artifact exist but before registration, acquire fail-fast administrative ownership, identify exactly one valid published orphan matching the pending lineage and event boundary, fully validate it, atomically register it as latest stable, clear pending state, append typed repair audit history, preserve canonical lifecycle and inbox state, and restore normal wakeability.
+It must export one declared stable committed boundary through an explicit administrative read-only API and narrow CLI command, order records by canonical event sequence, identify organism, lineage, schema, contract, and event boundaries, produce byte-identical output for unchanged canonical state, write through a temporary file and atomic publication, and prove that export creation, deletion, modification, or failure cannot alter canonical SQLite state.
 
-Do not add ambiguous-orphan cleanup, checkpoint deletion, retention-failure maintenance clear, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 15.
+Do not add JSONL import, lifecycle dual-writing, organism-controlled export, rollback, orphan deletion, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 16.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 

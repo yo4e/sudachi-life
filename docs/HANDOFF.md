@@ -220,13 +220,30 @@ Implemented and verified in PR #28:
 
 Checkpoint repair, orphan cleanup, maintenance clear for the new reason, and rollback are not implemented.
 
+### Slice 15 — explicit pending-checkpoint registration repair
+
+Implemented and verified in PR #29:
+
+- the protected first-water fixture commits boundary 13 and publishes its immutable lifecycle checkpoint artifact
+- the checkpoint deadline expires one nanosecond beyond the protected 5,000 ms limit before registry insertion, leaving canonical status `checkpoint_pending`, event count 13, and latest stable boundary 2
+- `repair_pending_checkpoint_registration` and `sudachi checkpoint repair-pending` expose one explicit administrative repair boundary
+- the operation acquires fail-fast `BEGIN IMMEDIATE` ownership without claiming input or advancing the environment
+- before any clock read, it requires exact pending identity and boundary, validates the previous stable checkpoint, rejects hidden or unsafe entries, requires exactly one visible unregistered artifact, and validates its identifier, lineage, lifecycle, versions, provenance, digests, protected configuration, and complete committed snapshot contents
+- zero, multiple, foreign-organism, corrupted, repeated, and busy repair attempts reject without clearing pending state or reading the clock
+- one injected administrative clock read supplies the successful registration and audit timestamp
+- one transaction inserts the registry row, advances latest stable to boundary 13, clears pending fields, restores `sleeping`, and appends typed `checkpoint_registration_repaired` event 14
+- no checkpoint artifact is copied, renamed, modified, or deleted; committed lifecycle state, environment, inbox history, genesis, and checkpoint-store bytes remain unchanged
+- a later second tick runs under the unchanged fixed policy, harvests `bed-b`, completes the objective, stabilizes boundary 24 at event 25, and returns to `sleeping`
+
+Ambiguous-orphan cleanup, checkpoint deletion, retention-failure maintenance clear, broad repair, and rollback are not implemented.
+
 ## Verified implementation results
 
-GitHub Actions passed on PR #28 with Python 3.12:
+GitHub Actions passed on PR #29 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **43 protected tests**
+- **50 protected tests**
 - installed genesis CLI smoke test
 - all earlier canonical water, harvest, abstention, blocked-state, recovery, action-failure, and budget-exhaustion behavior remains protected
 - the maintenance-threshold fixture proves exact failure transition, unchanged environment, checkpoint stabilization, typed maintenance entry, and later normal-wake rejection
@@ -234,8 +251,9 @@ GitHub Actions passed on PR #28 with Python 3.12:
 - the maintenance-clear fixture proves bounded reason validation, fail-fast ownership, atomic state and audit commit, exact preservation, rollback on audit failure, and later processing of the preserved tick
 - the checkpoint-retention fixture proves no pruning at four, fifth-checkpoint stability before pruning, genesis and latest preservation, oldest-eligible selection, exact artifact and registry removal, explicit byte-accounted audit history, and continued normal wakeability
 - the retention-failure fixture proves fifth-checkpoint stability before failure, staged-artifact restoration, five-row/five-artifact preservation, exact latest references, no false pruning success, typed maintenance warning, read-only inspection, and later zero-clock wake rejection
+- the pending-checkpoint-repair fixture proves exact one-orphan matching, full snapshot validation, zero-clock rejection for missing, ambiguous, foreign, invalid, repeated, and busy cases, atomic registry/pending/audit repair, artifact preservation, and later normal wakeability
 
-The exact local source-tree run also passed **43 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
+The exact local source-tree run also passed **50 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
 
 Canonical three-wake values remain:
 
@@ -398,6 +416,27 @@ The isolated Slice 14 checkpoint-retention-failure fixture finishes with:
 - no retention staging directory remains
 - later ordinary wake rejection consumes zero clock readings
 
+The isolated Slice 15 pending-checkpoint-repair fixture immediately after repair has:
+
+- `lifecycle_number = 1`
+- `environment_step = 1`
+- `bed-a.moisture = 1`
+- `bed-b.fruit = 1`
+- `water_units = 0`
+- `harvested_fruit = 0`
+- `objective_complete = false`
+- `consecutive_failures = 0`
+- `latest_stable_event_sequence = 13`
+- `event_count = 14`
+- `status = sleeping`
+- registered checkpoint boundaries 2 and 13
+- event 14 typed administrative `checkpoint_registration_repaired`
+- checkpoint artifacts and exact checkpoint-store bytes unchanged
+
+Before repair, the same fixture is committed at boundary 13 with event count 13, status `checkpoint_pending`, latest stable boundary 2, and exactly one valid published but unregistered boundary-13 artifact. Missing, ambiguous, foreign, invalid, repeated, and busy attempts leave that state unchanged with zero clock reads.
+
+After a later second tick, the repaired fixture finishes with lifecycle two, environment step two, harvested fruit one, completed objective, stable boundary 24, event count 25, status `sleeping`, and both ticks consumed.
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -416,22 +455,22 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #28 is merged, create a new branch from current `main` and implement **Slice 15: explicit pending-checkpoint orphan registration repair**.
+After PR #29 is merged, create a new branch from current `main` and implement **Slice 16: deterministic non-canonical JSONL event export**.
 
 The slice must:
 
-1. start from the protected checkpoint-deadline fixture after a committed lifecycle boundary remains `checkpoint_pending`
-2. require the immutable checkpoint artifact to have been published but not registered
-3. expose one explicit administrative repair API and narrow CLI command, not an organism action
-4. acquire fail-fast SQLite write ownership without claiming input or advancing the environment
-5. locate exactly one published orphan whose organism identity, lineage generation, pending event boundary, versions, digest, and protected configuration match canonical pending state
-6. fully validate the artifact and reject zero, multiple, mismatched, or invalid candidates without clearing pending state
-7. atomically register the valid orphan as latest stable, clear pending state, restore `sleeping`, and append typed administrative repair history
-8. preserve committed lifecycle state, event boundary, inbox rows, previous stable checkpoint, and artifact byte accounting
-9. prove a later ordinary wake can proceed from the repaired stable state
+1. start from one declared stable committed organism boundary with no pending checkpoint
+2. expose an explicit administrative read-only export API and narrow CLI command, not an organism action
+3. open canonical SQLite read-only and declare the exact source lineage and event boundary
+4. emit deterministic JSONL ordered by canonical event sequence
+5. identify export format, organism, lineage, schema, contract, and first and last event boundaries
+6. use canonical JSON serialization with no wall-clock-dependent output
+7. write to a bounded temporary file and publish atomically only after complete validation
+8. produce byte-identical output when canonical state is unchanged
+9. prove export creation, deletion, modification, and injected write failure cannot alter canonical SQLite state, checkpoint state, inbox state, or wakeability
 10. pass protected tests and CI
 
-Do not add ambiguous-orphan cleanup, checkpoint deletion, retention-failure maintenance clear, lineage rollback, caregiver consultation, learning, or generic planning in Slice 15.
+Do not add JSONL import, lifecycle dual-writing, organism-controlled export, rollback, orphan deletion, caregiver consultation, learning, or generic planning in Slice 16.
 
 ## Current issue map
 
