@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
@@ -77,30 +77,3 @@ jobs:
           assert status["harvested_fruit"] == 0
           assert [plot["plot_id"] for plot in status["plots"]] == ["bed-a", "bed-b"]
           PY
-
-  continuity:
-    if: github.actor != 'github-actions[bot]'
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out pull-request branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-      - name: Apply remaining Slice 15 continuity
-        shell: bash
-        run: |
-          base64 -d .github/patches/slice15-continuity-remaining.patch.gz.b64 | gzip -d > /tmp/slice15-continuity-remaining.patch
-          git apply --check /tmp/slice15-continuity-remaining.patch
-          git apply /tmp/slice15-continuity-remaining.patch
-          rm .github/patches/slice15-continuity-remaining.patch.gz.b64
-          rm .github/workflows/apply-slice15-continuity.yml
-          rm .github/slice15-continuity.trigger
-          git fetch origin main
-          git checkout origin/main -- .github/workflows/test.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "docs: advance continuity after Slice 15"
-          git push
