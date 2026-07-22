@@ -42,27 +42,29 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–7 establish:
+Slices 1–8 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
-- stable genesis, water, harvest, justified-abstention, blocked-abstention, and recovery checkpoints
+- stable genesis, water, harvest, justified-abstention, blocked-abstention, recovery, and action-failure checkpoints
 - idempotent synthetic garden ticks
 - fail-fast wake ownership and deterministic observation
 - fixed-policy `water_plot(bed-a)` and `harvest_plot(bed-b)` wakes
 - justified `objective_already_complete` abstention with zero action and mutation cost
 - classified `no_applicable_action` abstention when the objective is incomplete but no protected mutation is executable
-- independent transition and abstention evaluation
+- independent transition, abstention, and rolled-back failure evaluation
 - explicit failure-streak accounting below the maintenance threshold
 - resource-aware harvest fallback when watering is impossible
 - verified failure-streak reset after positive progress
-- the complete canonical three-wake run plus protected blocked-state and recovery fixtures
+- classified injected action failure after a partial savepoint write
+- removal of partial environment change while preserving charged action-attempt cost
+- the complete canonical three-wake run plus protected blocked-state, recovery, and action-failure fixtures
 
-After PR #21 is merged, the exact next implementation slice is **Slice 8: classified action failure and savepoint cost preservation**.
+After PR #22 is merged, the exact next implementation slice is **Slice 9: classified budget exhaustion before forbidden mutation**.
 
-It must inject one protected failure after a registered action begins inside its SQLite savepoint; prove partial environment changes disappear, the action attempt remains charged in the committed classified outcome, no false success is recorded, the failure streak increments exactly once below maintenance, a checkpoint stabilizes the result, and the organism returns to sleep.
+It must use one explicit protected fixture and a deterministic exhausted-budget condition; prove exhaustion is detected before any forbidden environment write, record a typed failure without false action success, preserve exact nonnegative budget accounting, increment the failure streak once below maintenance, checkpoint the unchanged environment, and return to sleep.
 
-Do not add budget-exhaustion handling, maintenance-threshold entry, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 8.
+Do not add maintenance-threshold entry, lineage rollback, checkpoint repair, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 9.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
