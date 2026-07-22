@@ -2,7 +2,7 @@
 
 Updated: **2026-07-22**
 
-This file is the operational restart point for repository state containing Phase 1 Slices 1–18. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for repository state containing Phase 1 Slices 1–19. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -34,7 +34,7 @@ Phase 1 has no caregiver, model adapter, chat interface, network access, subproc
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–18 are implemented in repository state containing this handoff.
+Primary implementation stream. Slices 1–19 are implemented in repository state containing this handoff.
 
 ### Issue #3 — prior work and provider review
 
@@ -129,30 +129,50 @@ Slice 17 creates no canonical event and does not enter rollback state.
 
 SQLite Online Backup is a complete logical snapshot but not assumed to be raw-file-byte-identical to the active file. Slice 18 validates the archive artifact's own digest and proves exact canonical SQLite content equality instead.
 
-See `docs/phase1/SLICE18_DURABLE_ROLLBACK_INTENT.md`.
+### Slice 19 — verified source-restored candidate
+
+- `build_restore_candidate(...)`
+- `sudachi rollback build-candidate <organism_id>`
+- fail-fast active ownership before mutable reads
+- exact `rollback_in_progress`, no-pending, and active-tip `rollback_started` requirement
+- exact durable-intent payload validation
+- full abandoned-future archive and blocked-active revalidation
+- proof that the blocked active body equals the archived future plus only status transition, one rollback-start event, and one sequence increment
+- exact selected registry row and immutable checkpoint revalidation
+- SQLite Online Backup restoration from the selected checkpoint into a bounded same-filesystem temporary candidate
+- integrity, foreign-key, protected-version, identity, source-lineage, lifecycle, pending-boundary, schema, row, and `sqlite_sequence` validation
+- deterministic immutable `restore-candidates/rc-.../` representation
+- validation before atomic directory publication
+- idempotent repeated construction
+- no canonical active mutation or event
+- injected construction and publication failures leave no partial candidate
+- success and failure preserve active `rollback_in_progress`, `rollback_started`, archive, source checkpoint, inbox, registry, environment, lineage, lifecycle, and all prior history
+
+The candidate is `source_restored_untransformed`. It is an isolated logical copy of the selected checkpoint, not yet a new lineage or active organism body.
+
+See `docs/phase1/SLICE19_RESTORE_CANDIDATE_CONSTRUCTION.md`.
 
 ## Validation state
 
-GitHub Actions on Python 3.12 for the PR #32 implementation head completed:
+GitHub Actions on Python 3.12 for the PR #33 implementation head completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **72 protected tests**
+- **81 protected tests**
 
-The final continuity-only head must also remain green before merge.
+The final continuity head must remain green before merge.
 
-`docs/PHASE1_TEST_MATRIX.md` maps implemented coverage. Phase 1 is incomplete; passing 72 tests does not imply all 41 contract evaluations are complete.
+`docs/PHASE1_TEST_MATRIX.md` maps implemented coverage. Phase 1 is incomplete; passing 81 tests does not imply all 41 contract evaluations are complete.
 
 ## Known incomplete Phase 1 work
 
 Major incomplete areas include:
 
-- restore-candidate construction and validation
-- candidate lineage transformation
+- candidate lineage transformation and candidate-local restoration history
 - active database replacement
-- rollback-completion history and abandoned-future linkage
-- post-replacement failure recovery
+- rollback-completion history and final abandoned-future linkage
+- post-replacement validation and failure recovery
 - rollback archive and candidate retention policy
 - complete repeated-run canonical equivalence
 - backward-wall-time ordering scenario
@@ -167,34 +187,36 @@ Major incomplete areas include:
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 19
+## Exact next task: Slice 20
 
-Implement only protected restore-candidate construction from the durable rollback intent.
+Implement only administrative transformation of one verified source-restored candidate into a fully validated new-lineage replacement candidate.
 
 1. create a new `agent/...` branch from current `main`
-2. expose an offline administrative Python API and narrow CLI command for constructing one candidate from the active rollback intent
-3. acquire fail-fast ownership before mutable active reads
-4. require status `rollback_in_progress`, no pending checkpoint, and one current-lineage `rollback_started` event at the active tip
-5. validate the event payload, referenced archive, archived abandoned future, selected checkpoint registry row, and immutable selected source
-6. reject missing, foreign, drifted, unsafe, ambiguous, busy, or inconsistent intent before candidate creation
-7. restore the selected checkpoint into a bounded same-filesystem temporary candidate through SQLite's Online Backup API
-8. validate candidate integrity, foreign keys, protected versions and configuration, organism identity, source lineage, lifecycle, event boundary, and exact source-checkpoint equality
-9. publish no candidate until validation and same-filesystem atomic publication succeed
-10. prove creation or publication failure leaves active `rollback_in_progress`, `rollback_started`, archive, source checkpoint, inbox, registry, environment, and prior history unchanged
-11. update tests, matrix, this handoff, Issue #13, and a Slice 19 note
-12. run GitHub Actions through a pull request
+2. expose an offline administrative Python API and narrow CLI command accepting one published source-restored candidate identifier
+3. acquire fail-fast ownership of the blocked active database before mutable rollback-intent reads
+4. require active status `rollback_in_progress`, no pending checkpoint, and the same current-lineage `rollback_started` event at the active tip
+5. revalidate the rollback archive, abandoned future, selected immutable checkpoint, source-restored candidate manifest and database, and exact source-checkpoint equality
+6. reject missing, foreign, drifted, unsafe, ambiguous, busy, already transformed, or inconsistent input before candidate mutation or publication
+7. create a bounded same-filesystem temporary working candidate; never modify the selected checkpoint, archive, or published source-restored candidate
+8. derive the new lineage generation exactly from the abandoned active generation under ADR 0004
+9. update only the isolated working candidate through one bounded administrative transaction while preserving organism identity and protected contract, schema, environment, and budget configuration
+10. clear source checkpoint-pending fields, keep the transformed candidate non-wakeable for the later replacement boundary, and append one typed candidate-local administrative restoration fact containing target and abandoned boundaries; do not append `rollback_completed`
+11. validate transformed-candidate integrity, foreign keys, new lineage, lifecycle, event order, source history, target boundary, abandoned-future references, protected configuration, and deterministic manifest
+12. atomically publish the transformed candidate only after complete validation
+13. prove transformation or publication failure leaves active `rollback_in_progress`, `rollback_started`, archive, source checkpoint, source-restored candidate, inbox, registry, environment, and all history unchanged
+14. update tests, matrix, this handoff, Issue #13, and a Slice 20 note
+15. run GitHub Actions through a pull request
 
-Slice 19 stops before:
+Slice 20 stops before:
 
-- changing candidate lineage generation
-- appending restored-lineage or rollback-completed history
 - replacing the active database
-- clearing `rollback_in_progress`
+- clearing the active body's `rollback_in_progress`
+- recording rollback completion in the active path
 - deleting or pruning checkpoints, archives, or candidates
 - JSONL import
 - caregiver consultation, learning, memory, skills, or generic recovery machinery
 
-The purpose is to isolate source restoration and candidate integrity before lineage transformation or the destructive active-replacement boundary.
+The purpose is to isolate lineage mutation and restoration history before the destructive active-replacement boundary.
 
 ## Restart protocol
 
@@ -203,8 +225,8 @@ At the next session:
 1. read `AGENTS.md`
 2. read this handoff and normative documents in order
 3. inspect current open issues and pull requests
-4. verify PR #32 is merged or reconcile repository truth
-5. begin only from the Slice 19 boundary above
+4. verify PR #33 is merged or reconcile repository truth
+5. begin only from the Slice 20 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action.
 
