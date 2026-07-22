@@ -1,6 +1,6 @@
 # Phase 1 Slice 13: Successful Bounded Checkpoint Retention
 
-Status: **implemented locally; GitHub validation pending in PR #27**
+Status: **implemented and verified in PR #27**
 
 Tracked by: Issue #13
 
@@ -100,9 +100,13 @@ The final active event count is `46`.
 - canonical garden and inbox state are unchanged
 - a new normal wake transaction can still be acquired
 
+## Validation
+
 Local source-tree validation completed compileall and **42 protected tests**.
 
-A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success. GitHub Actions must independently complete clean installation and the protected suite before merge.
+A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror. That mirror failure is not treated as success.
+
+GitHub Actions on Python 3.12 independently completed clean editable installation, compileall, genesis CLI smoke, and **42 protected tests**.
 
 ## Deliberately not implemented
 
@@ -113,4 +117,8 @@ A separate local clean editable install could not resolve `hatchling>=1.25` from
 
 ## Exact next slice
 
-The next slice must be chosen from the remaining Contract v0.2 evaluation matrix only after PR #27 is independently verified and merged. The leading boundary is classified retention-pruning failure: preserve the newly stable checkpoint, expose the incomplete cleanup, and enter explicit maintenance warning without corrupting latest-stable references. The exact scope must be confirmed against current Issue #13 and repository state before implementation.
+After PR #27 is merged, Slice 14 will protect one classified checkpoint-retention pruning failure after the newer checkpoint is already stable.
+
+It must preserve the newly stable latest checkpoint and latest-stable references, avoid a false `checkpoint_pruned` success record, restore the staged older artifact when failure occurs before canonical pruning commit or otherwise expose incomplete cleanup explicitly, record one typed maintenance warning, and leave normal wakes blocked.
+
+It must not add checkpoint repair, orphan cleanup, maintenance clear for the new reason, lineage rollback, caregiver consultation, learning, memory, or generic planning.
