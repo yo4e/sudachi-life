@@ -11,7 +11,7 @@ import sqlite3
 import tempfile
 from typing import Any
 
-from .checkpoint import validate_checkpoint_directory
+from .checkpoints import validate_checkpoint_directory
 from .constants import RUNTIME_WORKING_SET_MAX_BYTES
 from .errors import CheckpointError, OrganismNotFoundError, SchemaValidationError, SudachiError
 from .paths import OrganismPaths
@@ -92,12 +92,8 @@ class ActiveReplacementResult:
             "restoration_event_sequence": self.restoration_event_sequence,
             "active_database_size_bytes": self.active_database_size_bytes,
             "active_database_sha256": self.active_database_sha256,
-            "transformed_candidate_database_sha256": (
-                self.transformed_candidate_database_sha256
-            ),
-            "transformed_candidate_manifest_sha256": (
-                self.transformed_candidate_manifest_sha256
-            ),
+            "transformed_candidate_database_sha256": self.transformed_candidate_database_sha256,
+            "transformed_candidate_manifest_sha256": self.transformed_candidate_manifest_sha256,
             "recovered_existing_replacement": self.recovered_existing_replacement,
             "status": self.status,
         }
@@ -105,13 +101,11 @@ class ActiveReplacementResult:
 
 @dataclass(frozen=True, slots=True)
 class _ReplacementContext:
-    transformed_candidate_dir: Path
-    transformed_manifest: dict[str, Any]
-    transformed_manifest_sha256: str
-    transformed_database_sha256: str
+    candidate_dir: Path
+    manifest: dict[str, Any]
+    manifest_sha256: str
+    database_sha256: str
     source_candidate_dir: Path
-    archive_dir: Path
-    selected_checkpoint_dir: Path
     selected_registry: sqlite3.Row
 
 
@@ -120,7 +114,7 @@ def _is_busy(exc: sqlite3.OperationalError) -> bool:
     return code in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED} or "locked" in str(exc).lower()
 
 
-def _read_transformed_manifest(
+def _read_manifest(
     paths: OrganismPaths,
     transformed_candidate_id: str,
 ) -> tuple[Path, dict[str, Any]]:
@@ -130,9 +124,7 @@ def _read_transformed_manifest(
         )
     root = paths.restore_candidates
     if not root.is_dir() or root.is_symlink():
-        raise ActiveReplacementRejectedError(
-            "restore candidate root is missing or unsafe"
-        )
+        raise ActiveReplacementRejectedError("restore candidate root is missing or unsafe")
     if any(entry.is_symlink() for entry in root.iterdir()):
         raise ActiveReplacementRejectedError(
             "restore candidate root contains an unsafe symlink"
@@ -171,197 +163,8 @@ def _read_transformed_manifest(
     return candidate_dir, manifest
 
 
-def _validate_selected_registry(
-    connection: sqlite3.Connection,
-    manifest: dict[str, Any],
-) -> sqlite3.Row:
-    row = connection.execute(
-        "SELECT * FROM checkpoint_registry WHERE checkpoint_id = ?",
-        (manifest.get("selected_checkpoint_id"),),
-    ).fetchone()
-    if row is None:
-        raise ActiveReplacementRejectedError(
-            "selected checkpoint registry row is missing"
-        )
-    expected = {
-        "checkpoint_id": manifest.get("selected_checkpoint_id"),
-        "lineage_generation": manifest.get(
-            "selected_checkpoint_lineage_generation"
-        ),
-        "event_sequence": manifest.get("selected_checkpoint_event_sequence"),
-        "manifest_sha256": manifest.get("selected_checkpoint_manifest_sha256"),
-        "database_sha256": manifest.get("selected_checkpoint_database_sha256"),
-        "database_size_bytes": manifest.get(
-            "selected_checkpoint_database_size_bytes"
-        ),
-        "protected": 1,
-    }
-    for key, value in expected.items():
-        if row[key] != value:
-            raise ActiveReplacementRejectedError(
-                f"selected checkpoint registry row does not match transformed candidate: {key}"
-            )
-    return row
-
-
-def _validate_checkpoint_and_source_from_manifest(
-    paths: OrganismPaths,
-    manifest: dict[str, Any],
-) -> tuple[Path, dict[str, Any], Path, dict[str, Any]]:
-    selected_checkpoint_dir = paths.checkpoints / str(
-        manifest.get("selected_checkpoint_id")
-    )
-    selected_manifest = validate_checkpoint_directory(selected_checkpoint_dir)
-    selected_expected = {
-        "checkpoint_id": manifest.get("selected_checkpoint_id"),
-        "lineage_generation": manifest.get(
-            "selected_checkpoint_lineage_generation"
-        ),
-        "event_sequence": manifest.get("selected_checkpoint_event_sequence"),
-        "database_sha256": manifest.get("selected_checkpoint_database_sha256"),
-        "database_size_bytes": manifest.get(
-            "selected_checkpoint_database_size_bytes"
-        ),
-        "provenance": manifest.get("selected_checkpoint_provenance"),
-        "organism_id": manifest.get("organism_id"),
-        "lifecycle_number": manifest.get("source_lifecycle_number"),
-        "contract_version": manifest.get("contract_version"),
-        "schema_version": manifest.get("schema_version"),
-        "environment_version": manifest.get("environment_version"),
-        "budget_config_version": manifest.get("budget_config_version"),
-    }
-    for key, value in selected_expected.items():
-        if selected_manifest.get(key) != value:
-            raise ActiveReplacementRejectedError(
-                f"selected checkpoint does not match transformed candidate: {key}"
-            )
-    if _sha256_file(selected_checkpoint_dir / "manifest.json") != manifest.get(
-        "selected_checkpoint_manifest_sha256"
-    ):
-        raise ActiveReplacementRejectedError(
-            "selected checkpoint manifest digest does not match transformed candidate"
-        )
-
-    source_candidate_dir = paths.restore_candidates / str(
-        manifest.get("source_restore_candidate_id")
-    )
-    source_manifest = _validate_candidate_directory(
-        source_candidate_dir,
-        source_checkpoint_dir=selected_checkpoint_dir,
-    )
-    source_expected = {
-        "candidate_id": manifest.get("source_restore_candidate_id"),
-        "organism_id": manifest.get("organism_id"),
-        "archive_id": manifest.get("archive_id"),
-        "archive_manifest_sha256": manifest.get("archive_manifest_sha256"),
-        "archive_database_sha256": manifest.get("archive_database_sha256"),
-        "selected_checkpoint_id": manifest.get("selected_checkpoint_id"),
-        "source_lineage_generation": manifest.get("source_lineage_generation"),
-        "source_lifecycle_number": manifest.get("source_lifecycle_number"),
-        "source_event_sequence": manifest.get("source_event_sequence"),
-        "source_checkpoint_manifest_sha256": manifest.get(
-            "selected_checkpoint_manifest_sha256"
-        ),
-        "source_checkpoint_database_sha256": manifest.get(
-            "selected_checkpoint_database_sha256"
-        ),
-        "source_checkpoint_database_size_bytes": manifest.get(
-            "selected_checkpoint_database_size_bytes"
-        ),
-        "source_checkpoint_provenance": manifest.get(
-            "selected_checkpoint_provenance"
-        ),
-        "contract_version": manifest.get("contract_version"),
-        "schema_version": manifest.get("schema_version"),
-        "environment_version": manifest.get("environment_version"),
-        "budget_config_version": manifest.get("budget_config_version"),
-        "candidate_state": "source_restored_untransformed",
-        "status": "published",
-        "provenance": "restore_candidate",
-    }
-    for key, value in source_expected.items():
-        if source_manifest.get(key) != value:
-            raise ActiveReplacementRejectedError(
-                f"source restore candidate does not match transformed candidate: {key}"
-            )
-    if _sha256_file(source_candidate_dir / "manifest.json") != manifest.get(
-        "source_restore_candidate_manifest_sha256"
-    ):
-        raise ActiveReplacementRejectedError(
-            "source restore candidate manifest digest mismatch"
-        )
-    if _sha256_file(source_candidate_dir / "organism.sqlite3") != manifest.get(
-        "source_restore_candidate_database_sha256"
-    ):
-        raise ActiveReplacementRejectedError(
-            "source restore candidate database digest mismatch"
-        )
-    return (
-        selected_checkpoint_dir,
-        selected_manifest,
-        source_candidate_dir,
-        source_manifest,
-    )
-
-
-def _validate_archive_from_manifest(
-    paths: OrganismPaths,
-    manifest: dict[str, Any],
-) -> tuple[Path, dict[str, Any]]:
-    archive_dir, archive_manifest, archive_manifest_sha256 = _load_archive(
-        paths, str(manifest.get("archive_id"))
-    )
-    if archive_manifest_sha256 != manifest.get("archive_manifest_sha256"):
-        raise ActiveReplacementRejectedError(
-            "rollback archive manifest digest does not match transformed candidate"
-        )
-    if archive_manifest.get("database_sha256") != manifest.get(
-        "archive_database_sha256"
-    ):
-        raise ActiveReplacementRejectedError(
-            "rollback archive database digest does not match transformed candidate"
-        )
-    expected = {
-        "organism_id": manifest.get("organism_id"),
-        "active_lineage_generation": manifest.get(
-            "abandoned_lineage_generation"
-        ),
-        "active_lifecycle_number": manifest.get("abandoned_lifecycle_number"),
-        "active_event_sequence": manifest.get("abandoned_event_sequence"),
-        "selected_checkpoint_id": manifest.get("selected_checkpoint_id"),
-        "selected_checkpoint_lineage_generation": manifest.get(
-            "selected_checkpoint_lineage_generation"
-        ),
-        "selected_checkpoint_event_sequence": manifest.get(
-            "selected_checkpoint_event_sequence"
-        ),
-        "selected_checkpoint_manifest_sha256": manifest.get(
-            "selected_checkpoint_manifest_sha256"
-        ),
-        "selected_checkpoint_database_sha256": manifest.get(
-            "selected_checkpoint_database_sha256"
-        ),
-        "selected_checkpoint_database_size_bytes": manifest.get(
-            "selected_checkpoint_database_size_bytes"
-        ),
-        "selected_checkpoint_provenance": manifest.get(
-            "selected_checkpoint_provenance"
-        ),
-        "contract_version": manifest.get("contract_version"),
-        "schema_version": manifest.get("schema_version"),
-        "environment_version": manifest.get("environment_version"),
-        "budget_config_version": manifest.get("budget_config_version"),
-    }
-    for key, value in expected.items():
-        if archive_manifest.get(key) != value:
-            raise ActiveReplacementRejectedError(
-                f"rollback archive does not match transformed candidate: {key}"
-            )
-    return archive_dir, archive_manifest
-
-
-def _validate_manifest_relationships(manifest: dict[str, Any]) -> None:
-    required_strings = {
+def _validate_manifest_relations(manifest: dict[str, Any]) -> None:
+    required_text = (
         "transformed_candidate_id",
         "organism_id",
         "source_restore_candidate_id",
@@ -371,12 +174,12 @@ def _validate_manifest_relationships(manifest: dict[str, Any]) -> None:
         "contract_version",
         "environment_version",
         "budget_config_version",
-    }
-    if any(not isinstance(manifest.get(key), str) or not manifest.get(key) for key in required_strings):
+    )
+    if any(not isinstance(manifest.get(key), str) or not manifest[key] for key in required_text):
         raise ActiveReplacementRejectedError(
             "transformed candidate manifest has missing protected text metadata"
         )
-    integer_keys = {
+    required_int = (
         "rollback_started_event_sequence",
         "abandoned_lineage_generation",
         "abandoned_lifecycle_number",
@@ -390,59 +193,219 @@ def _validate_manifest_relationships(manifest: dict[str, Any]) -> None:
         "restoration_event_sequence",
         "restoration_wall_time_utc_us",
         "schema_version",
-    }
+    )
     if any(
         not isinstance(manifest.get(key), int) or int(manifest[key]) < 0
-        for key in integer_keys
+        for key in required_int
     ):
         raise ActiveReplacementRejectedError(
             "transformed candidate manifest has invalid protected integer metadata"
         )
-    if manifest.get("candidate_state") != "lineage_transformed_replacement_ready":
-        raise ActiveReplacementRejectedError(
-            "transformed candidate is not replacement-ready"
-        )
-    if manifest.get("status") != "published":
-        raise ActiveReplacementRejectedError(
-            "transformed candidate is not published"
-        )
-    if manifest.get("provenance") != "rollback_transformed_candidate":
-        raise ActiveReplacementRejectedError(
-            "transformed candidate provenance is invalid"
-        )
-    if int(manifest["new_lineage_generation"]) != int(
-        manifest["abandoned_lineage_generation"]
-    ) + 1:
+    exact = {
+        "candidate_state": "lineage_transformed_replacement_ready",
+        "status": "published",
+        "provenance": "rollback_transformed_candidate",
+    }
+    for key, value in exact.items():
+        if manifest.get(key) != value:
+            raise ActiveReplacementRejectedError(
+                f"transformed candidate {key} is invalid"
+            )
+    if manifest["new_lineage_generation"] != manifest["abandoned_lineage_generation"] + 1:
         raise ActiveReplacementRejectedError(
             "transformed candidate new lineage is not abandoned generation plus one"
         )
-    if int(manifest["restoration_event_sequence"]) != int(
-        manifest["source_event_sequence"]
-    ) + 1:
+    if manifest["restoration_event_sequence"] != manifest["source_event_sequence"] + 1:
         raise ActiveReplacementRejectedError(
             "transformed candidate restoration event is not source boundary plus one"
         )
-    if int(manifest["source_event_sequence"]) != int(
-        manifest["selected_checkpoint_event_sequence"]
-    ):
+    if manifest["source_event_sequence"] != manifest["selected_checkpoint_event_sequence"]:
         raise ActiveReplacementRejectedError(
             "transformed candidate source and selected boundaries differ"
         )
-    if int(manifest["source_lineage_generation"]) != int(
-        manifest["selected_checkpoint_lineage_generation"]
-    ):
+    if manifest["source_lineage_generation"] != manifest[
+        "selected_checkpoint_lineage_generation"
+    ]:
         raise ActiveReplacementRejectedError(
             "transformed candidate source and selected lineages differ"
         )
-    if int(manifest["rollback_started_event_sequence"]) != int(
-        manifest["abandoned_event_sequence"]
-    ) + 1:
+    if manifest["rollback_started_event_sequence"] != manifest["abandoned_event_sequence"] + 1:
         raise ActiveReplacementRejectedError(
             "transformed candidate rollback-start boundary is invalid"
         )
 
 
-def _validate_pre_replacement_context(
+def _selected_registry(
+    connection: sqlite3.Connection,
+    manifest: dict[str, Any],
+) -> sqlite3.Row:
+    row = connection.execute(
+        "SELECT * FROM checkpoint_registry WHERE checkpoint_id = ?",
+        (manifest.get("selected_checkpoint_id"),),
+    ).fetchone()
+    if row is None:
+        raise ActiveReplacementRejectedError(
+            "selected checkpoint registry row is missing"
+        )
+    expected = {
+        "checkpoint_id": manifest.get("selected_checkpoint_id"),
+        "lineage_generation": manifest.get("selected_checkpoint_lineage_generation"),
+        "event_sequence": manifest.get("selected_checkpoint_event_sequence"),
+        "manifest_sha256": manifest.get("selected_checkpoint_manifest_sha256"),
+        "database_sha256": manifest.get("selected_checkpoint_database_sha256"),
+        "database_size_bytes": manifest.get("selected_checkpoint_database_size_bytes"),
+        "protected": 1,
+    }
+    for key, value in expected.items():
+        if row[key] != value:
+            raise ActiveReplacementRejectedError(
+                f"selected checkpoint registry row does not match transformed candidate: {key}"
+            )
+    return row
+
+
+def _validate_artifact_chain(
+    paths: OrganismPaths,
+    connection: sqlite3.Connection,
+    candidate_dir: Path,
+    manifest: dict[str, Any],
+) -> _ReplacementContext:
+    _validate_manifest_relations(manifest)
+    selected_registry = _selected_registry(connection, manifest)
+    checkpoint_dir = paths.checkpoints / str(manifest["selected_checkpoint_id"])
+    checkpoint_manifest = validate_checkpoint_directory(checkpoint_dir)
+    checkpoint_expected = {
+        "checkpoint_id": manifest["selected_checkpoint_id"],
+        "lineage_generation": manifest["selected_checkpoint_lineage_generation"],
+        "event_sequence": manifest["selected_checkpoint_event_sequence"],
+        "database_sha256": manifest["selected_checkpoint_database_sha256"],
+        "database_size_bytes": manifest["selected_checkpoint_database_size_bytes"],
+        "provenance": manifest["selected_checkpoint_provenance"],
+        "organism_id": manifest["organism_id"],
+        "lifecycle_number": manifest["source_lifecycle_number"],
+        "contract_version": manifest["contract_version"],
+        "schema_version": manifest["schema_version"],
+        "environment_version": manifest["environment_version"],
+        "budget_config_version": manifest["budget_config_version"],
+    }
+    for key, value in checkpoint_expected.items():
+        if checkpoint_manifest.get(key) != value:
+            raise ActiveReplacementRejectedError(
+                f"selected checkpoint does not match transformed candidate: {key}"
+            )
+    if _sha256_file(checkpoint_dir / "manifest.json") != manifest[
+        "selected_checkpoint_manifest_sha256"
+    ]:
+        raise ActiveReplacementRejectedError(
+            "selected checkpoint manifest digest does not match transformed candidate"
+        )
+
+    source_candidate_dir = paths.restore_candidates / str(
+        manifest["source_restore_candidate_id"]
+    )
+    source_manifest = _validate_candidate_directory(
+        source_candidate_dir,
+        source_checkpoint_dir=checkpoint_dir,
+    )
+    source_expected = {
+        "candidate_id": manifest["source_restore_candidate_id"],
+        "organism_id": manifest["organism_id"],
+        "archive_id": manifest["archive_id"],
+        "archive_manifest_sha256": manifest["archive_manifest_sha256"],
+        "archive_database_sha256": manifest["archive_database_sha256"],
+        "selected_checkpoint_id": manifest["selected_checkpoint_id"],
+        "source_lineage_generation": manifest["source_lineage_generation"],
+        "source_lifecycle_number": manifest["source_lifecycle_number"],
+        "source_event_sequence": manifest["source_event_sequence"],
+        "source_checkpoint_manifest_sha256": manifest[
+            "selected_checkpoint_manifest_sha256"
+        ],
+        "source_checkpoint_database_sha256": manifest[
+            "selected_checkpoint_database_sha256"
+        ],
+        "source_checkpoint_database_size_bytes": manifest[
+            "selected_checkpoint_database_size_bytes"
+        ],
+        "source_checkpoint_provenance": manifest["selected_checkpoint_provenance"],
+        "candidate_state": "source_restored_untransformed",
+        "status": "published",
+        "provenance": "restore_candidate",
+    }
+    for key, value in source_expected.items():
+        if source_manifest.get(key) != value:
+            raise ActiveReplacementRejectedError(
+                f"source restore candidate does not match transformed candidate: {key}"
+            )
+    if _sha256_file(source_candidate_dir / "manifest.json") != manifest[
+        "source_restore_candidate_manifest_sha256"
+    ]:
+        raise ActiveReplacementRejectedError(
+            "source restore candidate manifest digest mismatch"
+        )
+    if _sha256_file(source_candidate_dir / "organism.sqlite3") != manifest[
+        "source_restore_candidate_database_sha256"
+    ]:
+        raise ActiveReplacementRejectedError(
+            "source restore candidate database digest mismatch"
+        )
+
+    _, archive_manifest, archive_manifest_sha256 = _load_archive(
+        paths, str(manifest["archive_id"])
+    )
+    if archive_manifest_sha256 != manifest["archive_manifest_sha256"]:
+        raise ActiveReplacementRejectedError(
+            "rollback archive manifest digest does not match transformed candidate"
+        )
+    archive_expected = {
+        "database_sha256": manifest["archive_database_sha256"],
+        "organism_id": manifest["organism_id"],
+        "active_lineage_generation": manifest["abandoned_lineage_generation"],
+        "active_lifecycle_number": manifest["abandoned_lifecycle_number"],
+        "active_event_sequence": manifest["abandoned_event_sequence"],
+        "selected_checkpoint_id": manifest["selected_checkpoint_id"],
+        "selected_checkpoint_lineage_generation": manifest[
+            "selected_checkpoint_lineage_generation"
+        ],
+        "selected_checkpoint_event_sequence": manifest[
+            "selected_checkpoint_event_sequence"
+        ],
+        "selected_checkpoint_manifest_sha256": manifest[
+            "selected_checkpoint_manifest_sha256"
+        ],
+        "selected_checkpoint_database_sha256": manifest[
+            "selected_checkpoint_database_sha256"
+        ],
+        "selected_checkpoint_database_size_bytes": manifest[
+            "selected_checkpoint_database_size_bytes"
+        ],
+        "selected_checkpoint_provenance": manifest["selected_checkpoint_provenance"],
+    }
+    for key, value in archive_expected.items():
+        if archive_manifest.get(key) != value:
+            raise ActiveReplacementRejectedError(
+                f"rollback archive does not match transformed candidate: {key}"
+            )
+
+    validated_manifest = _validate_transformed_candidate_directory(
+        candidate_dir,
+        source_candidate_dir=source_candidate_dir,
+        selected_registry=selected_registry,
+    )
+    if validated_manifest != manifest:
+        raise ActiveReplacementRejectedError(
+            "transformed candidate manifest changed during validation"
+        )
+    return _ReplacementContext(
+        candidate_dir=candidate_dir,
+        manifest=manifest,
+        manifest_sha256=_sha256_file(candidate_dir / "manifest.json"),
+        database_sha256=_sha256_file(candidate_dir / "organism.sqlite3"),
+        source_candidate_dir=source_candidate_dir,
+        selected_registry=selected_registry,
+    )
+
+
+def _validate_pre_replacement(
     active: sqlite3.Connection,
     paths: OrganismPaths,
     transformed_candidate_id: str,
@@ -451,15 +414,13 @@ def _validate_pre_replacement_context(
         organism,
         rollback_started,
         payload,
-        archive_dir,
-        _archive_manifest,
+        _,
+        _,
         selected,
         selected_manifest,
     ) = _validate_durable_intent(active, paths)
-    candidate_dir, preliminary_manifest = _read_transformed_manifest(
-        paths, transformed_candidate_id
-    )
-    _validate_manifest_relationships(preliminary_manifest)
+    candidate_dir, manifest = _read_manifest(paths, transformed_candidate_id)
+    _validate_manifest_relations(manifest)
     selected_registry = active.execute(
         "SELECT * FROM checkpoint_registry WHERE checkpoint_id = ?",
         (selected["checkpoint_id"],),
@@ -468,10 +429,10 @@ def _validate_pre_replacement_context(
         raise ActiveReplacementRejectedError(
             "selected checkpoint registry row disappeared after intent validation"
         )
-    source_candidate_dir, source_manifest, source_manifest_sha256, source_database_sha256 = (
+    source_dir, source_manifest, source_manifest_sha, source_database_sha = (
         _validate_source_candidate(
             paths,
-            str(preliminary_manifest.get("source_restore_candidate_id")),
+            str(manifest["source_restore_candidate_id"]),
             organism=organism,
             rollback_started=rollback_started,
             payload=payload,
@@ -479,24 +440,22 @@ def _validate_pre_replacement_context(
             selected_manifest=selected_manifest,
         )
     )
-    manifest = _validate_transformed_candidate_directory(
+    validated = _validate_transformed_candidate_directory(
         candidate_dir,
-        source_candidate_dir=source_candidate_dir,
+        source_candidate_dir=source_dir,
         selected_registry=selected_registry,
     )
     expected = {
         "transformed_candidate_id": transformed_candidate_id,
         "organism_id": organism["organism_id"],
         "source_restore_candidate_id": source_manifest["candidate_id"],
-        "source_restore_candidate_manifest_sha256": source_manifest_sha256,
-        "source_restore_candidate_database_sha256": source_database_sha256,
+        "source_restore_candidate_manifest_sha256": source_manifest_sha,
+        "source_restore_candidate_database_sha256": source_database_sha,
         "archive_id": payload["archive_id"],
         "archive_manifest_sha256": payload["archive_manifest_sha256"],
         "archive_database_sha256": payload["archive_database_sha256"],
         "rollback_started_event_sequence": int(rollback_started["event_sequence"]),
-        "abandoned_lineage_generation": int(
-            payload["pre_rollback_lineage_generation"]
-        ),
+        "abandoned_lineage_generation": int(payload["pre_rollback_lineage_generation"]),
         "abandoned_lifecycle_number": int(payload["pre_rollback_lifecycle_number"]),
         "abandoned_event_sequence": int(payload["pre_rollback_event_sequence"]),
         "selected_checkpoint_id": selected["checkpoint_id"],
@@ -511,61 +470,29 @@ def _validate_pre_replacement_context(
         "source_event_sequence": int(selected["event_sequence"]),
         "new_lineage_generation": int(organism["lineage_generation"]) + 1,
         "restoration_event_sequence": int(selected["event_sequence"]) + 1,
-        "contract_version": organism["contract_version"],
-        "schema_version": int(organism["schema_version"]),
-        "environment_version": organism["environment_version"],
-        "budget_config_version": organism["budget_config_version"],
     }
     for key, value in expected.items():
-        if manifest.get(key) != value:
+        if validated.get(key) != value:
             raise ActiveReplacementRejectedError(
                 f"transformed candidate does not match active rollback intent: {key}"
             )
-    if archive_dir.name != manifest["archive_id"]:
-        raise ActiveReplacementRejectedError(
-            "validated archive path does not match transformed candidate"
-        )
     return _ReplacementContext(
-        transformed_candidate_dir=candidate_dir,
-        transformed_manifest=manifest,
-        transformed_manifest_sha256=_sha256_file(candidate_dir / "manifest.json"),
-        transformed_database_sha256=_sha256_file(candidate_dir / "organism.sqlite3"),
-        source_candidate_dir=source_candidate_dir,
-        archive_dir=archive_dir,
-        selected_checkpoint_dir=paths.checkpoints / str(selected["checkpoint_id"]),
+        candidate_dir=candidate_dir,
+        manifest=validated,
+        manifest_sha256=_sha256_file(candidate_dir / "manifest.json"),
+        database_sha256=_sha256_file(candidate_dir / "organism.sqlite3"),
+        source_candidate_dir=source_dir,
         selected_registry=selected_registry,
     )
 
 
-def _validate_replaced_context(
+def _validate_replaced(
     active: sqlite3.Connection,
     paths: OrganismPaths,
     transformed_candidate_id: str,
 ) -> _ReplacementContext:
-    candidate_dir, preliminary_manifest = _read_transformed_manifest(
-        paths, transformed_candidate_id
-    )
-    _validate_manifest_relationships(preliminary_manifest)
-    selected_registry = _validate_selected_registry(active, preliminary_manifest)
-    (
-        selected_checkpoint_dir,
-        _selected_manifest,
-        source_candidate_dir,
-        _source_manifest,
-    ) = _validate_checkpoint_and_source_from_manifest(paths, preliminary_manifest)
-    archive_dir, _archive_manifest = _validate_archive_from_manifest(
-        paths, preliminary_manifest
-    )
-    manifest = _validate_transformed_candidate_directory(
-        candidate_dir,
-        source_candidate_dir=source_candidate_dir,
-        selected_registry=selected_registry,
-    )
-    if manifest != preliminary_manifest:
-        raise ActiveReplacementRejectedError(
-            "transformed candidate manifest changed during validation"
-        )
-
+    candidate_dir, manifest = _read_manifest(paths, transformed_candidate_id)
+    context = _validate_artifact_chain(paths, active, candidate_dir, manifest)
     organism = active.execute(
         "SELECT * FROM organism WHERE singleton_id = 1"
     ).fetchone()
@@ -586,10 +513,6 @@ def _validate_replaced_context(
         "pending_checkpoint_event_sequence": None,
         "latest_stable_checkpoint_id": manifest["selected_checkpoint_id"],
         "latest_stable_event_sequence": manifest["source_event_sequence"],
-        "contract_version": manifest["contract_version"],
-        "schema_version": manifest["schema_version"],
-        "environment_version": manifest["environment_version"],
-        "budget_config_version": manifest["budget_config_version"],
     }
     for key, value in expected_organism.items():
         if organism[key] != value:
@@ -603,16 +526,12 @@ def _validate_replaced_context(
         "lifecycle_number": manifest["source_lifecycle_number"],
         "event_type": "rollback_lineage_prepared",
         "source": "administration:rollback-candidate",
-        "schema_version": manifest["schema_version"],
-        "environment_version": manifest["environment_version"],
-        "budget_config_version": manifest["budget_config_version"],
     }
     for key, value in expected_tip.items():
         if tip[key] != value:
             raise ActiveReplacementRejectedError(
                 f"replaced active event tip does not match transformed candidate: {key}"
             )
-
     candidate = connect_database(candidate_dir / "organism.sqlite3", read_only=True)
     try:
         if _canonical_sqlite_snapshot(active) != _canonical_sqlite_snapshot(candidate):
@@ -621,23 +540,12 @@ def _validate_replaced_context(
             )
     finally:
         candidate.close()
-    return _ReplacementContext(
-        transformed_candidate_dir=candidate_dir,
-        transformed_manifest=manifest,
-        transformed_manifest_sha256=_sha256_file(candidate_dir / "manifest.json"),
-        transformed_database_sha256=_sha256_file(candidate_dir / "organism.sqlite3"),
-        source_candidate_dir=source_candidate_dir,
-        archive_dir=archive_dir,
-        selected_checkpoint_dir=selected_checkpoint_dir,
-        selected_registry=selected_registry,
-    )
+    return context
 
 
-def _validate_staged_database(stage_path: Path, context: _ReplacementContext) -> None:
+def _validate_stage(stage_path: Path, context: _ReplacementContext) -> None:
     staged = connect_database(stage_path, read_only=True)
-    candidate = connect_database(
-        context.transformed_candidate_dir / "organism.sqlite3", read_only=True
-    )
+    candidate = connect_database(context.candidate_dir / "organism.sqlite3", read_only=True)
     try:
         integrity = staged.execute("PRAGMA integrity_check").fetchall()
         if len(integrity) != 1 or integrity[0][0] != "ok":
@@ -661,14 +569,14 @@ def _validate_staged_database(stage_path: Path, context: _ReplacementContext) ->
         staged.close()
 
 
-def _result_from_context(
+def _result(
     paths: OrganismPaths,
     transformed_candidate_id: str,
     context: _ReplacementContext,
     *,
-    recovered_existing_replacement: bool,
+    recovered: bool,
 ) -> ActiveReplacementResult:
-    manifest = context.transformed_manifest
+    manifest = context.manifest
     return ActiveReplacementResult(
         organism_id=str(manifest["organism_id"]),
         transformed_candidate_id=transformed_candidate_id,
@@ -682,9 +590,9 @@ def _result_from_context(
         restoration_event_sequence=int(manifest["restoration_event_sequence"]),
         active_database_size_bytes=paths.database.stat().st_size,
         active_database_sha256=_sha256_file(paths.database),
-        transformed_candidate_database_sha256=context.transformed_database_sha256,
-        transformed_candidate_manifest_sha256=context.transformed_manifest_sha256,
-        recovered_existing_replacement=recovered_existing_replacement,
+        transformed_candidate_database_sha256=context.database_sha256,
+        transformed_candidate_manifest_sha256=context.manifest_sha256,
+        recovered_existing_replacement=recovered,
         status="rollback_in_progress",
     )
 
@@ -731,42 +639,33 @@ def replace_active_with_candidate(
                 "active database is missing protected rollback state"
             )
 
-        if (
+        is_replaced = (
             organism["status"] == "rollback_in_progress"
             and tip["event_type"] == "rollback_lineage_prepared"
             and tip["source"] == "administration:rollback-candidate"
-            and int(tip["lineage_generation"])
-            == int(organism["lineage_generation"])
-        ):
-            context = _validate_replaced_context(
-                active, paths, transformed_candidate_id
-            )
+            and tip["lineage_generation"] == organism["lineage_generation"]
+        )
+        if is_replaced:
+            context = _validate_replaced(active, paths, transformed_candidate_id)
             active.rollback()
             active.close()
             active = None
-            return _result_from_context(
-                paths,
-                transformed_candidate_id,
-                context,
-                recovered_existing_replacement=True,
-            )
+            return _result(paths, transformed_candidate_id, context, recovered=True)
 
-        if not (
+        is_prepared = (
             organism["status"] == "rollback_in_progress"
             and tip["event_type"] == "rollback_started"
             and tip["source"] == "administration:rollback"
-            and int(tip["lineage_generation"])
-            == int(organism["lineage_generation"])
-        ):
+            and tip["lineage_generation"] == organism["lineage_generation"]
+        )
+        if not is_prepared:
             raise ActiveReplacementRejectedError(
                 "active database is neither the protected pre-replacement intent nor the exact replaced candidate"
             )
 
-        context = _validate_pre_replacement_context(
-            active, paths, transformed_candidate_id
-        )
+        context = _validate_pre_replacement(active, paths, transformed_candidate_id)
         predicted_size = _tree_size(paths.organism_dir) + int(
-            context.transformed_manifest["database_size_bytes"]
+            context.manifest["database_size_bytes"]
         )
         if predicted_size > RUNTIME_WORKING_SET_MAX_BYTES:
             raise ActiveReplacementError(
@@ -780,32 +679,25 @@ def replace_active_with_candidate(
         )
         os.close(descriptor)
         stage_path = Path(stage_name)
-        source = connect_database(
-            context.transformed_candidate_dir / "organism.sqlite3",
-            read_only=True,
-        )
+        source = connect_database(context.candidate_dir / "organism.sqlite3", read_only=True)
         destination = sqlite3.connect(stage_path, isolation_level=None)
         try:
             source.backup(destination, pages=64, sleep=0.0)
         finally:
             destination.close()
             source.close()
-        _validate_staged_database(stage_path, context)
+        _validate_stage(stage_path, context)
         _fsync_file(stage_path)
 
-        active_size_before = paths.database.stat().st_size
-        active_sha256_before = _sha256_file(paths.database)
-        candidate_manifest_sha256_before = _sha256_file(
-            context.transformed_candidate_dir / "manifest.json"
-        )
-        candidate_database_sha256_before = _sha256_file(
-            context.transformed_candidate_dir / "organism.sqlite3"
-        )
-        if candidate_manifest_sha256_before != context.transformed_manifest_sha256:
+        active_size = paths.database.stat().st_size
+        active_sha = _sha256_file(paths.database)
+        candidate_manifest_sha = _sha256_file(context.candidate_dir / "manifest.json")
+        candidate_database_sha = _sha256_file(context.candidate_dir / "organism.sqlite3")
+        if candidate_manifest_sha != context.manifest_sha256:
             raise ActiveReplacementRejectedError(
                 "transformed candidate manifest changed before replacement"
             )
-        if candidate_database_sha256_before != context.transformed_database_sha256:
+        if candidate_database_sha != context.database_sha256:
             raise ActiveReplacementRejectedError(
                 "transformed candidate database changed before replacement"
             )
@@ -813,25 +705,24 @@ def replace_active_with_candidate(
         active.rollback()
         active.close()
         active = None
-
         if (
             not paths.database.is_file()
             or paths.database.is_symlink()
-            or paths.database.stat().st_size != active_size_before
-            or _sha256_file(paths.database) != active_sha256_before
+            or paths.database.stat().st_size != active_size
+            or _sha256_file(paths.database) != active_sha
         ):
             raise ActiveReplacementRejectedError(
                 "active database changed after validation and before replacement"
             )
-        if _sha256_file(
-            context.transformed_candidate_dir / "manifest.json"
-        ) != candidate_manifest_sha256_before or _sha256_file(
-            context.transformed_candidate_dir / "organism.sqlite3"
-        ) != candidate_database_sha256_before:
+        if (
+            _sha256_file(context.candidate_dir / "manifest.json")
+            != candidate_manifest_sha
+            or _sha256_file(context.candidate_dir / "organism.sqlite3")
+            != candidate_database_sha
+        ):
             raise ActiveReplacementRejectedError(
                 "transformed candidate changed after validation and before replacement"
             )
-
         if protected_test_fail_before_replace:
             raise ActiveReplacementError(
                 "injected active replacement failure before authority transfer"
@@ -841,7 +732,6 @@ def replace_active_with_candidate(
         stage_path = None
         replaced = True
         _fsync_dir(paths.organism_dir)
-
         if protected_test_fail_after_replace:
             raise ActiveReplacementIncompleteError(
                 "active database was replaced but post-replacement validation was interrupted"
@@ -858,20 +748,13 @@ def replace_active_with_candidate(
                     ) from exc
                 raise
             validate_canonical_state(post, expect_checkpoint_pending=False)
-            validated_context = _validate_replaced_context(
-                post, paths, transformed_candidate_id
-            )
+            validated = _validate_replaced(post, paths, transformed_candidate_id)
             post.rollback()
         finally:
             if post.in_transaction:
                 post.rollback()
             post.close()
-        return _result_from_context(
-            paths,
-            transformed_candidate_id,
-            validated_context,
-            recovered_existing_replacement=False,
-        )
+        return _result(paths, transformed_candidate_id, validated, recovered=False)
     except ActiveReplacementIncompleteError:
         raise
     except (
