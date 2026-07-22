@@ -17,8 +17,10 @@ from .constants import (
     CHECKPOINT_ARTIFACT_MAX_BYTES,
     CHECKPOINT_FORMAT_VERSION,
     CHECKPOINT_STORE_MAX_BYTES,
+    CONSECUTIVE_FAILURE_LIMIT,
     CONTRACT_VERSION,
     ENVIRONMENT_VERSION,
+    MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT,
     PHASE1_BUDGETS,
     RUNTIME_WORKING_SET_MAX_BYTES,
     SCHEMA_VERSION,
@@ -218,7 +220,8 @@ def _create_and_register_pending_checkpoint(
         registration.execute("BEGIN IMMEDIATE")
         current = registration.execute(
             """SELECT checkpoint_pending, pending_checkpoint_generation,
-                      pending_checkpoint_event_sequence, lineage_generation
+                      pending_checkpoint_event_sequence, lineage_generation,
+                      consecutive_failures, maintenance_reason
                FROM organism WHERE singleton_id = 1"""
         ).fetchone()
         if (
@@ -240,16 +243,52 @@ def _create_and_register_pending_checkpoint(
                 registered_wall_time_utc_us,
             ),
         )
-        registration.execute(
-            """UPDATE organism
-               SET status = 'sleeping', checkpoint_pending = 0,
-                   pending_checkpoint_generation = NULL,
-                   pending_checkpoint_event_sequence = NULL,
-                   latest_stable_checkpoint_id = ?, latest_stable_event_sequence = ?,
-                   last_sleep_wall_time_utc_us = ?
-               WHERE singleton_id = 1""",
-            (checkpoint_id, event_sequence, registered_wall_time_utc_us),
-        )
+        failure_streak = int(current["consecutive_failures"])
+        maintenance_reason = current["maintenance_reason"]
+        if failure_streak >= CONSECUTIVE_FAILURE_LIMIT:
+            if maintenance_reason != MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT:
+                raise CheckpointError(
+                    "failure-threshold checkpoint has no protected maintenance reason"
+                )
+            final_status = "maintenance_required"
+        elif maintenance_reason is not None:
+            final_status = "maintenance_required"
+        else:
+            final_status = "sleeping"
+
+        if final_status == "maintenance_required":
+            registration.execute(
+                """UPDATE organism
+                   SET status = 'maintenance_required', checkpoint_pending = 0,
+                       pending_checkpoint_generation = NULL,
+                       pending_checkpoint_event_sequence = NULL,
+                       latest_stable_checkpoint_id = ?, latest_stable_event_sequence = ?
+                   WHERE singleton_id = 1""",
+                (checkpoint_id, event_sequence),
+            )
+        else:
+            registration.execute(
+                """UPDATE organism
+                   SET status = 'sleeping', checkpoint_pending = 0,
+                       pending_checkpoint_generation = NULL,
+                       pending_checkpoint_event_sequence = NULL,
+                       latest_stable_checkpoint_id = ?, latest_stable_event_sequence = ?,
+                       maintenance_reason = NULL, last_sleep_wall_time_utc_us = ?
+                   WHERE singleton_id = 1""",
+                (checkpoint_id, event_sequence, registered_wall_time_utc_us),
+            )
+
+        stabilized_payload = {
+            "checkpoint_id": checkpoint_id,
+            "event_sequence": event_sequence,
+        }
+        if final_status == "maintenance_required":
+            stabilized_payload.update(
+                {
+                    "final_status": final_status,
+                    "maintenance_reason": maintenance_reason,
+                }
+            )
         registration.execute(
             """INSERT INTO event (
                    organism_id, lineage_generation, lifecycle_number,
@@ -264,12 +303,39 @@ def _create_and_register_pending_checkpoint(
                 registered_wall_time_utc_us,
                 registration_source,
                 json.dumps(
-                    {"checkpoint_id": checkpoint_id, "event_sequence": event_sequence},
+                    stabilized_payload,
                     sort_keys=True,
                     separators=(",", ":"),
                 ),
             ),
         )
+        if final_status == "maintenance_required":
+            registration.execute(
+                """INSERT INTO event (
+                       organism_id, lineage_generation, lifecycle_number,
+                       wall_time_utc_us, event_type, source, payload_json,
+                       schema_version, environment_version, budget_config_version
+                   )
+                   SELECT organism_id, lineage_generation, lifecycle_number, ?,
+                          'maintenance_entered', ?, ?,
+                          schema_version, environment_version, budget_config_version
+                   FROM organism WHERE singleton_id = 1""",
+                (
+                    registered_wall_time_utc_us,
+                    registration_source,
+                    json.dumps(
+                        {
+                            "checkpoint_event_sequence": event_sequence,
+                            "checkpoint_id": checkpoint_id,
+                            "consecutive_failures": failure_streak,
+                            "maintenance_threshold": CONSECUTIVE_FAILURE_LIMIT,
+                            "reason": maintenance_reason,
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                ),
+            )
         validate_canonical_state(registration, expect_checkpoint_pending=False)
         registration.commit()
     except Exception:

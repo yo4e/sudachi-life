@@ -13,6 +13,7 @@ from .constants import (
     ACTIVE_DATABASE_MAX_BYTES,
     BUDGET_CONFIG_VERSION,
     CONTRACT_VERSION,
+    CONSECUTIVE_FAILURE_LIMIT,
     DEVELOPMENTAL_STAGE,
     ENVIRONMENT_VERSION,
     PHASE1_BUDGETS,
@@ -158,6 +159,7 @@ class OrganismStatus:
     latest_stable_checkpoint_id: str | None
     latest_stable_event_sequence: int
     consecutive_failures: int
+    maintenance_reason: str | None
     environment_step: int
     objective_complete: bool
     water_units: int
@@ -166,7 +168,7 @@ class OrganismStatus:
     event_count: int
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "organism_id": self.organism_id,
             "contract_version": self.contract_version,
             "schema_version": self.schema_version,
@@ -186,6 +188,9 @@ class OrganismStatus:
             "plots": list(self.plots),
             "event_count": self.event_count,
         }
+        if self.maintenance_reason is not None:
+            payload["maintenance_reason"] = self.maintenance_reason
+        return payload
 
 
 def connect_database(path: Path, *, read_only: bool = False) -> sqlite3.Connection:
@@ -402,6 +407,26 @@ def validate_canonical_state(
             f"checkpoint_pending mismatch: expected {expect_checkpoint_pending}, found {pending}"
         )
 
+    status = str(row["status"])
+    failure_streak = int(row["consecutive_failures"])
+    maintenance_reason = row["maintenance_reason"]
+    if status == "sleeping" and failure_streak >= CONSECUTIVE_FAILURE_LIMIT:
+        raise SchemaValidationError(
+            "sleeping organism has reached the protected maintenance threshold"
+        )
+    if status == "sleeping" and maintenance_reason is not None:
+        raise SchemaValidationError("sleeping organism retains a maintenance reason")
+    if status == "maintenance_required" and not maintenance_reason:
+        raise SchemaValidationError("maintenance state requires a typed reason")
+    if (
+        status == "checkpoint_pending"
+        and failure_streak >= CONSECUTIVE_FAILURE_LIMIT
+        and not maintenance_reason
+    ):
+        raise SchemaValidationError(
+            "threshold checkpoint pending state requires a maintenance reason"
+        )
+
     budget_row = connection.execute(
         "SELECT config_version, config_json FROM budget_config WHERE singleton_id = 1"
     ).fetchone()
@@ -461,6 +486,7 @@ def read_status(paths: OrganismPaths) -> OrganismStatus:
             latest_stable_checkpoint_id=organism["latest_stable_checkpoint_id"],
             latest_stable_event_sequence=organism["latest_stable_event_sequence"],
             consecutive_failures=organism["consecutive_failures"],
+            maintenance_reason=organism["maintenance_reason"],
             environment_step=environment["environment_step"],
             objective_complete=bool(environment["objective_complete"]),
             water_units=inventory["water_units"],

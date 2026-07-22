@@ -18,7 +18,11 @@ from .actions import (
 from .budgets import ProtectedBudgetExhaustion, WakeBudgetLedger
 from .checkpoints import CheckpointResult, create_and_register_lifecycle_checkpoint
 from .clock import Clock, RealClock
-from .constants import ACTIVE_DATABASE_MAX_BYTES, CONSECUTIVE_FAILURE_LIMIT
+from .constants import (
+    ACTIVE_DATABASE_MAX_BYTES,
+    CONSECUTIVE_FAILURE_LIMIT,
+    MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT,
+)
 from .evaluation import (
     GardenEvaluation,
     evaluate_classified_action_failure,
@@ -276,6 +280,10 @@ def _next_failure_streak(
 
     if current < 0:
         raise SchemaValidationError("canonical failure streak is negative")
+    if current >= CONSECUTIVE_FAILURE_LIMIT:
+        raise SchemaValidationError(
+            "canonical failure streak already requires maintenance"
+        )
 
     if budget_exhaustion is not None:
         if evaluation.success or evaluation.progress != "budget_exhausted_before_action":
@@ -310,10 +318,8 @@ def _next_failure_streak(
                 "mutating action failure has no protected classification"
             )
 
-    if updated >= CONSECUTIVE_FAILURE_LIMIT:
-        raise SchemaValidationError(
-            "maintenance threshold entry is not implemented in Slice 9"
-        )
+    if updated > CONSECUTIVE_FAILURE_LIMIT:
+        raise SchemaValidationError("failure streak exceeded the protected threshold")
     return updated
 
 
@@ -425,18 +431,28 @@ def perform_garden_wake(
                 failure_reason = action_failure.reason
             else:
                 failure_reason = "successful_action"
+            failure_payload = {
+                "before": failure_streak_before,
+                "after": failure_streak_after,
+                "reason": failure_reason,
+                "maintenance_threshold": CONSECUTIVE_FAILURE_LIMIT,
+            }
+            if failure_streak_after == CONSECUTIVE_FAILURE_LIMIT:
+                failure_payload.update(
+                    {
+                        "maintenance_required": True,
+                        "maintenance_reason": (
+                            MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT
+                        ),
+                    }
+                )
             _event(
                 wake,
                 organism_id=organism_id_value,
                 lineage_generation=lineage_generation,
                 wall_time_utc_us=outcome_wall_time_utc_us,
                 event_type="failure_streak_updated",
-                payload={
-                    "before": failure_streak_before,
-                    "after": failure_streak_after,
-                    "reason": failure_reason,
-                    "maintenance_threshold": CONSECUTIVE_FAILURE_LIMIT,
-                },
+                payload=failure_payload,
                 ledger=ledger,
             )
 
@@ -483,6 +499,22 @@ def perform_garden_wake(
             source="organism:phase1-fixed-policy",
             payload=ledger.as_dict(),
         )
+        maintenance_reason_after = (
+            MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT
+            if failure_streak_after == CONSECUTIVE_FAILURE_LIMIT
+            else None
+        )
+        checkpoint_payload = {
+            "reason": "committed_wake",
+            "lifecycle_number": wake.lifecycle_number,
+        }
+        if maintenance_reason_after is not None:
+            checkpoint_payload.update(
+                {
+                    "final_status": "maintenance_required",
+                    "maintenance_reason": maintenance_reason_after,
+                }
+            )
         boundary = _append_event_sql(
             wake.connection,
             organism_id=organism_id_value,
@@ -491,7 +523,7 @@ def perform_garden_wake(
             wall_time_utc_us=finished.wall_time_utc_us,
             event_type="checkpoint_pending",
             source="organism:phase1-fixed-policy",
-            payload={"reason": "committed_wake", "lifecycle_number": wake.lifecycle_number},
+            payload=checkpoint_payload,
         )
         wake.connection.execute(
             """
@@ -499,13 +531,14 @@ def perform_garden_wake(
             SET lifecycle_number = ?, status = 'checkpoint_pending', checkpoint_pending = 1,
                 pending_checkpoint_generation = lineage_generation,
                 pending_checkpoint_event_sequence = ?, consecutive_failures = ?,
-                maintenance_reason = NULL, last_wake_wall_time_utc_us = ?
+                maintenance_reason = ?, last_wake_wall_time_utc_us = ?
             WHERE singleton_id = 1
             """,
             (
                 wake.lifecycle_number,
                 boundary,
                 failure_streak_after,
+                maintenance_reason_after,
                 started.wall_time_utc_us,
             ),
         )
