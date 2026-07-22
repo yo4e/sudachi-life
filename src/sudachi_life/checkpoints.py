@@ -21,6 +21,7 @@ from .constants import (
     CONSECUTIVE_FAILURE_LIMIT,
     CONTRACT_VERSION,
     ENVIRONMENT_VERSION,
+    MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED,
     MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT,
     PHASE1_BUDGETS,
     RUNTIME_WORKING_SET_MAX_BYTES,
@@ -41,6 +42,37 @@ class CheckpointResult:
     database_size_bytes: int
     event_sequence: int
     lineage_generation: int
+
+
+@dataclass(frozen=True, slots=True)
+class CheckpointRetentionFailure:
+    reason: str
+    injection_point: str
+    candidate_checkpoint_id: str
+    candidate_event_sequence: int
+    candidate_restored: bool
+    latest_stable_checkpoint_id: str
+    latest_stable_event_sequence: int
+    stable_checkpoint_count: int
+    checkpoint_store_bytes: int
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "reason": self.reason,
+            "injection_point": self.injection_point,
+            "candidate_checkpoint_id": self.candidate_checkpoint_id,
+            "candidate_event_sequence": self.candidate_event_sequence,
+            "candidate_restored": self.candidate_restored,
+            "latest_stable_checkpoint_id": self.latest_stable_checkpoint_id,
+            "latest_stable_event_sequence": self.latest_stable_event_sequence,
+            "stable_checkpoint_count": self.stable_checkpoint_count,
+            "checkpoint_store_bytes": self.checkpoint_store_bytes,
+            "retention_limit": CHECKPOINT_RETENTION_LIMIT,
+        }
+
+
+class _InjectedRetentionPruningFailure(Exception):
+    """Protected test-only failure after artifact staging."""
 
 
 def _sha256_file(path: Path) -> str:
@@ -97,7 +129,12 @@ def create_and_register_genesis_checkpoint(
     )
 
 
-def create_and_register_lifecycle_checkpoint(paths: OrganismPaths, *, clock: Clock) -> CheckpointResult:
+def create_and_register_lifecycle_checkpoint(
+    paths: OrganismPaths,
+    *,
+    clock: Clock,
+    protected_test_retention_failure_after_stage: bool = False,
+) -> CheckpointResult:
     started = clock.read()
     return _create_and_register_pending_checkpoint(
         paths,
@@ -108,7 +145,139 @@ def create_and_register_lifecycle_checkpoint(paths: OrganismPaths, *, clock: Clo
         registration_source="administration:checkpoint",
         deadline_start_monotonic_ns=started.monotonic_ns,
         completion_clock=clock,
+        protected_test_retention_failure_after_stage=(
+            protected_test_retention_failure_after_stage
+        ),
     )
+
+
+def _record_retention_failure_maintenance(
+    connection: sqlite3.Connection,
+    paths: OrganismPaths,
+    *,
+    failure: CheckpointRetentionFailure,
+    wall_time_utc_us: int,
+) -> None:
+    """Record a restored pre-commit retention failure as protected maintenance."""
+
+    connection.execute("BEGIN IMMEDIATE")
+    try:
+        validate_canonical_state(connection, expect_checkpoint_pending=False)
+        organism = connection.execute(
+            """SELECT organism_id, lineage_generation, lifecycle_number, status,
+                      latest_stable_checkpoint_id, latest_stable_event_sequence,
+                      consecutive_failures, maintenance_reason, schema_version,
+                      environment_version, budget_config_version
+               FROM organism WHERE singleton_id = 1"""
+        ).fetchone()
+        if organism is None:
+            raise CheckpointError(
+                "canonical organism state is missing during retention failure classification"
+            )
+        if organism["status"] != "sleeping" or organism["maintenance_reason"] is not None:
+            raise CheckpointError(
+                "retention failure classification requires stable sleeping state"
+            )
+        if (
+            organism["latest_stable_checkpoint_id"]
+            != failure.latest_stable_checkpoint_id
+            or int(organism["latest_stable_event_sequence"])
+            != failure.latest_stable_event_sequence
+        ):
+            raise CheckpointError(
+                "latest stable checkpoint changed during retention failure classification"
+            )
+
+        rows = connection.execute(
+            "SELECT checkpoint_id, event_sequence FROM checkpoint_registry "
+            "ORDER BY event_sequence, checkpoint_id"
+        ).fetchall()
+        if len(rows) != CHECKPOINT_RETENTION_LIMIT + 1:
+            raise CheckpointError(
+                "retention failure classification requires the protected fifth checkpoint"
+            )
+        registered_ids = [str(row["checkpoint_id"]) for row in rows]
+        registered_boundaries = [int(row["event_sequence"]) for row in rows]
+        if failure.candidate_checkpoint_id not in registered_ids:
+            raise CheckpointError(
+                "restored retention candidate is missing from the canonical registry"
+            )
+        if failure.latest_stable_checkpoint_id not in registered_ids:
+            raise CheckpointError(
+                "newest stable checkpoint is missing from the canonical registry"
+            )
+
+        stable_dirs = sorted(
+            path.name
+            for path in paths.checkpoints.iterdir()
+            if path.is_dir() and not path.name.startswith(".")
+        )
+        if stable_dirs != sorted(registered_ids):
+            raise CheckpointError(
+                "restored checkpoint artifacts do not match the canonical registry"
+            )
+        if any(path.name.startswith(".pruning-") for path in paths.checkpoints.iterdir()):
+            raise CheckpointError(
+                "retention staging artifact remains after protected restoration"
+            )
+        for checkpoint_id in registered_ids:
+            validate_checkpoint_directory(paths.checkpoints / checkpoint_id)
+
+        store_bytes = _checkpoint_store_size(paths.checkpoints)
+        if store_bytes != failure.checkpoint_store_bytes:
+            raise CheckpointError(
+                "checkpoint store byte accounting changed after retention restoration"
+            )
+
+        updated = connection.execute(
+            """UPDATE organism
+               SET status = 'maintenance_required', maintenance_reason = ?
+               WHERE singleton_id = 1 AND status = 'sleeping'
+                     AND checkpoint_pending = 0 AND maintenance_reason IS NULL
+                     AND latest_stable_checkpoint_id = ?
+                     AND latest_stable_event_sequence = ?""",
+            (
+                MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED,
+                failure.latest_stable_checkpoint_id,
+                failure.latest_stable_event_sequence,
+            ),
+        )
+        if updated.rowcount != 1:
+            raise CheckpointError(
+                "canonical state changed before retention maintenance entry"
+            )
+
+        payload = {
+            **failure.as_dict(),
+            "maintenance_reason": MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED,
+            "registered_checkpoint_boundaries": registered_boundaries,
+            "registered_checkpoint_count": len(rows),
+            "status_after": "maintenance_required",
+        }
+        connection.execute(
+            """INSERT INTO event (
+                   organism_id, lineage_generation, lifecycle_number,
+                   wall_time_utc_us, event_type, source, payload_json,
+                   schema_version, environment_version, budget_config_version
+               ) VALUES (?, ?, ?, ?, 'checkpoint_retention_failed',
+                         'administration:checkpoint-retention', ?, ?, ?, ?)""",
+            (
+                organism["organism_id"],
+                organism["lineage_generation"],
+                organism["lifecycle_number"],
+                wall_time_utc_us,
+                json.dumps(payload, sort_keys=True, separators=(",", ":")),
+                organism["schema_version"],
+                organism["environment_version"],
+                organism["budget_config_version"],
+            ),
+        )
+        validate_canonical_state(connection, expect_checkpoint_pending=False)
+        connection.commit()
+    except Exception:
+        if connection.in_transaction:
+            connection.rollback()
+        raise
 
 
 def _prune_oldest_eligible_checkpoint(
@@ -117,6 +286,7 @@ def _prune_oldest_eligible_checkpoint(
     latest_checkpoint_id: str,
     latest_event_sequence: int,
     wall_time_utc_us: int,
+    protected_test_retention_failure_after_stage: bool = False,
 ) -> None:
     """Prune one stable non-genesis checkpoint after a newer one is registered."""
 
@@ -196,6 +366,10 @@ def _prune_oldest_eligible_checkpoint(
             raise CheckpointError("checkpoint retention staging path already exists")
         os.replace(original_dir, staged_dir)
         _fsync_dir(paths.checkpoints)
+        if protected_test_retention_failure_after_stage:
+            raise _InjectedRetentionPruningFailure(
+                "protected test injected retention failure after artifact staging"
+            )
 
         deleted = connection.execute(
             "DELETE FROM checkpoint_registry WHERE checkpoint_id = ?",
@@ -249,6 +423,45 @@ def _prune_oldest_eligible_checkpoint(
         validate_canonical_state(connection, expect_checkpoint_pending=False)
         connection.commit()
         committed = True
+    except _InjectedRetentionPruningFailure:
+        if connection.in_transaction:
+            connection.rollback()
+        if (
+            staged_dir is None
+            or original_dir is None
+            or candidate is None
+            or not staged_dir.exists()
+        ):
+            raise CheckpointError(
+                "protected retention failure did not reach the declared staging point"
+            )
+        os.replace(staged_dir, original_dir)
+        _fsync_dir(paths.checkpoints)
+        if not original_dir.is_dir() or staged_dir.exists():
+            raise CheckpointError(
+                "protected retention candidate restoration did not complete"
+            )
+        stable_count = int(
+            connection.execute("SELECT COUNT(*) FROM checkpoint_registry").fetchone()[0]
+        )
+        failure = CheckpointRetentionFailure(
+            reason="protected_test_injected_checkpoint_retention_failure",
+            injection_point="after_artifact_stage_before_registry_mutation",
+            candidate_checkpoint_id=str(candidate["checkpoint_id"]),
+            candidate_event_sequence=int(candidate["event_sequence"]),
+            candidate_restored=True,
+            latest_stable_checkpoint_id=latest_checkpoint_id,
+            latest_stable_event_sequence=latest_event_sequence,
+            stable_checkpoint_count=stable_count,
+            checkpoint_store_bytes=_checkpoint_store_size(paths.checkpoints),
+        )
+        _record_retention_failure_maintenance(
+            connection,
+            paths,
+            failure=failure,
+            wall_time_utc_us=wall_time_utc_us,
+        )
+        return
     except Exception:
         if connection.in_transaction:
             connection.rollback()
@@ -280,6 +493,7 @@ def _create_and_register_pending_checkpoint(
     registration_source: str,
     deadline_start_monotonic_ns: int | None = None,
     completion_clock: Clock | None = None,
+    protected_test_retention_failure_after_stage: bool = False,
 ) -> CheckpointResult:
     paths.checkpoints.mkdir(parents=True, exist_ok=True)
     if paths.checkpoints.is_symlink():
@@ -510,6 +724,9 @@ def _create_and_register_pending_checkpoint(
         latest_checkpoint_id=checkpoint_id,
         latest_event_sequence=event_sequence,
         wall_time_utc_us=registered_wall_time_utc_us,
+        protected_test_retention_failure_after_stage=(
+            protected_test_retention_failure_after_stage
+        ),
     )
 
     return CheckpointResult(

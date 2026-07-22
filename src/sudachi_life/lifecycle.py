@@ -330,6 +330,7 @@ def perform_garden_wake(
     seed: int,
     clock: Clock | None = None,
     protected_test_failure_after_plot_write: bool = False,
+    protected_test_retention_failure_after_stage: bool = False,
 ) -> WakeResult:
     """Perform one fixed-policy wake and stabilize its checkpoint."""
 
@@ -557,7 +558,13 @@ def perform_garden_wake(
     if not committed:
         raise SchemaValidationError("wake did not commit")
 
-    checkpoint = create_and_register_lifecycle_checkpoint(paths, clock=clock)
+    checkpoint = create_and_register_lifecycle_checkpoint(
+        paths,
+        clock=clock,
+        protected_test_retention_failure_after_stage=(
+            protected_test_retention_failure_after_stage
+        ),
+    )
     status = read_status(paths)
     return WakeResult(
         organism_id=status.organism_id,
