@@ -16,6 +16,7 @@ from .constants import (
     BUDGET_CONFIG_VERSION,
     CHECKPOINT_ARTIFACT_MAX_BYTES,
     CHECKPOINT_FORMAT_VERSION,
+    CHECKPOINT_RETENTION_LIMIT,
     CHECKPOINT_STORE_MAX_BYTES,
     CONSECUTIVE_FAILURE_LIMIT,
     CONTRACT_VERSION,
@@ -108,6 +109,165 @@ def create_and_register_lifecycle_checkpoint(paths: OrganismPaths, *, clock: Clo
         deadline_start_monotonic_ns=started.monotonic_ns,
         completion_clock=clock,
     )
+
+
+def _prune_oldest_eligible_checkpoint(
+    paths: OrganismPaths,
+    *,
+    latest_checkpoint_id: str,
+    latest_event_sequence: int,
+    wall_time_utc_us: int,
+) -> None:
+    """Prune one stable non-genesis checkpoint after a newer one is registered."""
+
+    connection = connect_database(paths.database)
+    staged_dir: Path | None = None
+    original_dir: Path | None = None
+    committed = False
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        validate_canonical_state(connection, expect_checkpoint_pending=False)
+        organism = connection.execute(
+            """SELECT latest_stable_checkpoint_id, latest_stable_event_sequence
+               FROM organism WHERE singleton_id = 1"""
+        ).fetchone()
+        if organism is None:
+            raise CheckpointError("canonical organism state is missing during retention")
+        if (
+            organism["latest_stable_checkpoint_id"] != latest_checkpoint_id
+            or int(organism["latest_stable_event_sequence"]) != latest_event_sequence
+        ):
+            raise CheckpointError("latest stable checkpoint changed before retention")
+
+        rows = connection.execute(
+            """SELECT checkpoint_id, lineage_generation, event_sequence,
+                      database_sha256, database_size_bytes, protected
+               FROM checkpoint_registry
+               ORDER BY event_sequence, checkpoint_id"""
+        ).fetchall()
+        if len(rows) <= CHECKPOINT_RETENTION_LIMIT:
+            connection.commit()
+            committed = True
+            return
+        if len(rows) != CHECKPOINT_RETENTION_LIMIT + 1:
+            raise CheckpointError("stable checkpoint count exceeded the protected retention step")
+
+        latest_rows = [row for row in rows if row["checkpoint_id"] == latest_checkpoint_id]
+        if len(latest_rows) != 1:
+            raise CheckpointError("latest stable checkpoint is missing from retention registry")
+
+        candidate = None
+        candidate_manifest: dict[str, Any] | None = None
+        for row in rows:
+            checkpoint_id = str(row["checkpoint_id"])
+            if checkpoint_id == latest_checkpoint_id:
+                continue
+            checkpoint_dir = paths.checkpoints / checkpoint_id
+            manifest = validate_checkpoint_directory(checkpoint_dir)
+            if manifest["provenance"] == "genesis":
+                continue
+            candidate = row
+            candidate_manifest = manifest
+            break
+        if candidate is None or candidate_manifest is None:
+            raise CheckpointError(
+                "retention would require genesis removal without an explicit archive policy"
+            )
+        if int(candidate["protected"]) != 1:
+            raise CheckpointError("retention candidate is not a protected stable checkpoint")
+        if (
+            int(candidate_manifest["lineage_generation"])
+            != int(candidate["lineage_generation"])
+            or int(candidate_manifest["event_sequence"]) != int(candidate["event_sequence"])
+            or candidate_manifest["database_sha256"] != candidate["database_sha256"]
+        ):
+            raise CheckpointError("retention candidate manifest does not match registry")
+
+        original_dir = paths.checkpoints / str(candidate["checkpoint_id"])
+        pruned_artifact_size = _checkpoint_store_size(original_dir)
+        retained_store_size = (
+            _checkpoint_store_size(paths.checkpoints) - pruned_artifact_size
+        )
+        if pruned_artifact_size <= 0 or retained_store_size < 0:
+            raise CheckpointError("retention candidate storage accounting is invalid")
+
+        staged_dir = paths.checkpoints / f".pruning-{candidate['checkpoint_id']}"
+        if staged_dir.exists():
+            raise CheckpointError("checkpoint retention staging path already exists")
+        os.replace(original_dir, staged_dir)
+        _fsync_dir(paths.checkpoints)
+
+        deleted = connection.execute(
+            "DELETE FROM checkpoint_registry WHERE checkpoint_id = ?",
+            (candidate["checkpoint_id"],),
+        )
+        if deleted.rowcount != 1:
+            raise CheckpointError("retention candidate registry row changed unexpectedly")
+
+        retained_count = connection.execute(
+            "SELECT COUNT(*) FROM checkpoint_registry"
+        ).fetchone()[0]
+        if retained_count != CHECKPOINT_RETENTION_LIMIT:
+            raise CheckpointError("retention did not restore the protected checkpoint count")
+
+        connection.execute(
+            """INSERT INTO event (
+                   organism_id, lineage_generation, lifecycle_number,
+                   wall_time_utc_us, event_type, source, payload_json,
+                   schema_version, environment_version, budget_config_version
+               )
+               SELECT organism_id, lineage_generation, lifecycle_number, ?,
+                      'checkpoint_pruned', 'administration:checkpoint-retention', ?,
+                      schema_version, environment_version, budget_config_version
+               FROM organism WHERE singleton_id = 1""",
+            (
+                wall_time_utc_us,
+                json.dumps(
+                    {
+                        "latest_stable_checkpoint_id": latest_checkpoint_id,
+                        "latest_stable_event_sequence": latest_event_sequence,
+                        "pruned_artifact_size_bytes": pruned_artifact_size,
+                        "pruned_checkpoint_id": candidate["checkpoint_id"],
+                        "pruned_database_size_bytes": int(
+                            candidate["database_size_bytes"]
+                        ),
+                        "pruned_event_sequence": int(candidate["event_sequence"]),
+                        "pruned_lineage_generation": int(
+                            candidate["lineage_generation"]
+                        ),
+                        "pruned_provenance": candidate_manifest["provenance"],
+                        "reason": "checkpoint_retention_limit",
+                        "retained_checkpoint_count": retained_count,
+                        "retained_checkpoint_store_bytes": retained_store_size,
+                        "retention_limit": CHECKPOINT_RETENTION_LIMIT,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            ),
+        )
+        validate_canonical_state(connection, expect_checkpoint_pending=False)
+        connection.commit()
+        committed = True
+    except Exception:
+        if connection.in_transaction:
+            connection.rollback()
+        if staged_dir is not None and original_dir is not None and staged_dir.exists():
+            os.replace(staged_dir, original_dir)
+            _fsync_dir(paths.checkpoints)
+        raise
+    finally:
+        connection.close()
+
+    if not committed or staged_dir is None:
+        raise CheckpointError("checkpoint retention did not commit")
+    try:
+        shutil.rmtree(staged_dir)
+        _fsync_dir(paths.checkpoints)
+    except OSError as exc:
+        raise CheckpointError("pruned checkpoint artifact cleanup failed") from exc
+    if _checkpoint_store_size(paths.checkpoints) != retained_store_size:
+        raise CheckpointError("retained checkpoint store byte accounting changed unexpectedly")
 
 
 def _create_and_register_pending_checkpoint(
@@ -344,6 +504,13 @@ def _create_and_register_pending_checkpoint(
         raise
     finally:
         registration.close()
+
+    _prune_oldest_eligible_checkpoint(
+        paths,
+        latest_checkpoint_id=checkpoint_id,
+        latest_event_sequence=event_sequence,
+        wall_time_utc_us=registered_wall_time_utc_us,
+    )
 
     return CheckpointResult(
         checkpoint_id=checkpoint_id,

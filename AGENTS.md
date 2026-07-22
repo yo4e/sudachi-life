@@ -42,7 +42,7 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–12 establish:
+Slices 1–13 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
@@ -74,13 +74,18 @@ Slices 1–12 establish:
 - typed `maintenance_cleared` audit history with rollback if the audit write fails
 - preservation of environment, checkpoint references, and queued input through maintenance clear
 - later normal-wake processing of the preserved tick under the unchanged fixed policy
-- the complete canonical three-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, and maintenance-clear fixtures
+- bounded stable-checkpoint retention under protected limit four
+- fifth-checkpoint stabilization before any pruning
+- genesis preservation and oldest-eligible non-genesis pruning
+- matching artifact and registry removal with typed `checkpoint_pruned` audit history
+- exact retained-checkpoint and byte accounting with normal wakeability preserved
+- the complete canonical four-wake run plus protected blocked-state, recovery, action-failure, budget-exhaustion, maintenance-threshold, maintenance-inspection, maintenance-clear, and checkpoint-retention fixtures
 
-After PR #26 is merged, the exact next implementation slice is **Slice 13: successful bounded checkpoint retention pruning**.
+After PR #27 is merged, the exact next implementation slice is **Slice 14: classified checkpoint-retention pruning failure**.
 
-It must start from four stable checkpoints including genesis, create and register one newer stable lifecycle checkpoint, and only then prune the oldest eligible checkpoint so exactly four stable checkpoint artifacts and registry rows remain. It must preserve the newest checkpoint, latest-stable references, active canonical state, and normal wakeability, and record pruning as an explicit administrative fact.
+It must inject one protected deterministic pruning failure only after the newer checkpoint is stable, preserve the newly stable latest checkpoint, restore or expose the staged older artifact without false successful pruning, keep registry and filesystem state auditable, enter an explicit typed maintenance warning, block later normal wakes, and pass protected tests and CI.
 
-Do not add prune-failure recovery, checkpoint repair, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 13.
+Do not add checkpoint repair, orphan cleanup, maintenance clear for this new reason, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 14.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
