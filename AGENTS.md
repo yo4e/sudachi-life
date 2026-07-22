@@ -42,11 +42,11 @@ No research result authorizes a live caregiver during Phase 1.
 
 ## Immediate restart point
 
-Slices 1–6 establish:
+Slices 1–7 establish:
 
 - a canonical SQLite organism body
 - injected time and protected concrete budgets
-- stable genesis, water, harvest, justified-abstention, and blocked-abstention checkpoints
+- stable genesis, water, harvest, justified-abstention, blocked-abstention, and recovery checkpoints
 - idempotent synthetic garden ticks
 - fail-fast wake ownership and deterministic observation
 - fixed-policy `water_plot(bed-a)` and `harvest_plot(bed-b)` wakes
@@ -54,13 +54,15 @@ Slices 1–6 establish:
 - classified `no_applicable_action` abstention when the objective is incomplete but no protected mutation is executable
 - independent transition and abstention evaluation
 - explicit failure-streak accounting below the maintenance threshold
-- the complete canonical three-wake run plus one protected blocked-state fixture
+- resource-aware harvest fallback when watering is impossible
+- verified failure-streak reset after positive progress
+- the complete canonical three-wake run plus protected blocked-state and recovery fixtures
 
-After PR #20 is merged, the exact next implementation slice is **Slice 7: resource-aware harvest fallback and failure-streak reset**.
+After PR #21 is merged, the exact next implementation slice is **Slice 8: classified action failure and savepoint cost preservation**.
 
-It must use an explicit protected fixture with an incomplete objective, a dry living plot, no water, one harvestable fruit, and `consecutive_failures = 1`; prove that the fixed policy skips impossible watering, selects `harvest_plot`, makes positive progress, resets the failure streak to zero, checkpoints the outcome, and returns to sleep.
+It must inject one protected failure after a registered action begins inside its SQLite savepoint; prove partial environment changes disappear, the action attempt remains charged in the committed classified outcome, no false success is recorded, the failure streak increments exactly once below maintenance, a checkpoint stabilizes the result, and the organism returns to sleep.
 
-Do not add budget-exhaustion handling, injected action failure, maintenance-threshold entry, rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 7.
+Do not add budget-exhaustion handling, maintenance-threshold entry, lineage rollback, a caregiver, chat, learning, memories, skills, or a general agent loop in Slice 8.
 
 Phase 1 remains deterministic, local, network-free, and caregiver-free.
 
