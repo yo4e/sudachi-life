@@ -13,8 +13,6 @@ from .errors import OrganismNotFoundError, SchemaValidationError, SudachiError
 from .paths import OrganismPaths
 from .rollback_intent import _canonical_sqlite_snapshot
 from .rollback_replace import (
-    ActiveReplacementError,
-    ActiveReplacementRejectedError,
     _TRANSFORMED_CANDIDATE_ID_RE,
     _read_manifest,
     _validate_artifact_chain,
@@ -89,6 +87,7 @@ def _completion_payload(
     *,
     candidate_organism: sqlite3.Row,
     queued_input_events: int,
+    transformed_candidate_manifest_sha256: str,
 ) -> dict[str, object]:
     return {
         "administrative_reason": manifest["administrative_reason"],
@@ -133,13 +132,11 @@ def _completion_payload(
         "status_before": "rollback_in_progress",
         "transformed_candidate_database_sha256": manifest["database_sha256"],
         "transformed_candidate_id": manifest["transformed_candidate_id"],
-        "transformed_candidate_manifest_sha256": None,
+        "transformed_candidate_manifest_sha256": transformed_candidate_manifest_sha256,
     }
 
 
-def _candidate_completion_facts(
-    context,
-) -> tuple[sqlite3.Row, int, dict[str, object]]:
+def _candidate_completion_facts(context) -> tuple[sqlite3.Row, int, dict[str, object]]:
     candidate = connect_database(context.candidate_dir / "organism.sqlite3", read_only=True)
     try:
         candidate_organism = candidate.execute(
@@ -158,8 +155,8 @@ def _candidate_completion_facts(
             context.manifest,
             candidate_organism=candidate_organism,
             queued_input_events=queued,
+            transformed_candidate_manifest_sha256=context.manifest_sha256,
         )
-        payload["transformed_candidate_manifest_sha256"] = context.manifest_sha256
         return candidate_organism, queued, payload
     finally:
         candidate.close()
@@ -187,6 +184,7 @@ def _validate_completed(
             raise RollbackCompletionRejectedError(
                 "completed rollback state is missing protected rows"
             )
+
         expected_organism = {
             "organism_id": manifest["organism_id"],
             "lineage_generation": manifest["new_lineage_generation"],
@@ -205,7 +203,6 @@ def _validate_completed(
                 raise RollbackCompletionRejectedError(
                     f"completed rollback organism does not match request: {key}"
                 )
-
         allowed_organism_changes = {
             "status",
             "consecutive_failures",
@@ -265,9 +262,7 @@ def _validate_completed(
             manifest,
             candidate_organism=candidate_organism,
             queued_input_events=queued,
-        )
-        expected_payload["transformed_candidate_manifest_sha256"] = (
-            context.manifest_sha256
+            transformed_candidate_manifest_sha256=context.manifest_sha256,
         )
         try:
             payload = json.loads(tip["payload_json"])
@@ -419,7 +414,7 @@ def complete_rollback(
             )
 
         context = _validate_replaced(connection, paths, transformed_candidate_id)
-        candidate_organism, queued_before, payload = _candidate_completion_facts(context)
+        _candidate_organism, queued_before, payload = _candidate_completion_facts(context)
         queued_active = int(
             connection.execute(
                 "SELECT COUNT(*) FROM inbox_event WHERE consumed = 0"
@@ -508,7 +503,9 @@ def complete_rollback(
         )
     except _InjectedRollbackCompletionFailure as exc:
         raise RollbackCompletionRejectedError(str(exc)) from exc
-    except (ActiveReplacementError, ActiveReplacementRejectedError, SchemaValidationError) as exc:
+    except (RollbackCompletionBusyError, RollbackCompletionRejectedError):
+        raise
+    except SudachiError as exc:
         raise RollbackCompletionRejectedError(str(exc)) from exc
     finally:
         if connection.in_transaction:
