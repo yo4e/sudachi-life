@@ -59,7 +59,7 @@ Do not hide a new architecture inside implementation code. If implementation rev
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Repository state containing this file includes Slices 1–19:
+Primary implementation stream. Repository state containing this file includes Slices 1–20:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -80,8 +80,9 @@ Primary implementation stream. Repository state containing this file includes Sl
 17. retained rollback-source validation and verified pre-rollback archive
 18. durable rollback intent with atomic `rollback_started`
 19. verified source-restored candidate construction
+20. isolated candidate lineage transformation with `rollback_lineage_prepared`
 
-GitHub Actions for the final PR #33 head passed clean install, compileall, genesis CLI smoke, and **81 protected tests**.
+GitHub Actions for the PR #34 implementation head passed clean install, compileall, genesis CLI smoke, and **96 protected tests**.
 
 Phase 1 remains incomplete.
 
@@ -130,53 +131,62 @@ SQLite backup artifacts are not assumed to have the same raw file bytes as their
 
 ### Source-restored candidate
 
-Restore-candidate construction:
+Restore-candidate construction exposes `build_restore_candidate(...)` and `sudachi rollback build-candidate`, revalidates the blocked intent and immutable source, restores the selected checkpoint through SQLite Online Backup, validates exact source equality, and publishes deterministic `restore-candidates/rc-.../` only after validation and atomic rename.
 
-- exposes `build_restore_candidate(...)` and `sudachi rollback build-candidate`
-- acquires fail-fast active ownership before mutable reads
-- requires `rollback_in_progress`, no pending checkpoint, and `rollback_started` at the active tip
-- revalidates the intent, abandoned-future archive, exact blocked active state, selected registry row, and immutable checkpoint
-- restores the selected checkpoint through SQLite Online Backup into a bounded temporary candidate
-- validates integrity, foreign keys, protected versions, identity, source lineage, lifecycle, pending boundary, and exact source-checkpoint equality
-- publishes deterministic `restore-candidates/rc-.../` only after validation and atomic rename
-- changes no canonical active row and creates no canonical event
-- leaves no candidate on injected construction or publication failure
+The candidate is non-canonical and remains `source_restored_untransformed`. It is never used by normal organism runtime.
 
-The candidate is non-canonical and remains `source_restored_untransformed`. It is not yet a new lineage and is never used by normal organism runtime.
+### Lineage-transformed candidate
 
-## Exact restart point: Slice 20
+Candidate transformation:
 
-After reconciling current `main`, Issue #13, and open pull requests, implement only administrative lineage transformation of one verified source-restored candidate.
+- exposes `transform_restore_candidate(...)` and `sudachi rollback transform-candidate`
+- requires an explicit bounded administrative reason
+- acquires fail-fast ownership of the blocked active database before mutable reads
+- revalidates the intent, abandoned-future archive, selected checkpoint, and exact source-restored candidate
+- derives the new generation as `abandoned_active_generation + 1`
+- copies the immutable source candidate through SQLite Online Backup into a temporary working database
+- changes only the working candidate through one bounded administrative transaction
+- clears source pending fields, restores the selected registry row, and keeps status `rollback_in_progress`
+- preserves all source history and appends one exact candidate-local `rollback_lineage_prepared` event in the new lineage
+- validates declared schema, table, organism, event, registry, and `sqlite_sequence` differences
+- publishes deterministic `restore-candidates/rtc-.../` only after complete validation and atomic rename
+- changes no active row and never edits the checkpoint, archive, or source candidate
 
-Required Slice 20 boundary:
+The transformed candidate is non-canonical and remains `lineage_transformed_replacement_ready`. It is not wakeable and has not replaced the active database.
+
+## Exact restart point: Slice 21
+
+After reconciling current `main`, Issue #13, and open pull requests, implement only protected active-database replacement with one verified lineage-transformed candidate and immediate post-replacement validation.
+
+Required Slice 21 boundary:
 
 1. create a new `agent/...` branch from current `main`
-2. add an explicit offline administrative Python API and narrow CLI command accepting one published candidate identifier
+2. add an explicit offline administrative Python API and narrow CLI command accepting one published transformed-candidate identifier
 3. acquire fail-fast ownership of the blocked active database before reading mutable rollback intent
 4. require active status `rollback_in_progress`, no pending checkpoint, and the same current-lineage `rollback_started` event at the active tip
-5. revalidate the rollback archive, abandoned future, selected immutable checkpoint, source-restored candidate manifest and database, and exact source-checkpoint equality
-6. reject missing, foreign, drifted, unsafe, ambiguous, busy, already transformed, or inconsistent input before candidate mutation or publication
-7. perform transformation through a bounded same-filesystem temporary working candidate; do not mutate the selected checkpoint, archive, or published source-restored candidate
-8. derive the new lineage generation exactly from the abandoned active generation according to ADR 0004
-9. update only the isolated working candidate through one bounded administrative transaction, preserving organism identity and protected contract, schema, environment, and budget configuration
-10. clear the source checkpoint-pending fields in the transformed candidate, keep it non-wakeable for the later replacement boundary, and append one typed candidate-local administrative restoration fact containing target and abandoned boundaries; do not record `rollback_completed`
-11. validate transformed-candidate integrity, foreign keys, new lineage, lifecycle, event order, source history, target boundary, abandoned-future references, protected configuration, and deterministic manifest
-12. publish the transformed candidate atomically only after complete validation
-13. prove transformation or publication failure leaves active `rollback_in_progress`, `rollback_started`, archive, source checkpoint, source-restored candidate, inbox, registry, environment, and all history unchanged
+5. revalidate the archive, abandoned future, selected checkpoint, source-restored candidate, transformed-candidate manifest and database, new-lineage derivation, candidate-local restoration event, and replacement-ready state
+6. reject missing, foreign, drifted, unsafe, ambiguous, busy, already replaced, or inconsistent input before crossing the replacement boundary
+7. prove the verified pre-rollback archive still exactly preserves the active body before replacement except for the deliberate durable-intent transition already protected by Slices 18–20
+8. close all validation handles before replacement and use only bounded same-filesystem atomic filesystem operations; do not copy a live active SQLite file naively
+9. atomically replace `organism.sqlite3` with the verified transformed-candidate database while preserving the immutable candidate artifact
+10. reopen the new active database immediately and validate integrity, foreign keys, protected versions, organism identity, new lineage, source lifecycle, selected stable boundary, candidate-local restoration history, and status `rollback_in_progress`
+11. define and protect explicit recovery behavior for injected failure immediately before replacement and after replacement but before post-replacement validation completes; never claim rollback completion on these paths
+12. leave the successfully replaced active body non-wakeable in `rollback_in_progress`
+13. preserve archive, selected checkpoint, source candidate, transformed candidate, inbox restored at the selected boundary, registry, environment, and history exactly as represented by the validated transformed body
 14. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
 15. run GitHub Actions through a pull request
 
-Slice 20 must stop before:
+Slice 21 must stop before:
 
-- replacing the active database
-- clearing the active body's `rollback_in_progress`
-- recording rollback completion in the active path
+- appending active-path `rollback_completed`
+- clearing the restored active body's `rollback_in_progress`
+- enabling normal wakes
 - deleting or pruning checkpoints, archives, or candidates
 - JSONL import
 - caregiver consultation
 - learning, memory, skills, or generic recovery machinery
 
-Do not privately decide the active-replacement, post-replacement validation, or rollback-completion protocol while implementing isolated candidate transformation.
+Do not privately decide rollback-completion, maintenance-clear, post-rollback checkpoint, or artifact-retention protocol while implementing the destructive replacement boundary.
 
 ## End-of-work protocol
 
