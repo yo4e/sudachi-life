@@ -24,7 +24,7 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
 | 17. No negative counters | SQLite constraints and exact success, abstention, recovery, action-failure, budget-exhaustion, maintenance-threshold, and maintenance-clear transitions cover all implemented paths |
 | 18. Action attempt is charged before execution | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the attempt remains charged after the injected failure |
-| 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the partial plot write disappears while attempt cost remains and successful mutation cost returns to zero |
+| 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` proves the partial plot write disappears while attempt cost remains and successful mutation cost returns to zero |
 | 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves the lifecycle work deadline is detected before action proposal, attempt, mutation reservation, or environment write |
 | 21. Failure streak and maintenance threshold | Completion abstention proves justified zero; Slices 6, 8, and 9 prove classified increments; Slice 7 proves successful reset; Slice 10 proves exact two-to-three threshold entry; Slice 11 leaves maintenance unchanged; maintenance clear proves explicit reset from three to zero |
 | 22. Atomic state/event commit | Genesis and classified lifecycle commits are protected; maintenance clear proves state and audit event atomicity; pending repair proves registry, stable-boundary, status, and audit atomicity; `tests/test_rollback_intent.py::test_begin_failure_rolls_back_status_and_audit_event_together` proves `rollback_in_progress` and `rollback_started` commit or roll back together |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; JSONL exports, pre-rollback archives, and restore candidates are administrative non-canonical artifacts never read or written by organism runtime |
 | 41. Administration is distinguishable | Administrative event sources are explicit. Rollback preparation and restore-candidate construction intentionally create no canonical event; rollback begin records exactly one typed `rollback_started` event from `administration:rollback` |
 
-PR #33 passed GitHub Actions on Python 3.12 with **81 protected tests** on the implementation head.
+PR #33 passed GitHub Actions on Python 3.12 with **81 protected tests** on the final head.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
