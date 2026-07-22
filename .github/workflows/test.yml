@@ -88,11 +88,13 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - name: Apply exact Slice 15 continuity
+      - name: Apply remaining Slice 15 continuity
         shell: bash
         run: |
-          awk '/python - <<'\''PY'\''/{capture=1; next} /^          PY$/{capture=0} capture {sub(/^          /, ""); print}' .github/workflows/apply-slice15-continuity.yml > /tmp/apply_slice15_continuity.py
-          python /tmp/apply_slice15_continuity.py
+          base64 -d .github/patches/slice15-continuity-remaining.patch.gz.b64 | gzip -d > /tmp/slice15-continuity-remaining.patch
+          git apply --check /tmp/slice15-continuity-remaining.patch
+          git apply /tmp/slice15-continuity-remaining.patch
+          rm .github/patches/slice15-continuity-remaining.patch.gz.b64
           rm .github/workflows/apply-slice15-continuity.yml
           rm .github/slice15-continuity.trigger
           git fetch origin main
