@@ -199,23 +199,43 @@ Implemented and verified in PR #27:
 - every retained checkpoint validates, no staging directory remains, and normal wake ownership can still be acquired
 - active environment, objective, inventory, lineage, failure streak, latest-stable references, and inbox history remain unchanged
 
-Pruning-failure maintenance warning, checkpoint repair, orphan cleanup, and rollback are not implemented.
+Checkpoint repair, orphan cleanup, and rollback are not implemented.
+
+### Slice 14 — classified checkpoint-retention pruning failure
+
+Implemented and verified in PR #28:
+
+- the canonical fourth wake first publishes and registers boundary 44 and records checkpoint stabilization at event 45
+- a protected test-only failure is injected after boundary-13 artifact staging and before any registry mutation
+- the retention transaction rolls back and restores the staged boundary-13 artifact to its original immutable directory
+- all five checkpoint registry rows and artifacts remain at boundaries 2, 13, 24, 34, and 44
+- the newest checkpoint and exact latest-stable references remain boundary 44
+- every retained checkpoint validates, byte accounting matches, and no pruning staging directory remains
+- no false `checkpoint_pruned` event is recorded
+- one typed `checkpoint_retention_failed` administrative event is recorded at event 46
+- status becomes `maintenance_required` with reason `checkpoint_retention_pruning_failed`
+- active environment, objective, inventory, lineage, failure streak, and inbox history remain unchanged
+- read-only maintenance inspection reports the new reason and exact latest checkpoint
+- a later ordinary wake rejects before reading the clock or changing state
+
+Checkpoint repair, orphan cleanup, maintenance clear for the new reason, and rollback are not implemented.
 
 ## Verified implementation results
 
-GitHub Actions passed on PR #27 with Python 3.12:
+GitHub Actions passed on PR #28 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **42 protected tests**
+- **43 protected tests**
 - installed genesis CLI smoke test
 - all earlier canonical water, harvest, abstention, blocked-state, recovery, action-failure, and budget-exhaustion behavior remains protected
 - the maintenance-threshold fixture proves exact failure transition, unchanged environment, checkpoint stabilization, typed maintenance entry, and later normal-wake rejection
 - the maintenance-inspection fixture proves exact reporting, read-only files and canonical rows, typed non-maintenance rejection, and continued normal-wake blocking
 - the maintenance-clear fixture proves bounded reason validation, fail-fast ownership, atomic state and audit commit, exact preservation, rollback on audit failure, and later processing of the preserved tick
 - the checkpoint-retention fixture proves no pruning at four, fifth-checkpoint stability before pruning, genesis and latest preservation, oldest-eligible selection, exact artifact and registry removal, explicit byte-accounted audit history, and continued normal wakeability
+- the retention-failure fixture proves fifth-checkpoint stability before failure, staged-artifact restoration, five-row/five-artifact preservation, exact latest references, no false pruning success, typed maintenance warning, read-only inspection, and later zero-clock wake rejection
 
-The exact local source-tree run also passed **42 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
+The exact local source-tree run also passed **43 tests** and compileall. A separate local clean editable install could not resolve `hatchling>=1.25` from the execution environment's package mirror; GitHub Actions independently completed the clean install, so that mirror failure is not treated as success.
 
 Canonical three-wake values remain:
 
@@ -357,6 +377,27 @@ The isolated Slice 13 checkpoint-retention fixture finishes with:
 - no retention staging directory remains
 - normal wake ownership remains available
 
+The isolated Slice 14 checkpoint-retention-failure fixture finishes with:
+
+- `lifecycle_number = 4`
+- `environment_step = 2`
+- `bed-a.moisture = 1`
+- `bed-b.fruit = 0`
+- `water_units = 0`
+- `harvested_fruit = 1`
+- `objective_complete = true`
+- `consecutive_failures = 0`
+- `latest_stable_event_sequence = 44`
+- `event_count = 46`
+- `status = maintenance_required`
+- `maintenance_reason = checkpoint_retention_pruning_failed`
+- retained checkpoint boundaries 2, 13, 24, 34, and 44
+- the staged lifecycle boundary 13 artifact is restored and validates
+- event 46 typed administrative `checkpoint_retention_failed`
+- no false `checkpoint_pruned` event exists
+- no retention staging directory remains
+- later ordinary wake rejection consumes zero clock readings
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -375,20 +416,22 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #27 is merged, create a new branch from current `main` and implement **Slice 14: classified checkpoint-retention pruning failure**.
+After PR #28 is merged, create a new branch from current `main` and implement **Slice 15: explicit pending-checkpoint orphan registration repair**.
 
 The slice must:
 
-1. start from the protected fifth-checkpoint condition only after boundary 44 is stable and registered
-2. inject one deterministic test-only pruning failure at a declared point in the retention phase
-3. preserve the newly stable latest checkpoint and exact latest-stable references
-4. avoid a false `checkpoint_pruned` success record
-5. restore the staged older artifact when the failure occurs before canonical pruning commit, or otherwise expose the incomplete cleanup explicitly
-6. preserve auditable registry, filesystem, and byte-accounting state
-7. record one typed maintenance warning for the failed retention operation and leave the organism non-wakeable
-8. pass protected tests and CI
+1. start from the protected checkpoint-deadline fixture after a committed lifecycle boundary remains `checkpoint_pending`
+2. require the immutable checkpoint artifact to have been published but not registered
+3. expose one explicit administrative repair API and narrow CLI command, not an organism action
+4. acquire fail-fast SQLite write ownership without claiming input or advancing the environment
+5. locate exactly one published orphan whose organism identity, lineage generation, pending event boundary, versions, digest, and protected configuration match canonical pending state
+6. fully validate the artifact and reject zero, multiple, mismatched, or invalid candidates without clearing pending state
+7. atomically register the valid orphan as latest stable, clear pending state, restore `sleeping`, and append typed administrative repair history
+8. preserve committed lifecycle state, event boundary, inbox rows, previous stable checkpoint, and artifact byte accounting
+9. prove a later ordinary wake can proceed from the repaired stable state
+10. pass protected tests and CI
 
-Do not add checkpoint repair, orphan cleanup, maintenance clear for the new reason, lineage rollback, caregiver consultation, learning, or generic planning in Slice 14.
+Do not add ambiguous-orphan cleanup, checkpoint deletion, retention-failure maintenance clear, lineage rollback, caregiver consultation, learning, or generic planning in Slice 15.
 
 ## Current issue map
 
