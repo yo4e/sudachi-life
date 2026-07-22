@@ -42,6 +42,10 @@ class OrganismPaths:
         return self.organism_dir / "checkpoints"
 
     @property
+    def rollback_archives(self) -> Path:
+        return self.organism_dir / "rollback-archives"
+
+    @property
     def exports(self) -> Path:
         return self.organism_dir / "exports"
 

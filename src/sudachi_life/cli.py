@@ -1,7 +1,6 @@
 """Bounded command-line interface for SUDACHI-0."""
 
 from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path
@@ -17,6 +16,7 @@ from .maintenance import inspect_maintenance
 from .maintenance_recovery import clear_maintenance
 from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
+from .rollback import prepare_rollback_archive
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -99,6 +99,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", dest="as_json"
     )
 
+    rollback_parser = subparsers.add_parser(
+        "rollback", help="perform explicit offline rollback administration"
+    )
+    rollback_subparsers = rollback_parser.add_subparsers(
+        dest="rollback_command", required=True
+    )
+    rollback_prepare_parser = rollback_subparsers.add_parser(
+        "prepare",
+        help="validate one stable rollback source and archive the active database",
+    )
+    rollback_prepare_parser.add_argument("organism_id")
+    rollback_prepare_parser.add_argument(
+        "--event-sequence", type=int, required=True, dest="event_sequence"
+    )
+    rollback_prepare_parser.add_argument(
+        "--json", action="store_true", dest="as_json"
+    )
+
     return parser
 
 
@@ -143,6 +161,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             ).as_dict()
         elif args.command == "export" and args.export_command == "events":
             payload = export_stable_events(
+                args.runtime_dir,
+                args.organism_id,
+                args.event_sequence,
+            ).as_dict()
+        elif args.command == "rollback" and args.rollback_command == "prepare":
+            payload = prepare_rollback_archive(
                 args.runtime_dir,
                 args.organism_id,
                 args.event_sequence,
