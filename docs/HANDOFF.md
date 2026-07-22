@@ -71,7 +71,7 @@ Merged through PR #19:
 
 ### Slice 6 — classified no-applicable-action abstention
 
-Implemented and verified in PR #20:
+Merged through PR #20:
 
 - a protected administrative fixture creates an incomplete objective with a dry sprout, no water, and no harvestable fruit
 - the fixed policy selects typed `no_applicable_action` before entering any mutating executor
@@ -84,16 +84,33 @@ Implemented and verified in PR #20:
 
 The fixture is test administration, not a live caregiver. No human, model, or fixture caregiver participates in action selection.
 
+### Slice 7 — resource-aware harvest recovery
+
+Implemented and verified in PR #21:
+
+- a protected administrative fixture starts with an incomplete objective, a dry sprout, zero water, one harvestable fruit, and `consecutive_failures = 1`
+- deterministic observation exposes no executable water target and one executable harvest target
+- the fixed policy skips impossible watering and selects `harvest_plot(bed-b)`
+- one input, observation, action attempt, and environment mutation are consumed; all external-capability counters remain zero
+- the independent evaluator proves the exact harvest transition, positive progress, and an objective that correctly remains incomplete
+- unresolved needs decrease from two to one
+- `consecutive_failures` resets exactly once from one to zero
+- the committed pending boundary is event sequence 17 and administrative stabilization is event sequence 18
+- the organism returns to `sleeping`
+
+The recovery fixture is also test administration and does not participate in action selection.
+
 ## Verified implementation results
 
-GitHub Actions passed on PR #20 with Python 3.12:
+GitHub Actions passed on PR #21 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **30 protected tests**
+- **31 protected tests**
 - installed genesis CLI smoke test
 - all earlier canonical water, harvest, and completion-abstention behavior remains protected
 - the blocked-state fixture completes typed abstention, one failure increment, checkpoint stabilization, and sleep
+- the recovery fixture skips impossible watering, harvests, resets the failure streak, checkpoints, and sleeps
 
 The source-tree local run also passed **30 tests** and compileall. A separate local clean editable install could not resolve the `hatchling` build dependency from the execution environment's package mirror; GitHub Actions independently completed the clean install, so the repository result is verified without treating the local mirror failure as success.
 
@@ -124,6 +141,20 @@ The isolated Slice 6 blocked fixture finishes with:
 - `event_count = 17`
 - `status = sleeping`
 
+The isolated Slice 7 recovery fixture finishes with:
+
+- `lifecycle_number = 1`
+- `environment_step = 1`
+- `bed-a.moisture = 0`
+- `bed-b.fruit = 0`
+- `water_units = 0`
+- `harvested_fruit = 1`
+- `objective_complete = false`
+- `consecutive_failures = 0`
+- `latest_stable_event_sequence = 17`
+- `event_count = 18`
+- `status = sleeping`
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -142,21 +173,22 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #20 is merged, create a new branch from current `main` and implement **Slice 7: resource-aware harvest fallback and failure-streak reset**.
+After PR #21 is merged, create a new branch from current `main` and implement **Slice 8: classified action failure and savepoint cost preservation**.
 
 The slice must:
 
-1. use an explicit protected fixture with an incomplete objective, a dry living plot, zero water, one harvestable fruit, and `consecutive_failures = 1`
-2. claim one tick and build one complete observation
-3. prove that watering is impossible because the water resource is absent
-4. select `harvest_plot` as the next executable protected action
-5. consume one input, one observation, one action attempt, and one environment mutation
-6. independently prove positive progress and the exact harvest transition
-7. reset `consecutive_failures` from one to zero
-8. commit and stabilize an exact checkpoint boundary
-9. return to sleep and prove the result in protected tests and CI
+1. use an explicit protected failure-injection fixture with one executable registered action
+2. reserve and charge the action attempt before execution
+3. begin the transition inside the existing SQLite savepoint
+4. inject a classified failure after at least one partial environment write
+5. prove the savepoint removes every partial environment change
+6. commit a failure outcome without recording false action success
+7. preserve the charged action-attempt cost while recording zero successful environment mutations
+8. increment `consecutive_failures` exactly once below the maintenance threshold
+9. commit and stabilize an exact checkpoint boundary
+10. return to sleep and prove the result in protected tests and CI
 
-Do not add budget exhaustion, injected action failure, maintenance-threshold entry, rollback, caregiver consultation, learning, or generic planning in Slice 7.
+Do not add budget exhaustion, maintenance-threshold entry, lineage rollback, caregiver consultation, learning, or generic planning in Slice 8.
 
 ## Current issue map
 
