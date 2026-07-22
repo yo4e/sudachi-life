@@ -2,7 +2,7 @@
 
 Updated: **2026-07-22**
 
-This file is the operational restart point for repository state containing Phase 1 Slices 1–21. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for repository state containing Phase 1 Slices 1–22. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -32,7 +32,7 @@ Phase 1 has no caregiver, model adapter, chat interface, network access, subproc
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–21 are implemented in repository state containing this handoff.
+Primary implementation stream. Slices 1–22 are implemented in repository state containing this handoff.
 
 ### Issue #3 — prior work and provider review
 
@@ -83,32 +83,23 @@ Research stream. Preliminary evidence and provider-neutral strategy exist, but n
 - bounded atomic publication
 - no import or dual-write
 
-### Slice 17 — rollback source and pre-rollback archive
+### Slices 17–18 — abandoned future and durable intent
 
-- exact retained source validation
+- exact retained rollback-source validation
 - complete active SQLite Online Backup snapshot
 - immutable abandoned-future and source metadata
 - bounded deterministic archive publication
-- no canonical mutation or event
-
-### Slice 18 — durable rollback intent
-
 - complete archive and active-body revalidation
 - exact canonical SQLite logical equality
 - atomic `rollback_in_progress` plus `rollback_started`
 - zero-clock rejection paths
-- preserved inputs and blocked normal wake
+- blocked normal wake
 
-### Slice 19 — verified source-restored candidate
+### Slices 19–20 — source restoration and new-lineage candidate
 
 - selected checkpoint restored through Online Backup
 - exact source equality and protected provenance validation
 - deterministic immutable `source_restored_untransformed` candidate
-- atomic publication, idempotence, and failure cleanup
-- no active mutation
-
-### Slice 20 — isolated candidate lineage transformation
-
 - explicit bounded administrative reason
 - exact `abandoned_active_generation + 1` derivation
 - candidate-only transformation transaction
@@ -117,60 +108,76 @@ Research stream. Preliminary evidence and provider-neutral strategy exist, but n
 - source history preserved
 - one new-lineage `rollback_lineage_prepared` event
 - deterministic immutable `lineage_transformed_replacement_ready` candidate
-- complete table-difference and sequence validation
 - active and all immutable inputs unchanged
 
-See `docs/phase1/SLICE20_CANDIDATE_LINEAGE_TRANSFORMATION.md`.
+See:
+
+- `docs/phase1/SLICE19_RESTORE_CANDIDATE_CONSTRUCTION.md`
+- `docs/phase1/SLICE20_CANDIDATE_LINEAGE_TRANSFORMATION.md`
 
 ### Slice 21 — protected active-database authority transfer
 
 - `replace_active_with_candidate(...)`
 - `sudachi rollback replace-active <organism_id> --candidate-id <ID>`
 - fail-fast ownership of the old blocked active body
-- complete intent, archive, selected checkpoint, source-candidate, and transformed-candidate revalidation
+- complete provenance-chain revalidation
 - bounded same-filesystem staging through SQLite Online Backup
-- full staged integrity, foreign-key, canonical, and exact candidate-equality validation
-- old active and candidate digest recheck after closing SQLite handles
+- staged integrity, foreign-key, canonical, and exact equality validation
+- old-active and candidate digest recheck after closing SQLite handles
 - one same-filesystem atomic `os.replace()` of canonical `organism.sqlite3`
 - immutable archive and candidate artifacts preserved
 - immediate reopened active validation
 - exact active-versus-transformed-candidate logical equality
-- new active body remains `rollback_in_progress` with `rollback_lineage_prepared` at the tip
-- normal wakes remain blocked before clock or claim
-- pre-transfer failure preserves the old active body and removes staging
-- post-transfer interruption leaves the valid new blocked body detectable
-- exact repeat revalidates and recovers without rewriting
-- incompatible post-replacement drift is rejected
-
-The pre-rollback archive remains the authoritative abandoned future. Slice 21 transfers canonical authority but does not record rollback completion.
+- new active remains blocked with `rollback_lineage_prepared` at the tip
+- pre-transfer failure preservation
+- detectable and exactly recoverable post-transfer interruption
 
 See `docs/phase1/SLICE21_ACTIVE_DATABASE_REPLACEMENT.md`.
 
+### Slice 22 — atomic rollback completion and wakeability
+
+- `complete_rollback(...)`
+- `sudachi rollback complete <organism_id> --candidate-id <ID>`
+- fail-fast ownership of the replaced active body
+- complete checkpoint, archive, source-candidate, transformed-candidate, and active-replacement revalidation before clock use
+- one injected administrative clock read only after validation
+- atomic `rollback_in_progress -> sleeping` transition plus one exact `rollback_completed`
+- restored failure count reset and maintenance clear
+- exact payload binding original reason, target, abandoned future, old and new lineages, candidate identifiers and digests, and replacement validation
+- environment, inbox, registry, protected versions, and prior history preserved
+- injected failure proving status and completion history roll back together
+- exact repeated completion with zero clock reads and no mutation
+- incompatible completed history rejected
+- normal wake blocked before completion
+- normal wake enabled only after completion
+- first new-lineage wake creates and registers a new stable lifecycle checkpoint
+- pre-rollback archive and both candidates remain unchanged through that checkpoint
+
+See `docs/phase1/SLICE22_ROLLBACK_COMPLETION.md`.
+
 ## Validation state
 
-GitHub Actions on Python 3.12 for the PR #35 implementation head completed:
+GitHub Actions on Python 3.12 for the PR #36 implementation head completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **107 protected tests**
+- **115 protected tests**
 
-The first PR run failed during test collection because the new module imported singular `checkpoint` instead of the existing canonical `checkpoints` module. No protected test behavior ran in that attempt. The import was corrected and the next implementation run passed all 107 tests.
+The first Slice 22 run found one failure: archive drift was detected correctly but escaped as the lower-level `RollbackArchiveError`. The completion boundary was corrected to preserve the exact cause while classifying subsystem failures as `RollbackCompletionRejectedError`. The subsequent implementation run passed all 115 tests.
 
 The final continuity head must remain green before merge.
 
-`docs/PHASE1_TEST_MATRIX.md` maps implemented coverage. Phase 1 is incomplete; passing 107 tests does not imply all 41 contract evaluations are complete.
+`docs/PHASE1_TEST_MATRIX.md` maps implemented coverage. Phase 1 is incomplete; passing 115 tests does not imply all 41 contract evaluations are complete.
 
-The workflow remains the existing public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. Slice 21 adds no paid runner, larger runner, GPU runner, private-repository usage, or expanded artifact retention.
+The workflow remains the existing public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. Slices 20–22 introduced no paid runner, larger runner, GPU runner, private-repository usage, or expanded artifact retention.
 
 ## Known incomplete Phase 1 work
 
 Major incomplete areas include:
 
-- rollback-completion transaction
-- restored wakeability
-- first post-rollback stable checkpoint and archive-protection confirmation
-- rollback archive and candidate retention policy
+- accepted rollback archive and candidate retention policy
+- bounded behavior across multiple completed rollbacks
 - complete repeated-run canonical equivalence
 - backward-wall-time ordering scenario
 - explicit seed-independence comparison
@@ -184,35 +191,24 @@ Major incomplete areas include:
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 22
+## Exact next task: rollback-artifact retention decision
 
-Implement only rollback completion on the already replaced and fully validated active body.
+Do not implement rollback archive or candidate deletion yet.
 
-1. create a new `agent/...` branch from current `main`
-2. expose an offline administrative Python API and narrow CLI command accepting one transformed-candidate identifier
-3. acquire fail-fast ownership of the replaced active database before mutable reads
-4. require `rollback_in_progress`, no pending checkpoint, the new lineage generation, and exact `rollback_lineage_prepared` at the active tip
-5. revalidate the complete selected-checkpoint, archive, source-candidate, transformed-candidate, and active-replacement provenance chain, including exact active-versus-candidate equality
-6. reject missing, foreign, drifted, unsafe, ambiguous, busy, incomplete, or incompatible repeated state before clock use or mutation
-7. read one injected administrative clock only after complete validation
-8. atomically change the restored body to the correct stable wakeable status and append exactly one next-sequence `rollback_completed` event
-9. bind administrative reason, selected target, abandoned future, old and new lineages, candidate identifiers and digests, replacement validation, implementation version, and final status in the payload
-10. preserve organism identity, new lineage, source lifecycle, environment, selected-boundary inbox, registry, protected versions, and all prior history
-11. prove injected post-event failure rolls back status and completion history together and leaves wake blocked
-12. make exact repeated completion idempotent without a second clock read and reject incompatible repeat
-13. prove wake rejection before completion and normal wakeability after completion
-14. preserve every rollback artifact; do not delete or prune
-15. update tests, matrix, this handoff, Issue #13, and a Slice 22 note
-16. run GitHub Actions through a pull request
+The next work must be a reviewed decision boundary:
 
-Slice 22 stops before:
+1. reconcile current `main`, Issue #13, and open pull requests
+2. review Contract v0.2 rollback retention requirements, ADR 0004, the runtime working-set limit, and Slices 17–22
+3. draft a new decision record before implementation
+4. define which abandoned-future archive and candidate artifacts remain protected after the first post-rollback stable checkpoint
+5. define whether source and transformed candidates are reconstructible or independently required for audit
+6. define how multiple completed rollbacks remain bounded
+7. define what evidence permits an abandoned-future archive to be removed
+8. define same-filesystem atomic pruning and classified pruning-failure restoration
+9. decide whether Phase 1 permits pruning or instead imposes a bounded completed-rollback count while retaining every artifact
+10. update roadmap, matrix, this handoff, and Issue #13 after acceptance
 
-- rollback archive or candidate deletion or pruning
-- a new long-term artifact-retention policy
-- JSONL import
-- caregiver consultation, learning, memory, skills, or generic recovery machinery
-
-The purpose is to make the already transferred body explicitly complete and wakeable without conflating completion with later artifact retention or broader Phase 1 closure.
+No deletion implementation, remote backup assumption, or generic cleanup machinery may precede the accepted decision.
 
 ## Restart protocol
 
@@ -221,8 +217,8 @@ At the next session:
 1. read `AGENTS.md`
 2. read this handoff and normative documents in order
 3. inspect current open issues and pull requests
-4. verify PR #35 is merged or reconcile repository truth
-5. begin only from the Slice 22 boundary above
+4. verify PR #36 is merged or reconcile repository truth
+5. begin with the rollback-artifact retention decision, not deletion code
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action.
 
