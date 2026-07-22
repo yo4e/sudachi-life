@@ -1,0 +1,31 @@
+name: Apply Slice 12 continuity
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull-request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Apply exact continuity patch
+        run: |
+          base64 -d .slice12-continuity.patch.gz.b64 | gunzip > /tmp/slice12-continuity.patch
+          echo '031c43642eadabbd6438d738822c6a36d958378010076a6802f9b8307bff40bd  /tmp/slice12-continuity.patch' | sha256sum -c -
+          git apply --check /tmp/slice12-continuity.patch
+          git apply /tmp/slice12-continuity.patch
+          rm .slice12-continuity.patch.gz.b64
+          rm .github/workflows/slice12-apply-continuity.yml
+          git config user.name 'sudachi-life automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'docs: record audited maintenance clear'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
