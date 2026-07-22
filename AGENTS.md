@@ -59,7 +59,7 @@ Do not hide a new architecture inside implementation code. If implementation rev
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Repository state containing this file includes Slices 1–21:
+Primary implementation stream. Repository state containing this file includes Slices 1–22:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -82,8 +82,9 @@ Primary implementation stream. Repository state containing this file includes Sl
 19. verified source-restored candidate construction
 20. isolated candidate lineage transformation with `rollback_lineage_prepared`
 21. atomic active-database replacement with immediate validation and recoverable interruption
+22. atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
 
-GitHub Actions for the PR #35 implementation head passed clean install, compileall, genesis CLI smoke, and **107 protected tests** after one collection-time module-name correction.
+GitHub Actions for the PR #36 implementation head passed clean install, compileall, genesis CLI smoke, and **115 protected tests** after one completion exception-classification correction.
 
 Phase 1 remains incomplete.
 
@@ -110,74 +111,62 @@ The organism runtime must not:
 
 Administration is distinct from organism autonomy. Administrative operations have narrow typed boundaries and preserve authority separation.
 
-## Established rollback boundaries
+## Complete protected rollback path
 
-### Pre-rollback archive and durable intent
+### Archive and intent
 
 Rollback archive preparation validates one retained source, snapshots the complete active future through SQLite Online Backup, and publishes immutable `rollback-archives/pre-rb-.../` without canonical mutation.
 
 Rollback begin revalidates the archive and active body, atomically changes status to `rollback_in_progress`, appends exactly one `rollback_started`, and blocks normal wakes.
 
-### Source-restored and lineage-transformed candidates
+### Candidate construction and lineage transformation
 
-Source-candidate construction restores the selected checkpoint through SQLite Online Backup and publishes an exact `source_restored_untransformed` candidate.
+Source-candidate construction restores the selected checkpoint through SQLite Online Backup and publishes an exact immutable `source_restored_untransformed` candidate.
 
-Candidate transformation derives `abandoned_active_generation + 1`, mutates only an isolated working candidate, clears source pending fields, reconstructs the selected registry row, preserves all source history, appends one candidate-local `rollback_lineage_prepared`, and publishes a `lineage_transformed_replacement_ready` candidate.
+Candidate transformation derives `abandoned_active_generation + 1`, changes only an isolated working candidate, clears source pending fields, reconstructs the selected registry row, preserves source history, appends one candidate-local `rollback_lineage_prepared`, and publishes an immutable `lineage_transformed_replacement_ready` candidate.
 
-Both candidate forms are non-canonical and immutable after publication.
+### Canonical authority transfer
 
-### Active authority transfer
+Active replacement revalidates the complete provenance chain, stages an exact candidate copy through SQLite Online Backup, atomically replaces canonical `organism.sqlite3`, immediately validates the new active body, preserves every artifact, and leaves the new body blocked in `rollback_in_progress`.
 
-Active replacement:
+A post-transfer interruption is detectable and exact repeated validation recovers without rewriting.
 
-- exposes `replace_active_with_candidate(...)` and `sudachi rollback replace-active`
-- acquires fail-fast ownership of the old blocked active body
-- revalidates the complete intent, archive, checkpoint, source-candidate, and transformed-candidate chain
-- stages an exact transformed-candidate copy through SQLite Online Backup in the organism directory
-- validates staging before authority transfer
-- closes old SQLite handles and rechecks old active and candidate digests
-- atomically replaces canonical `organism.sqlite3` through same-filesystem `os.replace()`
-- preserves the archive and both candidate artifacts
-- immediately reopens and validates exact active-versus-candidate logical equality
-- leaves the new active body in `rollback_in_progress` with `rollback_lineage_prepared` at the tip
-- distinguishes pre-transfer failure from post-transfer incomplete validation
-- recognizes and revalidates an exact already-replaced body without rewriting it
+### Completion and wakeability
 
-The pre-rollback archive remains the authoritative abandoned future. Active replacement creates no event and does not complete rollback.
+Rollback completion:
 
-## Exact restart point: Slice 22
+- exposes `complete_rollback(...)` and `sudachi rollback complete`
+- acquires fail-fast ownership of the replaced body
+- revalidates the checkpoint, archive, both candidates, and exact active-candidate equality
+- reads one administrative clock only after validation
+- atomically changes `rollback_in_progress` to `sleeping`
+- clears restored failure and maintenance state
+- appends exactly one next-sequence `rollback_completed`
+- binds target, abandoned future, lineages, candidate identifiers and digests, replacement validation, and the original administrative reason
+- rolls back status and event together on injected failure
+- recognizes an exact completed state without another clock read or mutation
+- restores normal wakeability only after commit
 
-After reconciling current `main`, Issue #13, and open pull requests, implement only rollback completion on the already replaced and fully validated active body.
+Protected tests prove the first post-rollback wake runs in the new lineage and creates a new stable lifecycle checkpoint while every rollback artifact remains unchanged.
 
-Required Slice 22 boundary:
+## Exact restart point: rollback-artifact retention decision
 
-1. create a new `agent/...` branch from current `main`
-2. add an explicit offline administrative Python API and narrow CLI command accepting one transformed-candidate identifier
-3. acquire fail-fast ownership of the replaced active database before mutable reads
-4. require canonical status `rollback_in_progress`, no pending checkpoint, the new lineage generation, and exact `rollback_lineage_prepared` at the active tip
-5. revalidate the complete checkpoint, archive, source-candidate, transformed-candidate, and active-replacement provenance chain, including exact active-versus-candidate logical equality
-6. reject missing, foreign, drifted, unsafe, ambiguous, busy, incomplete, already-completed-with-different-input, or inconsistent state before clock use or mutation
-7. read exactly one injected administrative clock only after complete validation
-8. in one bounded SQLite transaction, change the restored body from `rollback_in_progress` to the correct stable wakeable status and append exactly one next-sequence `rollback_completed` event
-9. bind the administrative reason, selected target, abandoned archive and boundary, old and new lineage generations, source and transformed candidate identifiers and digests, replacement validation, implementation version, and final status in the completion payload
-10. preserve organism identity, new lineage, source lifecycle, environment, inbox restored at the selected boundary, selected registry row, protected versions, and all prior history
-11. validate canonical state and exact event order before commit
-12. prove injected failure after status update and completion-event insertion rolls back both together and leaves normal wakes blocked
-13. make an exact repeated completion request detectable and idempotent without a second clock read; reject incompatible repeated input
-14. prove normal wake rejection before completion and normal wakeability only after completion
-15. preserve every checkpoint, archive, source candidate, and transformed candidate; do not delete or prune artifacts
-16. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-17. run GitHub Actions through a pull request
+The complete rollback path now preserves all artifacts. Do not implement deletion or pruning until an accepted decision record defines a bounded retention policy.
 
-Slice 22 must stop before:
+Required next work:
 
-- deleting or pruning rollback archives or candidates
-- introducing a new rollback-artifact retention policy
-- JSONL import
-- caregiver consultation
-- learning, memory, skills, or generic recovery machinery
+1. reconcile current `main`, Issue #13, and open pull requests
+2. review Contract v0.2 rollback retention requirements, ADR 0004, runtime working-set limits, and Slices 17–22
+3. author a proposed decision record before implementation
+4. define which pre-rollback archives, source candidates, and transformed candidates remain protected after a first post-rollback stable checkpoint
+5. define whether candidates are reconstructible or independently audit-critical
+6. define how multiple completed rollbacks remain bounded
+7. define what evidence permits abandoned-future archive removal
+8. define atomic pruning and recoverable failure behavior
+9. decide whether Phase 1 permits pruning at all or instead imposes a bounded completed-rollback count
+10. update roadmap, handoff, and Issue #13 after review
 
-Do not privately decide long-term rollback-artifact retention or broader Phase 1 evaluation closure while implementing completion and wakeability.
+No rollback artifact deletion, remote backup assumption, or generic cleanup machinery may precede that accepted decision.
 
 ## End-of-work protocol
 
