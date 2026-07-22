@@ -86,7 +86,7 @@ The fixture is test administration, not a live caregiver. No human, model, or fi
 
 ### Slice 7 — resource-aware harvest recovery
 
-Implemented and verified in PR #21:
+Merged through PR #21:
 
 - a protected administrative fixture starts with an incomplete objective, a dry sprout, zero water, one harvestable fruit, and `consecutive_failures = 1`
 - deterministic observation exposes no executable water target and one executable harvest target
@@ -100,19 +100,33 @@ Implemented and verified in PR #21:
 
 The recovery fixture is also test administration and does not participate in action selection.
 
+### Slice 8 — classified action failure and savepoint cost preservation
+
+Implemented and verified in PR #22:
+
+- a protected administrative fixture exposes exactly one executable `water_plot(bed-a)` action
+- test administration requests one typed failure after the plot row is partially written inside the existing SQLite savepoint
+- the executor rolls the savepoint back and releases the successful-mutation budget reservation while preserving the charged action attempt
+- the lifecycle records `action_failed`, never records false `action_completed`, and consumes the claimed input
+- the independent evaluator proves plots, inventory, objective, unresolved needs, and environment step are unchanged
+- `consecutive_failures` advances exactly once from zero to one below maintenance threshold three
+- the committed pending boundary is event sequence 17 and administrative stabilization is event sequence 18
+- the organism returns to `sleeping`
+
+The failure injection is a test-only keyword argument. It is not available through the CLI, inbox, fixed policy, or organism state.
+
 ## Verified implementation results
 
-GitHub Actions passed on PR #21 with Python 3.12:
+GitHub Actions passed on PR #22 with Python 3.12:
 
 - clean editable installation
 - `python -m compileall -q src tests`
-- **31 protected tests**
+- **32 protected tests**
 - installed genesis CLI smoke test
-- all earlier canonical water, harvest, and completion-abstention behavior remains protected
-- the blocked-state fixture completes typed abstention, one failure increment, checkpoint stabilization, and sleep
-- the recovery fixture skips impossible watering, harvests, resets the failure streak, checkpoints, and sleeps
+- all earlier canonical water, harvest, abstention, blocked-state, and recovery behavior remains protected
+- the action-failure fixture proves partial savepoint rollback, preserved attempt cost, zero successful mutation cost, one failure increment, checkpoint stabilization, and sleep
 
-The source-tree local run also passed **30 tests** and compileall. A separate local clean editable install could not resolve the `hatchling` build dependency from the execution environment's package mirror; GitHub Actions independently completed the clean install, so the repository result is verified without treating the local mirror failure as success.
+The exact local source-tree run also passed **32 tests** and compileall. GitHub Actions independently completed the clean editable installation and protected test run.
 
 Canonical three-wake values remain:
 
@@ -155,6 +169,20 @@ The isolated Slice 7 recovery fixture finishes with:
 - `event_count = 18`
 - `status = sleeping`
 
+The isolated Slice 8 action-failure fixture finishes with:
+
+- `lifecycle_number = 1`
+- `environment_step = 0`
+- `bed-a.moisture = 0`
+- `bed-b.fruit = 0`
+- `water_units = 1`
+- `harvested_fruit = 0`
+- `objective_complete = false`
+- `consecutive_failures = 1`
+- `latest_stable_event_sequence = 17`
+- `event_count = 18`
+- `status = sleeping`
+
 ## Integration repair record
 
 PR #15 was accidentally merged before its required foundation in PR #14. PR #16 repaired the order, introduced clean-checkout CI, and verified the combined baseline. This was an integration defect, not a contract change.
@@ -173,22 +201,21 @@ PR #15 was accidentally merged before its required foundation in PR #14. PR #16 
 
 ## Exact next implementation task
 
-After PR #21 is merged, create a new branch from current `main` and implement **Slice 8: classified action failure and savepoint cost preservation**.
+After PR #22 is merged, create a new branch from current `main` and implement **Slice 9: classified budget exhaustion before forbidden mutation**.
 
 The slice must:
 
-1. use an explicit protected failure-injection fixture with one executable registered action
-2. reserve and charge the action attempt before execution
-3. begin the transition inside the existing SQLite savepoint
-4. inject a classified failure after at least one partial environment write
-5. prove the savepoint removes every partial environment change
-6. commit a failure outcome without recording false action success
-7. preserve the charged action-attempt cost while recording zero successful environment mutations
-8. increment `consecutive_failures` exactly once below the maintenance threshold
-9. commit and stabilize an exact checkpoint boundary
-10. return to sleep and prove the result in protected tests and CI
+1. use an explicit protected fixture with one executable registered action
+2. create one deterministic exhausted-budget condition without changing the protected budget configuration
+3. detect exhaustion before the prohibited environment write
+4. record a typed budget-exhausted failure without false action completion
+5. prove plots, inventory, objective, and environment step remain unchanged
+6. preserve exact nonnegative budget accounting
+7. increment `consecutive_failures` exactly once below the maintenance threshold
+8. consume the classified input, commit and stabilize an exact checkpoint boundary
+9. return to sleep and prove the result in protected tests and CI
 
-Do not add budget exhaustion, maintenance-threshold entry, lineage rollback, caregiver consultation, learning, or generic planning in Slice 8.
+Do not add maintenance-threshold entry, checkpoint repair, lineage rollback, caregiver consultation, learning, or generic planning in Slice 9.
 
 ## Current issue map
 
