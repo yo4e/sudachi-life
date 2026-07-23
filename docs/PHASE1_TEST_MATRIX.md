@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–28 implemented and verified — Phase 1 incomplete**
+Status: **Slices 1–29 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -21,13 +21,13 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 13. Lexicographic tie breaking | `tests/test_insertion_order_tie_breaking.py::test_complete_wake_uses_lexicographic_tie_break_after_reverse_insertion` stabilizes a fixture whose physical rowid order is `bed-b`, `bed-a` while both are executable water targets; canonical observation and applicable targets are `bed-a`, `bed-b`, the policy waters `bed-a`, the exact transition and event/checkpoint boundaries succeed, physical order remains reversed, and later input is accepted |
 | 14. Resource-aware harvest fallback | `tests/test_resource_aware_recovery.py::test_resource_aware_harvest_recovers_and_resets_failure_streak` |
 | 15. Specific no-applicable-action abstention | `tests/test_no_applicable_action.py::test_no_applicable_action_abstains_and_increments_failure_once`; the companion evaluator test rejects abstention when an action is executable |
-| 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
+| 16. Duplicate external tick never creates another action | `tests/test_post_action_duplicate_replay.py::test_consumed_external_event_replay_never_creates_duplicate_action` completes and checkpoints the original action, proves replay of the consumed identifier is zero-clock and byte/canonical/artifact identical, proves a no-input wake rolls back its tentative history, and proves only a later distinct identifier creates the second action |
 | 17. No negative counters | SQLite constraints and exact implemented transitions cover all implemented paths |
 | 18. Action attempt is charged before execution | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` |
 | 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` |
 | 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` and both cleanup-grace tests prove the executor is never entered after the normal-work deadline |
 | 21. Failure streak and maintenance threshold | Slices 5–12 protect justified zero, classified increments, successful reset, exact threshold entry, inspection, and explicit clear; rollback completion resets restored failure and maintenance state before wakeability |
-| 22. Atomic state/event commit | Genesis and lifecycle commits are protected; maintenance clear and pending repair are atomic; rollback intent commits status and `rollback_started` together; candidate transformation commits isolated lineage and restoration history together; active replacement transfers a validated body atomically; Slice 22 proves `sleeping` and `rollback_completed` commit or roll back together; Slice 27 proves cleanup-grace overrun rolls back all uncommitted lifecycle events, state, sequence, and inbox claim changes |
+| 22. Atomic state/event commit | Genesis and lifecycle commits are protected; maintenance clear and pending repair are atomic; rollback intent commits status and `rollback_started` together; candidate transformation commits isolated lineage and restoration history together; active replacement transfers a validated body atomically; Slice 22 proves `sleeping` and `rollback_completed` commit or roll back together; Slice 27 proves cleanup-grace overrun rolls back all uncommitted lifecycle events, state, sequence, and inbox claim changes; Slice 29 proves no-input rejection rolls back tentative wake history |
 | 23. Sequence order is canonical | Canonical lifecycles and administrative events are sequence-asserted; Slice 24 proves exact order under decreasing wall timestamps; rollback preserves source history, appends `rollback_lineage_prepared` at source plus one, and appends `rollback_completed` at exactly the next sequence |
 | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
 | 25. JSONL export deterministic and non-canonical | `tests/test_event_export.py` proves stable-boundary validation, canonical byte-identical output, atomic publication, isolation, and preserved wakeability |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #44 GitHub Actions run 263 passed twice on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **123 protected tests**. The exact rerun completed in **6.92 seconds**. No production correction was required.
+PR #45 GitHub Actions run 269 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **124 protected tests in 10.15 seconds**. No production correction was required.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
