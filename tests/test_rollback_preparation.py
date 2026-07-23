@@ -148,7 +148,11 @@ def test_prepare_rollback_archive_validates_source_and_preserves_active_state(
         ]
     ) == 0
     cli_payload = json.loads(capsys.readouterr().out)
-    assert cli_payload == result.as_dict()
+    assert cli_payload == {
+        "authority_category": "administration",
+        "authority_source": "administration:rollback-prepare",
+        **result.as_dict(),
+    }
     assert _canonical_snapshot(paths) == before
 
     with WakeTransaction.acquire(paths):
