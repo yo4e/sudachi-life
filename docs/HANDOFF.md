@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–29 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–30 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -26,15 +26,13 @@ Use this precedence:
 
 Phase 1 has one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, deterministic `seed-garden-v1`, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable checkpoints, bounded retention, rollback lineage rules, and explicit administrative boundaries.
 
-Phase 1 has no caregiver, model adapter, chat interface, network access, subprocess access, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
+Phase 1 has no caregiver, model adapter, chat interface, network access, organism subprocess access, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
 
 ## AI collaboration operations
 
 Read `docs/AI_COLLABORATION_OPERATIONS.md`.
 
-SUDACHI's biological vocabulary describes local deterministic software and a synthetic garden, not wet-lab biology. Repository work must not evade product safeguards. State concrete benign software context when relevant, accept delayed or blocked requests, and never conceal material intent.
-
-Conversation rollover is based on reliability signals, not an automatic count of two merged slices. Continue through multiple bounded slices while repository, branch, pull-request, and CI state remain directly reconstructable. Reassess after several substantial slices, normally around eight to twelve, or earlier after a long debugging trail, repeated CI repair, stale context, or state confusion. Do not deliberately approach a roughly twenty-slice conversation likely to hit the platform limit.
+Conversation rollover is based on reliability signals, not an automatic count of two merged slices. Continue through multiple bounded slices while repository, branch, pull-request, and CI state remain directly reconstructable. Reassess normally around eight to twelve substantial slices, or earlier after a long debugging trail, repeated CI repair, stale context, or state confusion. Do not deliberately approach a roughly twenty-slice conversation likely to hit the platform limit.
 
 Do not introduce a paid runner, larger or GPU runner, private-repository Actions usage, paid external service, or model/API call without explicit owner approval.
 
@@ -42,244 +40,106 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–29 are merged on `main`. The exact next implementation boundary is Slice 30 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–30 are merged on `main`. The exact next implementation boundary is Slice 31 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
 Research stream. Preliminary evidence and provider-neutral strategy exist, but no strong novelty claim and no live caregiver selection are authorized.
 
-## Implemented Phase 1 slices
+## Implemented Phase 1 summary
 
-### Slices 1–5 — canonical body and garden run
+### Slices 1–16 — canonical metabolism and bounded storage
 
 - Python 3.12 package and CLI
 - canonical SQLite schema and append-only events
 - injected clocks and fail-fast wake ownership
-- deterministic inbox claim and observation
-- stable genesis checkpoint
-- canonical water, harvest, and objective-complete abstention run
-- protected budgets, savepoints, evaluation, and checkpointing
+- deterministic inbox claim and seed-garden observation
+- stable genesis and lifecycle checkpoints
+- canonical water, harvest, completion abstention, classified no-action, and resource-aware recovery
+- savepoint action rollback and lifecycle deadline exhaustion
+- maintenance threshold, inspection, and administrative clear
+- bounded checkpoint retention, classified pruning failure, and pending registration repair
+- deterministic non-canonical JSONL export
 
-### Slices 6–9 — classified failure and recovery
+### Slices 17–23 — complete bounded rollback path
 
-- typed no-action abstention
-- resource-aware fallback
-- action-failure savepoint rollback with preserved attempt cost
-- monotonic lifecycle deadline exhaustion before mutation
-- unchanged-state evaluation and stable checkpointing
+- retained-source validation and verified pre-rollback archive
+- durable `rollback_started`
+- exact source restoration and isolated new-lineage candidate transformation
+- atomic active database replacement with immediate validation
+- atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
+- one-completed-rollback admission guard under accepted ADR 0007
+- complete immutable archive and candidate evidence retained without pruning
 
-### Slices 10–12 — maintenance
+See the corresponding notes in `docs/phase1/` and accepted ADR 0007.
 
-- exact failure-threshold entry into `maintenance_required`
-- blocked later wake
-- read-only inspection
-- explicit atomic administrative clear
+### Slices 24–26 — declared determinism
 
-### Slices 13–15 — checkpoint retention and repair
-
-- bounded retention limit four
-- newest-before-prune stabilization
-- genesis and latest preservation
-- oldest eligible pruning
-- classified pruning failure with artifact restoration
-- explicit exact pending registration repair
-
-### Slice 16 — deterministic non-canonical JSONL export
-
-- declared stable-boundary export
-- read-only canonical source
-- exact checkpoint and event-range validation
-- byte-identical canonical JSONL
-- bounded atomic publication
-- no import or dual-write
-
-### Slices 17–18 — abandoned future and durable intent
-
-- exact retained rollback-source validation
-- complete active SQLite Online Backup snapshot
-- immutable abandoned-future and source metadata
-- bounded deterministic archive publication
-- complete archive and active-body revalidation
-- exact canonical SQLite logical equality
-- atomic `rollback_in_progress` plus `rollback_started`
-- zero-clock rejection paths
-- blocked normal wake
-
-### Slices 19–20 — source restoration and new-lineage candidate
-
-- selected checkpoint restored through Online Backup
-- exact source equality and protected provenance validation
-- deterministic immutable `source_restored_untransformed` candidate
-- explicit bounded administrative reason
-- exact `abandoned_active_generation + 1` derivation
-- candidate-only transformation transaction
-- source pending fields cleared in isolation
-- selected registry row reconstructed
-- source history preserved
-- one new-lineage `rollback_lineage_prepared` event
-- deterministic immutable `lineage_transformed_replacement_ready` candidate
-- active and all immutable inputs unchanged
+- decreasing wall time cannot reorder canonical events
+- different declared seeds do not change fixed seed-garden behavior
+- identical declared inputs produce exact canonical and artifact equivalence, including active SQLite bytes, checkpoint manifests, digests, and identifiers
 
 See:
 
-- `docs/phase1/SLICE19_RESTORE_CANDIDATE_CONSTRUCTION.md`
-- `docs/phase1/SLICE20_CANDIDATE_LINEAGE_TRANSFORMATION.md`
+- `docs/phase1/SLICE24_BACKWARD_WALL_TIME_ORDERING.md`
+- `docs/phase1/SLICE25_SEED_INDEPENDENCE.md`
+- `docs/phase1/SLICE26_REPEATED_RUN_EQUIVALENCE.md`
 
-### Slice 21 — protected active-database authority transfer
+### Slice 27 — protected cleanup grace
 
-- `replace_active_with_candidate(...)`
-- `sudachi rollback replace-active <organism_id> --candidate-id <ID>`
-- fail-fast ownership of the old blocked active body
-- complete provenance-chain revalidation
-- bounded same-filesystem staging through SQLite Online Backup
-- staged integrity, foreign-key, canonical, and exact equality validation
-- one same-filesystem atomic `os.replace()` of canonical `organism.sqlite3`
-- immutable archive and candidate artifacts preserved
-- immediate reopened active validation
-- new active remains blocked with `rollback_lineage_prepared` at the tip
-- pre-transfer failure preservation
-- detectable and exactly recoverable post-transfer interruption
-
-See `docs/phase1/SLICE21_ACTIVE_DATABASE_REPLACEMENT.md`.
-
-### Slice 22 — atomic rollback completion and wakeability
-
-- `complete_rollback(...)`
-- `sudachi rollback complete <organism_id> --candidate-id <ID>`
-- fail-fast ownership of the replaced body
-- complete provenance-chain revalidation before clock use
-- one injected administrative clock read only after validation
-- atomic `rollback_in_progress -> sleeping` plus one exact `rollback_completed`
-- restored failure count reset and maintenance clear
-- exact payload binding original reason, target, abandoned future, lineages, candidate identifiers and digests, and replacement validation
-- injected failure proves status and history roll back together
-- exact repeated completion consumes zero clock and performs no mutation
-- normal wake blocked before completion and enabled only afterward
-- first new-lineage wake creates and registers a stable lifecycle checkpoint
-- all rollback artifacts remain unchanged
-
-See `docs/phase1/SLICE22_ROLLBACK_COMPLETION.md`.
-
-### Slice 23 — single completed rollback admission guard
-
-- preserves fail-fast `BEGIN IMMEDIATE` as the administrative ownership boundary
-- validates canonical state before reading mutable rollback history
-- counts exact canonical `rollback_completed` events
-- requires zero completed rollback events before latest-source lookup or archive-root creation
-- rejects one or more events with typed `RollbackPreparationRejectedError`
-- consumes no clock and changes no canonical or artifact state on rejection
-- proves selected-source validation is not reached on the second attempt
-- proves the complete first rollback and first new-lineage stable checkpoint remain unchanged
-- proves no second archive is created
-- proves a separately initialized organism remains independently eligible for its first rollback
-
-See `docs/phase1/SLICE23_SINGLE_COMPLETED_ROLLBACK_GUARD.md`.
-
-### Slice 24 — backward wall-time event ordering
-
-- runs the complete first-water lifecycle while wall timestamps repeatedly move backward
-- keeps monotonic readings increasing for lifecycle and checkpoint deadlines
-- preserves the canonical `water_plot(bed-a)` decision and positive evaluation
-- stabilizes lifecycle checkpoint boundary 13 and returns to sleep
-- requires exact event sequences 1–14 despite decreasing timestamps
-- proves event sequence, not wall time, remains canonical order
-- adds protected coverage only; no production behavior changes
-
-See `docs/phase1/SLICE24_BACKWARD_WALL_TIME_ORDERING.md`.
-
-### Slice 25 — declared seed independence
-
-- initializes two independent but otherwise identical `seed-garden-v1` organisms
-- supplies the same external tick and injected clock readings
-- runs complete first-water wakes with declared seeds `1` and `2`
-- preserves each declared seed in `WakeResult` and canonical `wake_accepted` audit history
-- normalizes only the declared seed and digest-derived checkpoint identity fields
-- requires identical policy, transition, evaluation, concrete budgets, canonical state, event history, SQLite sequences, pending boundary 13, checkpoint snapshot projection, stabilization event 14, and final sleeping wakeability
-- proves distinct audited seed values produce distinct checkpoint database digests, manifest digests, and digest-derived identifiers without changing behavior
-- adds protected coverage only; no production behavior changes
-
-See `docs/phase1/SLICE25_SEED_INDEPENDENCE.md`.
-
-### Slice 26 — exact repeated-run canonical equivalence
-
-- initializes two independent runtime roots with identical organism identity, versions, genesis time, seed-garden state, external tick, seed, and fake-clock readings
-- performs two complete first-water wakes
-- normalizes no declared, audit, digest, identifier, timestamp, or artifact field
-- requires exact `WakeResult`, status, schema, every canonical table row, SQLite sequence state, and `user_version`
-- requires identical active SQLite SHA-256 digests
-- requires identical checkpoint identifiers, manifests, database and manifest digests, and complete checkpoint-store relative file sets
-- requires every checkpoint artifact size and SHA-256 digest to match
-- proves both sleeping organisms accept the same next tick with exact continued canonical equivalence
-- adds protected coverage only; no production behavior changes
-
-See `docs/phase1/SLICE26_REPEATED_RUN_EQUIVALENCE.md`.
-
-### Slice 27 — protected cleanup-grace boundary
-
-- detects the exhausted normal-work budget before executor entry
-- preserves zero action attempts, zero environment mutations, zero retries, and zero caregiver or external effects after the 2000 ms deadline
-- adds one declared injected clock read after terminal events are prepared
-- records the complete terminalization elapsed time in the budget ledger
-- accepts typed terminalization at exactly 2250 ms
-- rejects 2250 ms plus one nanosecond with typed `BudgetExhaustedError`
-- prevents checkpoint work after cleanup-capacity exhaustion
-- rolls back every uncommitted lifecycle event, SQLite sequence increment, state change, and inbox claim on overrun
-- leaves the queued input unclaimed and unconsumed
+- normal organism work stops at the 2000 ms deadline before executor entry
+- one explicit injected reading measures terminalization completion
+- exactly 2250 ms is accepted
+- 2250 ms plus one nanosecond raises and rolls back all uncommitted lifecycle state
 
 See `docs/phase1/SLICE27_CLEANUP_GRACE_BOUNDARY.md`.
 
 ### Slice 28 — insertion-order-independent tie breaking
 
-- stabilizes a protected fixture whose physical rowid order is `bed-b`, then `bed-a`
-- makes both plots executable watering targets
-- requires canonical observation and applicable-target order `bed-a`, `bed-b`
-- requires fixed-policy selection of lexicographically smallest `bed-a`
-- verifies one exact successful mutation, concrete budgets, event order, checkpoint boundary 16, stabilization event 17, and final sleep
-- preserves the reversed physical row order after action
-- preserves the declared seed as audit input without using it as a tie breaker
-- accepts a later distinct input
-- adds protected coverage only; no production behavior changes
+- physical rowid order `bed-b`, `bed-a`
+- both plots executable water targets
+- canonical observation and policy still choose lexicographically smallest `bed-a`
+- exact transition, budgets, event order, checkpoint, final sleep, and later input acceptance
 
 See `docs/phase1/SLICE28_INSERTION_ORDER_TIE_BREAKING.md`.
 
-### Slice 29 — consumed external-input replay
+### Slice 29 — consumed-input replay protection
 
-- completes and stabilizes the original water action
-- captures active database bytes, canonical rows, inbox, events, sequences, checkpoint registry, and all checkpoint artifacts
-- replays the consumed external identifier with a zero-reading fake clock
-- requires `inserted=False`, original inbox identity and receive time, and exact snapshot equality
-- proves no new inbox row or `input_enqueued` event exists
-- attempts a wake with no distinct input and receives typed `NoInputEventError`
-- proves the tentative `wake_accepted` event and every uncommitted change roll back
-- accepts a later distinct identifier and produces only the intended second harvest action
-- adds protected coverage only; no production behavior changes
+- duplicate enqueue after the original successful action consumes zero clock and returns the existing row
+- active database bytes, canonical state, sequences, registry, and checkpoint artifacts remain exact
+- no-input wake rolls back tentative history
+- only a later distinct identifier produces the second action
 
 See `docs/phase1/SLICE29_POST_ACTION_DUPLICATE_REPLAY.md`.
 
+### Slice 30 — real process-crash rollback
+
+- a spawned external test harness acquires `WakeTransaction`
+- it claims the tick and creates representative uncommitted event, sequence, garden, inventory, environment, inbox, and organism changes
+- it proves those changes inside its transaction and exits through `os._exit(73)` without commit or cleanup
+- the parent reacquires `BEGIN IMMEDIATE`, proving write-lock release
+- exact active SQLite bytes, canonical rows, inbox, events, sequences, registry, and checkpoint artifacts return to the pre-crash snapshot
+- the original tick remains unclaimed and completes normally afterward
+- no production crash hook or organism subprocess capability was added
+
+See `docs/phase1/SLICE30_PROCESS_CRASH_ROLLBACK.md`.
+
 ## Accepted ADR 0007 retention boundary
 
-Phase 1 permits at most one completed rollback per organism.
-
-The following evidence remains immutable and retained:
-
-- the verified pre-rollback archive containing the abandoned future
-- the source-restored candidate
-- the lineage-transformed authority-transfer candidate
-- canonical `rollback_lineage_prepared` and `rollback_completed` history
-- the first post-rollback stable checkpoint
-
-There is no rollback-artifact deletion or pruning in Phase 1. A second rollback experiment uses a new organism identity. This bounds evidence growth without introducing deletion authority or partial-pruning recovery.
+Phase 1 permits at most one completed rollback per organism. The pre-rollback archive, source-restored candidate, lineage-transformed candidate, rollback events, and first post-rollback checkpoint remain immutable and retained. There is no rollback-artifact deletion or pruning in Phase 1.
 
 ## Validation state
 
-Slice 29 GitHub Actions run 269 on Python 3.12 completed:
+Slice 30 test-first validation on Python 3.12:
 
-- clean editable installation
-- source and test compilation
-- genesis CLI smoke test
-- **124 protected tests passed in 10.15 seconds**
+- run 275: 124 existing tests passed; one new assertion failed because it overconstrained SQLite rollback-journal pathname deletion
+- the contract-external pathname assertion was removed without production changes
+- run 276: **125 protected tests passed in 6.38 seconds**
+- clean editable installation passed
+- source and test compilation passed
+- genesis CLI smoke passed
 
-No Slice 29 production correction was required. The existing canonical unique identifier, consumed-input predicate, and outer transaction rollback passed unchanged.
+No Slice 30 production correction was required. SQLite process-exit rollback and lock release passed unchanged.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -287,34 +147,31 @@ The workflow remains the public-repository standard `ubuntu-latest` runner with 
 
 Major incomplete areas include:
 
-- process-crash-before-commit execution test
-- nested-wake rejection
+- nested-wake and hidden-write-connection rejection
 - explicit second-wake rejection while a prior checkpoint is pending
 - broader protected-authority tests
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 30
+## Exact next task: Slice 31
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate branch.
-
-The next bounded subject is the remaining execution proof for evaluation 27: a real process exit while a wake transaction is uncommitted must restore the exact prior state and release the write lock.
+The next bounded subject is evaluation 28: nested wakes and hidden write connections must be rejected without queued work or canonical mutation.
 
 Before implementation:
 
-1. confirm no newer repository decision or open pull request changes this ordering
-2. use an external protected test harness process; do not add an organism subprocess capability
-3. initialize and enqueue one normal tick, then capture exact stable canonical and artifact state
-4. in the child process acquire `WakeTransaction`, claim the tick, create representative uncommitted wake/event/state changes, and exit without commit or cleanup
-5. require the child to exit inside a strict timeout
-6. require exact rollback of inbox claim, events, state, SQLite sequences, active database bytes, and checkpoint artifacts
-7. require the parent to acquire the released lock and complete the original tick normally
-8. add the protected process-crash test before changing production code
-9. make a production correction only if the existing SQLite transaction boundary violates the accepted contract
-10. update the Slice 30 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+1. reconstruct current `main`, Issue #13, and open pull requests
+2. acquire one outer `WakeTransaction`
+3. require nested `WakeTransaction.acquire(...)` for the same organism to fail with typed `WakeBusyError`
+4. require a separate hidden write connection's `BEGIN IMMEDIATE` to fail while the outer wake owns the body
+5. require zero organism clock reads and no queued request, event, inbox row, sequence, state, database-byte, or artifact change from either rejection
+6. roll back and close the outer transaction
+7. prove a normal wake then acquires ownership and processes the original tick
+8. add protected tests before changing production code
+9. make a production correction only if the existing locking boundary violates the contract
+10. update the Slice 31 note, matrix, this handoff, `AGENTS.md`, and Issue #13
 11. run GitHub Actions through a pull request
 
-Do not add subprocess access to the organism, production crash hooks, generic fault injection, replay machinery, rollback-artifact deletion, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Do not add reentrant wake support, queued wakes, hidden connection pools, subprocess access, generic concurrency machinery, retries, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## Restart protocol
 
@@ -324,8 +181,8 @@ At the next session or clean reconstruction point:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #45 is merged on current `main`, or reconcile newer repository truth
-6. begin only from the exact Slice 30 boundary above
+5. verify PR #46 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 31 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
 
