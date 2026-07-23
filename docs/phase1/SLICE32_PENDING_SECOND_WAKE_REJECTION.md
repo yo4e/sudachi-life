@@ -58,9 +58,11 @@ No production source, schema, contract, action, evaluator, clock boundary, budge
 
 ## Validation
 
-GitHub Actions run 290 on Python 3.12 passed:
+GitHub Actions run 290 on Python 3.12 proved the protected test and initial durable note:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
 - **127 protected tests in 7.66 seconds**
+
+The complete continuity head remains subject to the standard pull-request workflow before merge.
