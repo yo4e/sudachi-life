@@ -98,7 +98,7 @@ Primary implementation stream. Current `main` includes Slices 1–25:
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-Final GitHub Actions run 233 for PR #41 passed clean install, compileall, genesis CLI smoke, and **119 protected tests** on Python 3.12. No production correction was required.
+GitHub Actions run 237 for the complete Slice 25 implementation-and-continuity head passed clean install, compileall, genesis CLI smoke, and **119 protected tests in 6.57 seconds** on Python 3.12. No production correction was required.
 
 Phase 1 remains incomplete.
 
