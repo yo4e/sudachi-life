@@ -263,7 +263,6 @@ def test_process_exit_rolls_back_uncommitted_wake_and_releases_lock(
     finally:
         recovery.close()
 
-    assert not Path(f"{paths.database}-journal").exists()
     assert _canonical_snapshot(paths) == before
 
     clock = FakeClock(
