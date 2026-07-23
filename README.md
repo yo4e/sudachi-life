@@ -144,10 +144,10 @@ The repository is written in English. The only intentional Japanese text is the 
 
 ## Status
 
-**Phase 0 contract freeze is complete pending merge of the Contract v0.2 reconciliation pull request.**
+**Phase 1 SUDACHI-0 metabolism is implemented and all 41 fixed Contract v0.2 evaluations have protected coverage.**
 
-No organism has been implemented yet. After the aligned contract and documentation merge, the next implementation milestone is a test-first Python package skeleton whose initialization command creates a validated SQLite organism and stable genesis checkpoint.
+The final Slice 35 implementation head passes 142 protected tests, clean editable installation, compilation, and the genesis CLI smoke test on Python 3.12. This establishes trustworthy deterministic metabolism and recovery, not learning or intelligence.
 
-Issue #3 research proceeds in parallel. No live human or model caregiver is connected.
+Issue #3 research proceeds in parallel. No live human or model caregiver is connected. Phase 2 requires an explicit reviewed scope decision; there is no automatic next implementation slice.
 
 For a cold start, read [`AGENTS.md`](AGENTS.md), follow its reading order, and then inspect current issues and pull requests.
