@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–24 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–25 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -42,7 +42,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–24 are merged on `main`. The exact next implementation boundary is Slice 25 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–25 are merged on `main`. The exact next implementation boundary is Slice 26 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -187,6 +187,19 @@ See `docs/phase1/SLICE23_SINGLE_COMPLETED_ROLLBACK_GUARD.md`.
 
 See `docs/phase1/SLICE24_BACKWARD_WALL_TIME_ORDERING.md`.
 
+### Slice 25 — declared seed independence
+
+- initializes two independent but otherwise identical `seed-garden-v1` organisms
+- supplies the same external tick and injected clock readings
+- runs complete first-water wakes with declared seeds `1` and `2`
+- preserves each declared seed in `WakeResult` and canonical `wake_accepted` audit history
+- normalizes only the declared seed and digest-derived checkpoint identity fields
+- requires identical policy, transition, evaluation, concrete budgets, canonical state, event history, SQLite sequences, pending boundary 13, checkpoint snapshot projection, stabilization event 14, and final sleeping wakeability
+- proves distinct audited seed values produce distinct checkpoint database digests, manifest digests, and digest-derived identifiers without changing behavior
+- adds protected coverage only; no production behavior changes
+
+See `docs/phase1/SLICE25_SEED_INDEPENDENCE.md`.
+
 ## Accepted ADR 0007 retention boundary
 
 Phase 1 permits at most one completed rollback per organism.
@@ -203,14 +216,14 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-Final GitHub Actions run 229 for PR #39 on Python 3.12 completed:
+GitHub Actions run 237 for the complete Slice 25 implementation-and-continuity head on Python 3.12 completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **118 protected tests passed in 19.01 seconds**
+- **119 protected tests passed in 6.57 seconds**
 
-No Slice 24 implementation correction was required. The existing event-sequence design passed the complete backward-wall-time scenario unchanged.
+No Slice 25 production correction was required. The existing fixed policy passed the complete seed-independence comparison unchanged.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -219,7 +232,6 @@ The workflow remains the public-repository standard `ubuntu-latest` runner with 
 Major incomplete areas include:
 
 - complete repeated-run canonical equivalence
-- explicit seed-independence comparison
 - cleanup-grace boundary coverage
 - altered insertion-order tie-breaking scenario
 - post-action duplicate-input replay scenario
@@ -230,21 +242,21 @@ Major incomplete areas include:
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 25
+## Exact next task: Slice 26
 
 After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate branch.
 
-The earliest remaining explicit comparison is evaluation 4: different declared seeds must not change `seed-garden-v1` behavior.
+The next bounded subject is evaluation 1: complete repeated-run canonical equivalence for identical declared inputs.
 
 Before implementation:
 
 1. confirm no newer repository decision or open pull request changes this ordering
-2. inspect seed use in the wake result and canonical `wake_accepted` audit payload
-3. define a behavior projection that allows only the declared seed field and downstream artifact digests to differ
-4. require identical policy choice, environment transition, evaluation, budgets, lifecycle boundary, checkpoint stability, and wakeability
+2. create two independent complete canonical first-wake runs with identical organism identity, external event identifier, seed, and injected clock readings
+3. define an exact comparison that normalizes no declared input
+4. require identical logical canonical state, event history, SQLite sequence state, lifecycle boundaries, checkpoint manifests, database and manifest digests, digest-derived checkpoint identifiers, stable status, and wakeability
 5. add the comparative protected test before changing production code
-6. make a production correction only if the existing fixed policy violates the accepted contract
-7. update the Slice 25 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+6. make a production correction only if the existing implementation violates the accepted contract
+7. update the Slice 26 note, matrix, this handoff, `AGENTS.md`, and Issue #13
 8. run GitHub Actions through a pull request
 
 Do not begin generic replay or random-number machinery, rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery.
@@ -257,8 +269,8 @@ At the next session:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify current `main` contains merge commits `dec5c1dd32634cc66c20c269768487431c150bbe` and `486a56deb538d4741089c78c288b2ae77bffcdf1`, or reconcile newer repository truth
-6. begin only from the exact Slice 25 boundary above
+5. verify PR #41 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 26 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply the early chat-rollover triggers rather than waiting for a hard conversation limit.
 
