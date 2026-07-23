@@ -68,7 +68,7 @@ A chat is temporary. At a clean boundary, prefer rollover after two substantial 
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Repository state containing this file includes Slices 1–23:
+Primary implementation stream. Repository state containing this file includes Slices 1–24:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -93,10 +93,11 @@ Primary implementation stream. Repository state containing this file includes Sl
 21. atomic active-database replacement with immediate validation and recoverable interruption
 22. atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
 23. single-completed-rollback admission enforcement at preparation
+24. complete first-wake event ordering under backward wall time
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 219 for PR #38 passed clean install, compileall, genesis CLI smoke, and **117 protected tests** on Python 3.12. No implementation correction was required.
+GitHub Actions run 225 for PR #39 passed clean install, compileall, genesis CLI smoke, and **118 protected tests** on Python 3.12. No implementation correction was required.
 
 Phase 1 remains incomplete.
 
@@ -173,16 +174,22 @@ ADR 0007 resolves rollback-artifact retention for Phase 1:
 
 Slice 23 enforces that boundary at rollback preparation. After fail-fast ownership and canonical validation, preparation counts canonical `rollback_completed` events and requires zero before latest-source lookup, source selection, or archive-root creation. Rejection is typed, zero-clock, and non-mutating. A separately initialized organism remains eligible for its own first rollback.
 
-## Exact restart point: review and merge PR #38
+## Canonical event ordering under backward wall time
 
-PR #38 contains the verified Slice 23 boundary. Do not extend its scope.
+Slice 24 closes Contract evaluation 3 without production changes. One protected complete first-water wake uses decreasing wall timestamps from genesis through enqueue, wake, lifecycle completion, and checkpoint stabilization while monotonic readings increase. The organism still waters `bed-a`, commits boundary 13, stabilizes event 14, and returns to sleep. Canonical event identity and order remain the exact database sequence 1–14; timestamps are metadata only.
+
+## Exact restart point: review and merge PR #39
+
+PR #39 contains the verified Slice 24 boundary. Do not extend its scope.
 
 After merge:
 
 1. reconstruct current `main`
 2. inspect current open issues and pull requests
 3. confirm Issue #13 and continuity documents reflect the merged result
-4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 24 branch
+4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 25 branch
+
+The earliest remaining explicit comparison is Contract evaluation 4, seed independence. Verify repository truth before creating the branch.
 
 Do not begin:
 

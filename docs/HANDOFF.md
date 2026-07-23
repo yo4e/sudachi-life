@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for repository state containing Phase 1 Slices 1–23 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for repository state containing Phase 1 Slices 1–24 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -42,7 +42,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–22 are merged. Slice 23 is implemented and verified in PR #38 on `agent/slice-23-single-rollback-guard`; it is ready for human review and merge.
+Primary implementation stream. Slices 1–23 are merged. Slice 24 is implemented and verified in PR #39 on `agent/slice-24-backward-wall-time-ordering`; it is ready for review and merge.
 
 ### Issue #3 — prior work and provider review
 
@@ -175,6 +175,18 @@ See `docs/phase1/SLICE22_ROLLBACK_COMPLETION.md`.
 
 See `docs/phase1/SLICE23_SINGLE_COMPLETED_ROLLBACK_GUARD.md`.
 
+### Slice 24 — backward wall-time event ordering
+
+- runs the complete first-water lifecycle while wall timestamps repeatedly move backward
+- keeps monotonic readings increasing for lifecycle and checkpoint deadlines
+- preserves the canonical `water_plot(bed-a)` decision and positive evaluation
+- stabilizes lifecycle checkpoint boundary 13 and returns to sleep
+- requires exact event sequences 1–14 despite decreasing timestamps
+- proves event sequence, not wall time, remains canonical order
+- adds protected coverage only; no production behavior changes
+
+See `docs/phase1/SLICE24_BACKWARD_WALL_TIME_ORDERING.md`.
+
 ## Accepted ADR 0007 retention boundary
 
 Phase 1 permits at most one completed rollback per organism.
@@ -191,14 +203,14 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-GitHub Actions run 219 for PR #38 on Python 3.12 completed:
+GitHub Actions run 225 for PR #39 on Python 3.12 completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **117 protected tests passed in 6.31 seconds**
+- **118 protected tests passed in 8.37 seconds**
 
-No Slice 23 implementation correction was required. The guard and both new protected tests passed on the first pull-request run.
+No Slice 24 implementation correction was required. The existing event-sequence design passed the complete backward-wall-time scenario unchanged.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -207,7 +219,6 @@ The workflow remains the public-repository standard `ubuntu-latest` runner with 
 Major incomplete areas include:
 
 - complete repeated-run canonical equivalence
-- backward-wall-time ordering scenario
 - explicit seed-independence comparison
 - cleanup-grace boundary coverage
 - altered insertion-order tie-breaking scenario
@@ -221,16 +232,18 @@ Do not weaken existing tests to make these easier.
 
 ## Exact next task
 
-Review and merge PR #38 without extending its scope.
+Review and merge PR #39 without extending its scope.
 
 After merge:
 
 1. reconstruct current `main`
 2. inspect current open issues and pull requests
 3. confirm Issue #13 and continuity documents reflect the merged result
-4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 24 branch
+4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 25 branch
 
-Do not begin rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery while closing Slice 23.
+The earliest remaining explicit comparison is evaluation 4, seed independence. Verify repository truth before creating the branch.
+
+Do not begin rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery while closing Slice 24.
 
 ## Restart protocol
 
@@ -240,7 +253,7 @@ At the next session:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #38 and its final CI state against current `main`
+5. verify PR #39 and its final CI state against current `main`
 6. finish the exact review-and-merge task above before choosing a later slice
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply the early chat-rollover triggers rather than waiting for a hard conversation limit.

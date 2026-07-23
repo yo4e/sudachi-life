@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–23 implemented and verified — Phase 1 incomplete**
+Status: **Slices 1–24 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -8,7 +8,7 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | --- | --- |
 | 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, classified failures, maintenance, byte-identical JSONL export, deterministic rollback candidates, exact repeated replacement, and exact repeated completion are covered; full repeated-run canonical equivalence remains planned |
 | 2. Unexpected clock reads fail | Lifecycle clock counts are protected; maintenance inspection, export, archive preparation, source-candidate construction, active replacement, repeated completion, and completed-rollback preparation rejection consume no clock; rollback begin, candidate transformation, and first completion read their declared clock only after complete validation; rejection paths consume zero |
-| 3. Backward wall time does not reorder events | Event sequence is canonical; complete first-wake backward-time scenario remains planned |
+| 3. Backward wall time does not reorder events | `tests/test_backward_wall_time_ordering.py::test_backward_wall_time_does_not_reorder_complete_first_wake` runs the complete first-water lifecycle and checkpoint with repeatedly decreasing wall timestamps, increasing monotonic readings, exact event sequences 1–14, and stable sleep |
 | 4. Seed does not change seed-garden behavior | Fixed first-water policy ignores the declared seed; explicit comparative test remains planned |
 | 5. One tick/observation/attempt/mutation maximum | Water and harvest assert one attempt/mutation; abstentions and maintenance-threshold entry assert zero; classified action failure asserts one attempt and zero successful mutations; classified pre-action exhaustion asserts zero attempts and mutations |
 | 6. Twelve-step and monotonic deadline | First-water ledger records twelve steps; `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves typed lifecycle deadline exhaustion before action |
@@ -28,7 +28,7 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` |
 | 21. Failure streak and maintenance threshold | Slices 5–12 protect justified zero, classified increments, successful reset, exact threshold entry, inspection, and explicit clear; rollback completion resets restored failure and maintenance state before wakeability |
 | 22. Atomic state/event commit | Genesis and lifecycle commits are protected; maintenance clear and pending repair are atomic; rollback intent commits status and `rollback_started` together; candidate transformation commits isolated lineage and restoration history together; active replacement transfers a validated body atomically; Slice 22 proves `sleeping` and `rollback_completed` commit or roll back together |
-| 23. Sequence order is canonical | Canonical lifecycles and administrative events are sequence-asserted; rollback preserves source history, appends `rollback_lineage_prepared` at source plus one, and appends `rollback_completed` at exactly the next sequence |
+| 23. Sequence order is canonical | Canonical lifecycles and administrative events are sequence-asserted; Slice 24 proves exact order under decreasing wall timestamps; rollback preserves source history, appends `rollback_lineage_prepared` at source plus one, and appends `rollback_completed` at exactly the next sequence |
 | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
 | 25. JSONL export deterministic and non-canonical | `tests/test_event_export.py` proves stable-boundary validation, canonical byte-identical output, atomic publication, isolation, and preserved wakeability |
 | 26. Competing wake has one winner and one non-queued rejection | Wake and every write-owning rollback administrative boundary through completion have protected fail-fast competing-writer rejection |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #38 GitHub Actions run 219 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **117 protected tests**. No implementation correction was required.
+PR #39 GitHub Actions run 225 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **118 protected tests**. No implementation correction was required.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
