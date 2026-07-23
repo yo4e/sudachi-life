@@ -1,12 +1,12 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–25 implemented and verified — Phase 1 incomplete**
+Status: **Slices 1–26 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
 | Contract evaluation | Protected test status |
 | --- | --- |
-| 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, classified failures, maintenance, byte-identical JSONL export, deterministic rollback candidates, exact repeated replacement, and exact repeated completion are covered; full repeated-run canonical equivalence remains planned |
+| 1. Identical declared inputs produce identical canonical results | `tests/test_repeated_run_equivalence.py::test_identical_declared_inputs_produce_exact_first_wake_results` runs two independent complete first-water lifecycles with identical organism identity, versions, queued tick, seed, and fake-clock readings; without normalization it requires identical results, status, schema, every canonical table row, SQLite sequence state, active database digest, checkpoint manifests and digests, digest-derived identifiers, complete checkpoint-store artifacts, and acceptance of the same next tick |
 | 2. Unexpected clock reads fail | Lifecycle clock counts are protected; maintenance inspection, export, archive preparation, source-candidate construction, active replacement, repeated completion, and completed-rollback preparation rejection consume no clock; rollback begin, candidate transformation, and first completion read their declared clock only after complete validation; rejection paths consume zero |
 | 3. Backward wall time does not reorder events | `tests/test_backward_wall_time_ordering.py::test_backward_wall_time_does_not_reorder_complete_first_wake` runs the complete first-water lifecycle and checkpoint with repeatedly decreasing wall timestamps, increasing monotonic readings, exact event sequences 1–14, and stable sleep |
 | 4. Seed does not change seed-garden behavior | `tests/test_seed_independence.py::test_different_declared_seeds_preserve_first_wake_behavior` runs two complete first-water lifecycles with identical declared inputs except seeds `1` and `2`; after normalizing only the audited seed and digest-derived checkpoint identity fields, policy, transition, evaluation, budgets, canonical state, event history, pending boundary 13, checkpoint snapshot, stabilization event 14, and sleeping wakeability are identical |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #41 GitHub Actions run 233 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **119 protected tests in 5.44 seconds**. No production correction was required.
+PR #42 GitHub Actions run 241 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **120 protected tests in 6.75 seconds**. No production correction was required.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
