@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–30 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–31 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -40,7 +40,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–30 are merged on `main`. The exact next implementation boundary is Slice 31 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–31 are merged on `main`. The exact next implementation boundary is Slice 32 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -48,98 +48,75 @@ Research stream. Preliminary evidence and provider-neutral strategy exist, but n
 
 ## Implemented Phase 1 summary
 
-### Slices 1–16 — canonical metabolism and bounded storage
+### Slices 1–23 — canonical metabolism, bounded storage, and rollback
 
-- Python 3.12 package and CLI
-- canonical SQLite schema and append-only events
-- injected clocks and fail-fast wake ownership
-- deterministic inbox claim and seed-garden observation
-- stable genesis and lifecycle checkpoints
-- canonical water, harvest, completion abstention, classified no-action, and resource-aware recovery
-- savepoint action rollback and lifecycle deadline exhaustion
-- maintenance threshold, inspection, and administrative clear
-- bounded checkpoint retention, classified pruning failure, and pending registration repair
+- canonical SQLite body, append-only events, injected clocks, and fail-fast write ownership
+- deterministic seed-garden water, harvest, abstention, classified failure, and recovery paths
+- concrete budgets, lifecycle deadline, savepoint rollback, maintenance, and checkpoint retention/repair
 - deterministic non-canonical JSONL export
+- complete bounded rollback path from verified archive through restored wakeability
+- one-completed-rollback retention boundary under ADR 0007
 
-### Slices 17–23 — complete bounded rollback path
-
-- retained-source validation and verified pre-rollback archive
-- durable `rollback_started`
-- exact source restoration and isolated new-lineage candidate transformation
-- atomic active database replacement with immediate validation
-- atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
-- one-completed-rollback admission guard under accepted ADR 0007
-- complete immutable archive and candidate evidence retained without pruning
-
-See the corresponding notes in `docs/phase1/` and accepted ADR 0007.
+Read the corresponding durable notes in `docs/phase1/`.
 
 ### Slices 24–26 — declared determinism
 
-- decreasing wall time cannot reorder canonical events
+- backward wall time cannot reorder canonical events
 - different declared seeds do not change fixed seed-garden behavior
-- identical declared inputs produce exact canonical and artifact equivalence, including active SQLite bytes, checkpoint manifests, digests, and identifiers
-
-See:
-
-- `docs/phase1/SLICE24_BACKWARD_WALL_TIME_ORDERING.md`
-- `docs/phase1/SLICE25_SEED_INDEPENDENCE.md`
-- `docs/phase1/SLICE26_REPEATED_RUN_EQUIVALENCE.md`
+- identical declared inputs produce exact canonical and checkpoint-artifact equivalence
 
 ### Slice 27 — protected cleanup grace
 
-- normal organism work stops at the 2000 ms deadline before executor entry
-- one explicit injected reading measures terminalization completion
-- exactly 2250 ms is accepted
-- 2250 ms plus one nanosecond raises and rolls back all uncommitted lifecycle state
-
-See `docs/phase1/SLICE27_CLEANUP_GRACE_BOUNDARY.md`.
+- organism work stops at the 2000 ms deadline
+- typed terminalization may finish through exactly 2250 ms
+- one nanosecond beyond cleanup capacity rolls back all uncommitted lifecycle state
 
 ### Slice 28 — insertion-order-independent tie breaking
 
-- physical rowid order `bed-b`, `bed-a`
-- both plots executable water targets
-- canonical observation and policy still choose lexicographically smallest `bed-a`
-- exact transition, budgets, event order, checkpoint, final sleep, and later input acceptance
-
-See `docs/phase1/SLICE28_INSERTION_ORDER_TIE_BREAKING.md`.
+- physical rowid order is `bed-b`, then `bed-a`
+- both are executable watering targets
+- canonical observation and fixed policy still choose lexicographically smallest `bed-a`
 
 ### Slice 29 — consumed-input replay protection
 
-- duplicate enqueue after the original successful action consumes zero clock and returns the existing row
-- active database bytes, canonical state, sequences, registry, and checkpoint artifacts remain exact
+- duplicate enqueue after the original action consumes zero clock and returns the existing row
+- database bytes, canonical state, sequences, registry, and artifacts remain exact
 - no-input wake rolls back tentative history
-- only a later distinct identifier produces the second action
-
-See `docs/phase1/SLICE29_POST_ACTION_DUPLICATE_REPLAY.md`.
+- only a later distinct identifier creates the second action
 
 ### Slice 30 — real process-crash rollback
 
-- a spawned external test harness acquires `WakeTransaction`
-- it claims the tick and creates representative uncommitted event, sequence, garden, inventory, environment, inbox, and organism changes
-- it proves those changes inside its transaction and exits through `os._exit(73)` without commit or cleanup
-- the parent reacquires `BEGIN IMMEDIATE`, proving write-lock release
-- exact active SQLite bytes, canonical rows, inbox, events, sequences, registry, and checkpoint artifacts return to the pre-crash snapshot
-- the original tick remains unclaimed and completes normally afterward
-- no production crash hook or organism subprocess capability was added
+- a spawned external test process owns and mutates one uncommitted wake
+- it exits through `os._exit(73)` without cleanup
+- the parent reacquires `BEGIN IMMEDIATE`
+- exact canonical/database/artifact state returns to the pre-crash snapshot
+- the original tick then completes normally
 
-See `docs/phase1/SLICE30_PROCESS_CRASH_ROLLBACK.md`.
+### Slice 31 — nested wake and hidden writer rejection
+
+- one outer `WakeTransaction` owns the body
+- nested acquisition raises typed `WakeBusyError` and is explicitly not queued
+- a separate hidden connection cannot acquire `BEGIN IMMEDIATE`
+- both paths consume zero organism clock input
+- database bytes, canonical state, inbox, events, sequences, registry, and artifacts remain exact
+- after outer rollback and close, the original tick completes normally exactly once
+
+See `docs/phase1/SLICE31_NESTED_WAKE_REJECTION.md`.
 
 ## Accepted ADR 0007 retention boundary
 
-Phase 1 permits at most one completed rollback per organism. The pre-rollback archive, source-restored candidate, lineage-transformed candidate, rollback events, and first post-rollback checkpoint remain immutable and retained. There is no rollback-artifact deletion or pruning in Phase 1.
+Phase 1 permits at most one completed rollback per organism. The complete pre-rollback archive and candidate evidence set remains immutable and retained. There is no rollback-artifact deletion or pruning in Phase 1.
 
 ## Validation state
 
-Slice 30 test-first validation on Python 3.12:
+Slice 31 GitHub Actions run 286 on Python 3.12 completed:
 
-- run 275: 124 existing tests passed; one new assertion failed because it overconstrained SQLite rollback-journal pathname deletion
-- the contract-external pathname assertion was removed without production changes
-- run 276: **125 protected tests passed in 6.38 seconds**
-- clean editable installation passed
-- source and test compilation passed
-- genesis CLI smoke passed
+- clean editable installation
+- source and test compilation
+- genesis CLI smoke test
+- **126 protected tests passed in 8.88 seconds**
 
-No Slice 30 production correction was required. SQLite process-exit rollback and lock release passed unchanged.
+No Slice 31 production correction was required. Existing `BEGIN IMMEDIATE`, typed wake-busy translation, and connection isolation passed unchanged.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -147,31 +124,31 @@ The workflow remains the public-repository standard `ubuntu-latest` runner with 
 
 Major incomplete areas include:
 
-- nested-wake and hidden-write-connection rejection
-- explicit second-wake rejection while a prior checkpoint is pending
+- complete explicit second-wake rejection while a prior checkpoint is pending
 - broader protected-authority tests
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 31
+## Exact next task: Slice 32
 
-The next bounded subject is evaluation 28: nested wakes and hidden write connections must be rejected without queued work or canonical mutation.
+The next bounded subject is evaluation 31: an explicit second wake must not advance while the prior committed lifecycle remains `checkpoint_pending`.
 
 Before implementation:
 
 1. reconstruct current `main`, Issue #13, and open pull requests
-2. acquire one outer `WakeTransaction`
-3. require nested `WakeTransaction.acquire(...)` for the same organism to fail with typed `WakeBusyError`
-4. require a separate hidden write connection's `BEGIN IMMEDIATE` to fail while the outer wake owns the body
-5. require zero organism clock reads and no queued request, event, inbox row, sequence, state, database-byte, or artifact change from either rejection
-6. roll back and close the outer transaction
-7. prove a normal wake then acquires ownership and processes the original tick
-8. add protected tests before changing production code
-9. make a production correction only if the existing locking boundary violates the contract
-10. update the Slice 31 note, matrix, this handoff, `AGENTS.md`, and Issue #13
-11. run GitHub Actions through a pull request
+2. enqueue two distinct ticks before the first wake
+3. use an existing protected checkpoint-failure or deferred-stabilization path so the first action commits an exact pending boundary
+4. capture both inbox rows, canonical events and state, SQLite sequences, registry, database bytes, and checkpoint artifacts
+5. attempt a second normal wake and require typed rejection before the second tick is claimed or consumed
+6. require exact pending-body and artifact equality after rejection
+7. repair or stabilize the existing pending boundary through the current administrative path
+8. prove the second tick then proceeds normally
+9. add the protected scenario before changing production code
+10. make a production correction only if the accepted pending-state boundary is violated
+11. update the Slice 32 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+12. run GitHub Actions through a pull request
 
-Do not add reentrant wake support, queued wakes, hidden connection pools, subprocess access, generic concurrency machinery, retries, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Do not add queued wakes, automatic checkpoint repair, hidden retries, reentrant wake support, schema changes, new crash hooks, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## Restart protocol
 
@@ -181,8 +158,8 @@ At the next session or clean reconstruction point:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #46 is merged on current `main`, or reconcile newer repository truth
-6. begin only from the exact Slice 31 boundary above
+5. verify PR #47 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 32 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
 

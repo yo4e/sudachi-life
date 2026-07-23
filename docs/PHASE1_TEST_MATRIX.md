@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–30 implemented and verified — Phase 1 incomplete**
+Status: **Slices 1–31 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -33,10 +33,10 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 25. JSONL export deterministic and non-canonical | `tests/test_event_export.py` proves stable-boundary validation, canonical byte-identical output, atomic publication, isolation, and preserved wakeability |
 | 26. Competing wake has one winner and one non-queued rejection | Wake and every write-owning rollback administrative boundary through completion have protected fail-fast competing-writer rejection |
 | 27. Crash before commit preserves prior state | `tests/test_process_crash_rollback.py::test_process_exit_rolls_back_uncommitted_wake_and_releases_lock` uses a spawned external harness process to claim input and mutate event, sequence, garden, inventory, environment, inbox, and organism rows inside one uncommitted wake, exits through `os._exit`, then proves exact database/canonical/artifact rollback, released `BEGIN IMMEDIATE` ownership, and normal completion of the original tick |
-| 28. Nested wake is rejected | Planned |
+| 28. Nested wake is rejected | `tests/test_nested_wake_rejection.py::test_nested_wake_and_hidden_writer_fail_without_queued_work` holds one outer wake owner, proves nested acquisition raises typed `WakeBusyError`, proves a hidden connection cannot acquire `BEGIN IMMEDIATE`, requires zero clock and exact database/canonical/artifact preservation, then closes the outer owner and processes the original tick exactly once |
 | 29. Stable genesis checkpoint before wakeable | Initialization and genesis checkpoint tests |
 | 30. Successful wake commits an exact pending boundary | Canonical wake fixture boundaries are asserted; Slice 22 additionally proves the first post-rollback new-lineage wake commits and stabilizes a new checkpoint |
-| 31. No later wake advances while checkpoint is pending | Pending-state rejection is protected; rollback remains non-wakeable through replacement and becomes wakeable only after atomic completion |
+| 31. No later wake advances while checkpoint is pending | Pending-state rejection is protected; rollback remains non-wakeable through replacement and becomes wakeable only after atomic completion; a complete explicit second-wake scenario remains planned |
 | 32. Invalid checkpoint is not stable | Digest and directory-name mismatch tests |
 | 33. Checkpoint validation covers protected identity and boundary | Initialization, lifecycle, repair, export, and all rollback stages revalidate declared checkpoint identity, lineage, registry metadata, digest, and event boundary; first post-rollback checkpoint is new-lineage validated |
 | 34. Checkpoint failure preserves committed pending state | Checkpoint timeout preserves pending state; pending-checkpoint repair proves exact registration repair |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #46 GitHub Actions run 276 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **125 protected tests in 6.38 seconds**. No production correction was required; one test-only rollback-journal pathname overconstraint from run 275 was removed.
+PR #47 GitHub Actions run 286 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **126 protected tests in 8.88 seconds**. No production correction was required.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
