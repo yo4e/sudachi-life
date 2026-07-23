@@ -182,8 +182,9 @@ class WakeBudgetLedger:
         *,
         semantic_steps_used: int,
         exhaustion: ProtectedBudgetExhaustion,
+        terminalization_elapsed_monotonic_ns: int,
     ) -> None:
-        """Finalize one safely classified exhaustion inside cleanup capacity."""
+        """Finalize one classified exhaustion before cleanup grace expires."""
 
         if self.exhaustion is not None:
             raise SchemaValidationError("budget exhaustion was already finalized")
@@ -200,8 +201,27 @@ class WakeBudgetLedger:
             raise SchemaValidationError(
                 "classified budget exhaustion does not match protected accounting"
             )
+        if terminalization_elapsed_monotonic_ns < 0:
+            raise SchemaValidationError(
+                "terminalization elapsed time may not be negative"
+            )
+        if (
+            terminalization_elapsed_monotonic_ns
+            < exhaustion.observed_elapsed_monotonic_ns
+        ):
+            raise SchemaValidationError(
+                "terminalization elapsed time precedes exhaustion detection"
+            )
+        cleanup_limit_ns = (
+            int(self.limits["lifecycle_wall_time_ms"])
+            + int(self.limits["cleanup_grace_ms"])
+        ) * 1_000_000
+        if terminalization_elapsed_monotonic_ns > cleanup_limit_ns:
+            raise BudgetExhaustedError(
+                "protected cleanup grace exhausted before lifecycle terminalization"
+            )
         self.semantic_steps_used = semantic_steps_used
-        self.elapsed_monotonic_ns = exhaustion.observed_elapsed_monotonic_ns
+        self.elapsed_monotonic_ns = terminalization_elapsed_monotonic_ns
         self.exhaustion = exhaustion
 
     def as_dict(self) -> dict[str, Any]:
