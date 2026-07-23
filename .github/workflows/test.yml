@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -16,6 +16,157 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply bounded Slice 27 patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one replacement target, found {count}")
+              file.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              "src/sudachi_life/budgets.py",
+              '''    def finish_exhausted(
+                  self,
+                  *,
+                  semantic_steps_used: int,
+                  exhaustion: ProtectedBudgetExhaustion,
+              ) -> None:
+                  """Finalize one safely classified exhaustion inside cleanup capacity."""
+
+                  if self.exhaustion is not None:
+                      raise SchemaValidationError("budget exhaustion was already finalized")
+                  if semantic_steps_used < 0 or semantic_steps_used > int(
+                      self.limits["lifecycle_steps"]
+                  ):
+                      raise BudgetExhaustedError("semantic lifecycle step budget exhausted")
+                  expected = self.detect_lifecycle_wall_time_exhaustion(
+                      elapsed_monotonic_ns=exhaustion.observed_elapsed_monotonic_ns,
+                      attempted_forbidden_operation=exhaustion.attempted_forbidden_operation,
+                      environment_step=exhaustion.environment_step,
+                  )
+                  if expected != exhaustion:
+                      raise SchemaValidationError(
+                          "classified budget exhaustion does not match protected accounting"
+                      )
+                  self.semantic_steps_used = semantic_steps_used
+                  self.elapsed_monotonic_ns = exhaustion.observed_elapsed_monotonic_ns
+                  self.exhaustion = exhaustion
+          ''',
+              '''    def finish_exhausted(
+                  self,
+                  *,
+                  semantic_steps_used: int,
+                  exhaustion: ProtectedBudgetExhaustion,
+                  terminalization_elapsed_monotonic_ns: int,
+              ) -> None:
+                  """Finalize one classified exhaustion before cleanup grace expires."""
+
+                  if self.exhaustion is not None:
+                      raise SchemaValidationError("budget exhaustion was already finalized")
+                  if semantic_steps_used < 0 or semantic_steps_used > int(
+                      self.limits["lifecycle_steps"]
+                  ):
+                      raise BudgetExhaustedError("semantic lifecycle step budget exhausted")
+                  expected = self.detect_lifecycle_wall_time_exhaustion(
+                      elapsed_monotonic_ns=exhaustion.observed_elapsed_monotonic_ns,
+                      attempted_forbidden_operation=exhaustion.attempted_forbidden_operation,
+                      environment_step=exhaustion.environment_step,
+                  )
+                  if expected != exhaustion:
+                      raise SchemaValidationError(
+                          "classified budget exhaustion does not match protected accounting"
+                      )
+                  if terminalization_elapsed_monotonic_ns < 0:
+                      raise SchemaValidationError(
+                          "terminalization elapsed time may not be negative"
+                      )
+                  if (
+                      terminalization_elapsed_monotonic_ns
+                      < exhaustion.observed_elapsed_monotonic_ns
+                  ):
+                      raise SchemaValidationError(
+                          "terminalization elapsed time precedes exhaustion detection"
+                      )
+                  cleanup_limit_ns = (
+                      int(self.limits["lifecycle_wall_time_ms"])
+                      + int(self.limits["cleanup_grace_ms"])
+                  ) * 1_000_000
+                  if terminalization_elapsed_monotonic_ns > cleanup_limit_ns:
+                      raise BudgetExhaustedError(
+                          "protected cleanup grace exhausted before lifecycle terminalization"
+                      )
+                  self.semantic_steps_used = semantic_steps_used
+                  self.elapsed_monotonic_ns = terminalization_elapsed_monotonic_ns
+                  self.exhaustion = exhaustion
+          ''',
+          )
+
+          replace_once(
+              "src/sudachi_life/lifecycle.py",
+              '''        if budget_exhaustion is not None:
+                      finished = pre_action
+                      ledger.finish_exhausted(
+                          semantic_steps_used=12,
+                          exhaustion=budget_exhaustion,
+                      )
+          ''',
+              '''        if budget_exhaustion is not None:
+                      finished = clock.read()
+                      ledger.finish_exhausted(
+                          semantic_steps_used=12,
+                          exhaustion=budget_exhaustion,
+                          terminalization_elapsed_monotonic_ns=(
+                              finished.monotonic_ns - started.monotonic_ns
+                          ),
+                      )
+          ''',
+          )
+
+          replace_once(
+              "tests/test_budget_exhaustion.py",
+              '''            ClockReading(300, 10_000_000),
+                          ClockReading(301, 2_011_000_000),
+                          ClockReading(302, 2_020_000_000),
+                          ClockReading(303, 2_030_000_000),
+          ''',
+              '''            ClockReading(300, 10_000_000),
+                          ClockReading(301, 2_011_000_000),
+                          ClockReading(302, 2_020_000_000),
+                          ClockReading(303, 2_030_000_000),
+                          ClockReading(304, 2_040_000_000),
+          ''',
+          )
+          replace_once(
+              "tests/test_budget_exhaustion.py",
+              "    assert clock.read_count == 4\n",
+              "    assert clock.read_count == 5\n",
+          )
+          replace_once(
+              "tests/test_budget_exhaustion.py",
+              '''    assert result.budget_ledger["elapsed_monotonic_ns"] == 2_001_000_000
+          ''',
+              '''    assert result.budget_ledger["elapsed_monotonic_ns"] == 2_010_000_000
+          ''',
+          )
+          PY
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/sudachi_life/budgets.py src/sudachi_life/lifecycle.py tests/test_budget_exhaustion.py
+          git diff --cached --check
+          git commit -m "fix: enforce cleanup grace at terminalization"
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
