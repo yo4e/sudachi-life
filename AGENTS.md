@@ -68,7 +68,7 @@ Two merged slices are not an automatic rollover trigger. Continue through multip
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–27:
+Primary implementation stream. Current `main` includes Slices 1–28:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -97,10 +97,11 @@ Primary implementation stream. Current `main` includes Slices 1–27:
 25. complete first-wake behavior independence from different declared seeds
 26. exact repeated-run canonical and artifact equivalence for identical declared inputs
 27. protected cleanup-grace terminalization boundary and overrun rollback
+28. complete lexicographic action tie breaking under reversed physical row insertion order
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 255 for the complete Slice 27 production-and-test head passed clean install, compileall, genesis CLI smoke, and **122 protected tests in 7.02 seconds** on Python 3.12. Slice 27 required one production correction: an explicit exhaustion-terminalization clock reading and enforcement of the accepted 2250 ms cleanup limit.
+GitHub Actions run 263 for the Slice 28 test-first head passed twice on Python 3.12. The exact rerun passed clean install, compileall, genesis CLI smoke, and **123 protected tests in 6.92 seconds**. No production correction was required.
 
 Phase 1 remains incomplete.
 
@@ -193,23 +194,29 @@ Slice 26 closes Contract evaluation 1 without production changes. Two independen
 
 Slice 27 closes Contract evaluation 7. Normal work detected at 2001 ms stops before executor entry with zero action, mutation, retry, caregiver, or external effects. One explicit injected reading measures terminalization completion. Exactly 2250 ms is accepted and recorded in the budget ledger; 2250 ms plus one nanosecond raises `BudgetExhaustedError`, performs no checkpoint work, and rolls back every uncommitted event, sequence, state, and inbox-claim change.
 
-## Exact restart point: Slice 28
+## Insertion-order-independent tie breaking
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 28 branch.
+Slice 28 closes Contract evaluation 13 without production changes. A protected stable fixture physically stores `bed-b` before `bed-a` while both are executable water targets. Canonical observation sorts plots and applicable targets as `bed-a`, `bed-b`; the policy waters `bed-a`, commits exact lifecycle boundary 16, stabilizes event 17, preserves reversed physical row order, returns to sleep, and accepts a later distinct input.
 
-The next bounded subject is Contract evaluation 13: lexicographic action tie breaking must remain independent of physical row insertion order.
+## Exact restart point: Slice 29
+
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 29 branch.
+
+The next bounded subject is Contract evaluation 16: replaying a consumed external tick identifier after its successful action must never create a duplicate action.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. inspect seed-garden storage, sorted observation construction, and fixed-policy target selection
-3. build a protected stable fixture in which both plots are executable watering targets but physical insertion order is `bed-b` before `bed-a`
-4. add the narrow complete-wake test before changing production code
-5. require the observation and decision to choose lexicographically smallest `bed-a`, then verify the exact transition, budget ledger, event order, checkpoint boundary, and sleeping wakeability
-6. prove no rowid, insertion order, dictionary order, timestamp, or seed becomes a tie breaker
-7. make a production correction only if the existing implementation violates the accepted contract
-8. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-9. run GitHub Actions through a pull request
+2. run and stabilize one complete successful canonical action for a declared external event identifier
+3. capture exact canonical state, event history, inbox row, SQLite sequence state, checkpoint registry, and checkpoint artifacts after that action
+4. replay the same consumed external event identifier through `enqueue_garden_tick(...)` with a zero-reading fake clock
+5. require `inserted=False`, the original inbox identity and received time, zero clock reads, no new event, no new inbox row, and no canonical or artifact mutation
+6. prove the replay leaves no claimable duplicate input and cannot create a second lifecycle or action
+7. prove a later distinct event identifier remains independently accepted and processable
+8. add the narrow protected scenario before changing production code
+9. make a production correction only if the existing implementation violates the accepted contract
+10. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+11. run GitHub Actions through a pull request
 
 Do not begin:
 

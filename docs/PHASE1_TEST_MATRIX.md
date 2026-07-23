@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–27 implemented and verified — Phase 1 incomplete**
+Status: **Slices 1–28 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -18,7 +18,7 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 10. First canonical tick waters `bed-a` | `tests/test_first_water_success.py::test_first_water_wake_commits_evaluates_and_checkpoints` |
 | 11. Second canonical tick harvests `bed-b` | `tests/test_second_harvest_success.py::test_second_wake_harvests_and_completes_objective` |
 | 12. Third canonical tick abstains after completion | `tests/test_objective_complete_boundary.py::test_third_wake_abstains_after_objective_completion` |
-| 13. Lexicographic tie breaking | Initial sorted observation and first-water target are covered; altered insertion-order action scenario remains planned |
+| 13. Lexicographic tie breaking | `tests/test_insertion_order_tie_breaking.py::test_complete_wake_uses_lexicographic_tie_break_after_reverse_insertion` stabilizes a fixture whose physical rowid order is `bed-b`, `bed-a` while both are executable water targets; canonical observation and applicable targets are `bed-a`, `bed-b`, the policy waters `bed-a`, the exact transition and event/checkpoint boundaries succeed, physical order remains reversed, and later input is accepted |
 | 14. Resource-aware harvest fallback | `tests/test_resource_aware_recovery.py::test_resource_aware_harvest_recovers_and_resets_failure_streak` |
 | 15. Specific no-applicable-action abstention | `tests/test_no_applicable_action.py::test_no_applicable_action_abstains_and_increments_failure_once`; the companion evaluator test rejects abstention when an action is executable |
 | 16. Duplicate external tick never creates another action | Idempotent enqueue is protected; complete post-action replay scenario remains planned |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #43 GitHub Actions run 255 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **122 protected tests in 7.02 seconds**. Slice 27 required one production correction: an explicit terminalization clock boundary and cleanup-limit enforcement.
+PR #44 GitHub Actions run 263 passed twice on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **123 protected tests**. The exact rerun completed in **6.92 seconds**. No production correction was required.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
