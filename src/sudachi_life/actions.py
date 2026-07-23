@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 import sqlite3
+from typing import Iterator
 
 from .budgets import WakeBudgetLedger
 from .errors import SchemaValidationError, SudachiError
@@ -12,6 +14,10 @@ from .garden import GardenObservation
 
 class ActionRejectedError(SudachiError):
     """A registered action proposal failed validation before mutation."""
+
+
+class ProtectedAuthorityViolationError(SudachiError):
+    """Organism action SQL attempted to exceed its protected authority."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +76,151 @@ class GardenAbstention:
 
 
 GardenDecision = GardenActionDecision | GardenAbstention
+
+
+_ACTION_READ_TABLES = frozenset(
+    {
+        "action_definition",
+        "garden_plot",
+        "inventory",
+        "environment_state",
+    }
+)
+
+_ACTION_UPDATE_COLUMNS = {
+    "water_plot": frozenset(
+        {
+            ("garden_plot", "moisture"),
+            ("inventory", "water_units"),
+            ("environment_state", "environment_step"),
+        }
+    ),
+    "harvest_plot": frozenset(
+        {
+            ("garden_plot", "fruit"),
+            ("inventory", "harvested_fruit"),
+            ("environment_state", "environment_step"),
+        }
+    ),
+}
+
+_AUTHORIZER_ACTION_NAMES = {
+    sqlite3.SQLITE_CREATE_INDEX: "CREATE_INDEX",
+    sqlite3.SQLITE_CREATE_TABLE: "CREATE_TABLE",
+    sqlite3.SQLITE_CREATE_TEMP_INDEX: "CREATE_TEMP_INDEX",
+    sqlite3.SQLITE_CREATE_TEMP_TABLE: "CREATE_TEMP_TABLE",
+    sqlite3.SQLITE_CREATE_TEMP_TRIGGER: "CREATE_TEMP_TRIGGER",
+    sqlite3.SQLITE_CREATE_TEMP_VIEW: "CREATE_TEMP_VIEW",
+    sqlite3.SQLITE_CREATE_TRIGGER: "CREATE_TRIGGER",
+    sqlite3.SQLITE_CREATE_VIEW: "CREATE_VIEW",
+    sqlite3.SQLITE_DELETE: "DELETE",
+    sqlite3.SQLITE_DROP_INDEX: "DROP_INDEX",
+    sqlite3.SQLITE_DROP_TABLE: "DROP_TABLE",
+    sqlite3.SQLITE_DROP_TEMP_INDEX: "DROP_TEMP_INDEX",
+    sqlite3.SQLITE_DROP_TEMP_TABLE: "DROP_TEMP_TABLE",
+    sqlite3.SQLITE_DROP_TEMP_TRIGGER: "DROP_TEMP_TRIGGER",
+    sqlite3.SQLITE_DROP_TEMP_VIEW: "DROP_TEMP_VIEW",
+    sqlite3.SQLITE_DROP_TRIGGER: "DROP_TRIGGER",
+    sqlite3.SQLITE_DROP_VIEW: "DROP_VIEW",
+    sqlite3.SQLITE_INSERT: "INSERT",
+    sqlite3.SQLITE_PRAGMA: "PRAGMA",
+    sqlite3.SQLITE_READ: "READ",
+    sqlite3.SQLITE_SELECT: "SELECT",
+    sqlite3.SQLITE_TRANSACTION: "TRANSACTION",
+    sqlite3.SQLITE_UPDATE: "UPDATE",
+    sqlite3.SQLITE_ATTACH: "ATTACH",
+    sqlite3.SQLITE_DETACH: "DETACH",
+    sqlite3.SQLITE_ALTER_TABLE: "ALTER_TABLE",
+    sqlite3.SQLITE_REINDEX: "REINDEX",
+    sqlite3.SQLITE_ANALYZE: "ANALYZE",
+    sqlite3.SQLITE_CREATE_VTABLE: "CREATE_VTABLE",
+    sqlite3.SQLITE_DROP_VTABLE: "DROP_VTABLE",
+    sqlite3.SQLITE_FUNCTION: "FUNCTION",
+    sqlite3.SQLITE_SAVEPOINT: "SAVEPOINT",
+    sqlite3.SQLITE_RECURSIVE: "RECURSIVE",
+}
+
+
+@dataclass(slots=True)
+class _ActionSqlAuthority:
+    decision: GardenActionDecision
+    violation: tuple[int, str | None, str | None, str | None, str | None] | None = None
+
+    def authorize(
+        self,
+        action_code: int,
+        first_argument: str | None,
+        second_argument: str | None,
+        database_name: str | None,
+        trigger_name: str | None,
+    ) -> int:
+        if action_code == sqlite3.SQLITE_SELECT:
+            return sqlite3.SQLITE_OK
+
+        if action_code == sqlite3.SQLITE_READ:
+            if database_name == "main" and first_argument in _ACTION_READ_TABLES:
+                return sqlite3.SQLITE_OK
+
+        elif action_code == sqlite3.SQLITE_UPDATE:
+            allowed_updates = _ACTION_UPDATE_COLUMNS.get(
+                self.decision.action_id, frozenset()
+            )
+            if (
+                database_name == "main"
+                and (first_argument, second_argument) in allowed_updates
+            ):
+                return sqlite3.SQLITE_OK
+
+        elif action_code == sqlite3.SQLITE_SAVEPOINT:
+            if (
+                first_argument in {"BEGIN", "RELEASE", "ROLLBACK"}
+                and second_argument == "garden_action"
+            ):
+                return sqlite3.SQLITE_OK
+
+        if self.violation is None:
+            self.violation = (
+                action_code,
+                first_argument,
+                second_argument,
+                database_name,
+                trigger_name,
+            )
+        return sqlite3.SQLITE_DENY
+
+    def violation_message(self) -> str:
+        if self.violation is None:
+            return "protected action SQL authority denied an unknown operation"
+        action_code, first, second, database, trigger = self.violation
+        operation = _AUTHORIZER_ACTION_NAMES.get(action_code, f"CODE_{action_code}")
+        target_parts = [part for part in (database, first, second) if part]
+        target = ".".join(target_parts) if target_parts else "<unspecified>"
+        suffix = f" through trigger {trigger}" if trigger else ""
+        return (
+            f"protected action SQL authority denied {operation} on {target}{suffix}"
+        )
+
+
+@contextmanager
+def _protected_action_sql_authority(
+    connection: sqlite3.Connection,
+    decision: GardenActionDecision,
+) -> Iterator[None]:
+    authority = _ActionSqlAuthority(decision)
+    connection.set_authorizer(authority.authorize)
+    try:
+        try:
+            yield
+        except sqlite3.DatabaseError as exc:
+            if authority.violation is not None:
+                raise ProtectedAuthorityViolationError(
+                    authority.violation_message()
+                ) from exc
+            raise
+        if authority.violation is not None:
+            raise ProtectedAuthorityViolationError(authority.violation_message())
+    finally:
+        connection.set_authorizer(None)
 
 
 def _observed_action(observation: GardenObservation, action_id: str) -> dict[str, object]:
@@ -276,15 +427,20 @@ def execute_garden_action(
         raise SchemaValidationError(
             "protected action-failure injection requires water_plot"
         )
-    if decision.action_id == "water_plot":
-        execute_water_plot(
-            connection,
-            decision,
-            ledger,
-            protected_test_failure_after_plot_write=protected_test_failure_after_plot_write,
-        )
-        return
-    if decision.action_id == "harvest_plot":
-        execute_harvest_plot(connection, decision, ledger)
-        return
+    if decision.action_id not in _ACTION_UPDATE_COLUMNS:
+        raise ActionRejectedError(f"unregistered Phase 1 action: {decision.action_id}")
+
+    with _protected_action_sql_authority(connection, decision):
+        if decision.action_id == "water_plot":
+            execute_water_plot(
+                connection,
+                decision,
+                ledger,
+                protected_test_failure_after_plot_write=protected_test_failure_after_plot_write,
+            )
+            return
+        if decision.action_id == "harvest_plot":
+            execute_harvest_plot(connection, decision, ledger)
+            return
+
     raise ActionRejectedError(f"unregistered Phase 1 action: {decision.action_id}")
