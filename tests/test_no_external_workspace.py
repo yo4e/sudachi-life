@@ -55,6 +55,24 @@ def _relative_directories(root: Path) -> tuple[str, ...]:
     )
 
 
+def _administrative_workspace_entries(paths: OrganismPaths) -> tuple[str, ...]:
+    entries: list[str] = []
+    for root in (
+        paths.exports,
+        paths.diagnostics,
+        paths.rollback_archives,
+        paths.restore_candidates,
+    ):
+        if not root.exists():
+            continue
+        entries.append(str(root.relative_to(paths.organism_dir)) + "/")
+        entries.extend(
+            str(path.relative_to(paths.organism_dir)) + ("/" if path.is_dir() else "")
+            for path in sorted(root.rglob("*"))
+        )
+    return tuple(entries)
+
+
 def _install_external_effect_guards(
     monkeypatch: pytest.MonkeyPatch,
 ) -> list[str]:
@@ -237,13 +255,7 @@ def test_action_execution_has_no_external_workspace_or_effect_surface(
         }
 
         directories_before = _relative_directories(paths.organism_dir)
-        for administrative_path in (
-            paths.exports,
-            paths.diagnostics,
-            paths.rollback_archives,
-            paths.restore_candidates,
-        ):
-            assert not administrative_path.exists()
+        administrative_workspace_before = _administrative_workspace_entries(paths)
 
         valid_ledger = WakeBudgetLedger.load(wake.connection)
         rejected_ledger = WakeBudgetLedger.load(wake.connection)
@@ -285,13 +297,7 @@ def test_action_execution_has_no_external_workspace_or_effect_surface(
         assert not path_like_target.exists()
         assert not path_like_target.parent.exists()
         assert _relative_directories(paths.organism_dir) == directories_before
-        for administrative_path in (
-            paths.exports,
-            paths.diagnostics,
-            paths.rollback_archives,
-            paths.restore_candidates,
-        ):
-            assert not administrative_path.exists()
+        assert _administrative_workspace_entries(paths) == administrative_workspace_before
     finally:
         wake.rollback_and_close()
 
