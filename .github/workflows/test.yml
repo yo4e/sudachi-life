@@ -24,85 +24,108 @@ jobs:
           python - <<'PY' 2>&1 | tee patch.log
           from pathlib import Path
 
-          def replace_once(path: str, old: str, new: str) -> None:
-              file = Path(path)
-              text = file.read_text()
-              count = text.count(old)
-              print(f"{path}: target count={count}")
-              if count != 1:
-                  raise SystemExit(f"{path}: expected one replacement target, found {count}")
-              file.write_text(text.replace(old, new, 1))
+          budgets = Path("src/sudachi_life/budgets.py")
+          lines = budgets.read_text().splitlines(keepends=True)
+          start = lines.index("    def finish_exhausted(\n")
+          exhaustion_line = next(
+              index
+              for index in range(start, len(lines))
+              if lines[index] == "        exhaustion: ProtectedBudgetExhaustion,\n"
+          )
+          if lines[exhaustion_line + 1] != "    ) -> None:\n":
+              raise SystemExit("budgets.py: unexpected finish_exhausted signature")
+          lines.insert(
+              exhaustion_line + 1,
+              "        terminalization_elapsed_monotonic_ns: int,\n",
+          )
+          docstring_line = next(
+              index
+              for index in range(start, len(lines))
+              if "Finalize one safely classified exhaustion" in lines[index]
+          )
+          lines[docstring_line] = (
+              '        """Finalize one classified exhaustion before cleanup grace expires."""\n'
+          )
+          assignment_line = next(
+              index
+              for index in range(start, len(lines))
+              if lines[index] == "        self.semantic_steps_used = semantic_steps_used\n"
+          )
+          expected_tail = [
+              "        self.semantic_steps_used = semantic_steps_used\n",
+              "        self.elapsed_monotonic_ns = exhaustion.observed_elapsed_monotonic_ns\n",
+              "        self.exhaustion = exhaustion\n",
+          ]
+          if lines[assignment_line : assignment_line + 3] != expected_tail:
+              raise SystemExit("budgets.py: unexpected exhausted assignment tail")
+          lines[assignment_line : assignment_line + 3] = [
+              "        if terminalization_elapsed_monotonic_ns < 0:\n",
+              "            raise SchemaValidationError(\n",
+              '                "terminalization elapsed time may not be negative"\n',
+              "            )\n",
+              "        if (\n",
+              "            terminalization_elapsed_monotonic_ns\n",
+              "            < exhaustion.observed_elapsed_monotonic_ns\n",
+              "        ):\n",
+              "            raise SchemaValidationError(\n",
+              '                "terminalization elapsed time precedes exhaustion detection"\n',
+              "            )\n",
+              "        cleanup_limit_ns = (\n",
+              '            int(self.limits["lifecycle_wall_time_ms"])\n',
+              '            + int(self.limits["cleanup_grace_ms"])\n',
+              "        ) * 1_000_000\n",
+              "        if terminalization_elapsed_monotonic_ns > cleanup_limit_ns:\n",
+              "            raise BudgetExhaustedError(\n",
+              '                "protected cleanup grace exhausted before lifecycle terminalization"\n',
+              "            )\n",
+              "        self.semantic_steps_used = semantic_steps_used\n",
+              "        self.elapsed_monotonic_ns = terminalization_elapsed_monotonic_ns\n",
+              "        self.exhaustion = exhaustion\n",
+          ]
+          budgets.write_text("".join(lines))
+          print("budgets.py: structural patch applied")
 
-          replace_once(
-              "src/sudachi_life/budgets.py",
-              "        exhaustion: ProtectedBudgetExhaustion,\n    ) -> None:\n        \"\"\"Finalize one safely classified exhaustion inside cleanup capacity.\"\"\"\n",
-              "        exhaustion: ProtectedBudgetExhaustion,\n        terminalization_elapsed_monotonic_ns: int,\n    ) -> None:\n        \"\"\"Finalize one classified exhaustion before cleanup grace expires.\"\"\"\n",
+          lifecycle = Path("src/sudachi_life/lifecycle.py")
+          lines = lifecycle.read_text().splitlines(keepends=True)
+          finished_line = lines.index("            finished = pre_action\n")
+          if lines[finished_line - 1] != "        if budget_exhaustion is not None:\n":
+              raise SystemExit("lifecycle.py: unexpected exhausted branch")
+          expected_call = [
+              "            finished = pre_action\n",
+              "            ledger.finish_exhausted(\n",
+              "                semantic_steps_used=12,\n",
+              "                exhaustion=budget_exhaustion,\n",
+              "            )\n",
+          ]
+          if lines[finished_line : finished_line + 5] != expected_call:
+              raise SystemExit("lifecycle.py: unexpected finish_exhausted call")
+          lines[finished_line : finished_line + 5] = [
+              "            finished = clock.read()\n",
+              "            ledger.finish_exhausted(\n",
+              "                semantic_steps_used=12,\n",
+              "                exhaustion=budget_exhaustion,\n",
+              "                terminalization_elapsed_monotonic_ns=(\n",
+              "                    finished.monotonic_ns - started.monotonic_ns\n",
+              "                ),\n",
+              "            )\n",
+          ]
+          lifecycle.write_text("".join(lines))
+          print("lifecycle.py: structural patch applied")
+
+          tests = Path("tests/test_budget_exhaustion.py")
+          lines = tests.read_text().splitlines(keepends=True)
+          reading_line = lines.index("            ClockReading(303, 2_030_000_000),\n")
+          lines.insert(reading_line + 1, "            ClockReading(304, 2_040_000_000),\n")
+          read_count_line = lines.index("    assert clock.read_count == 4\n")
+          lines[read_count_line] = "    assert clock.read_count == 5\n"
+          elapsed_line = lines.index(
+              '    assert result.budget_ledger["elapsed_monotonic_ns"] == 2_001_000_000\n'
           )
-          replace_once(
-              "src/sudachi_life/budgets.py",
-              '''        self.semantic_steps_used = semantic_steps_used
-          self.elapsed_monotonic_ns = exhaustion.observed_elapsed_monotonic_ns
-          self.exhaustion = exhaustion
-          ''',
-              '''        if terminalization_elapsed_monotonic_ns < 0:
-              raise SchemaValidationError(
-                  "terminalization elapsed time may not be negative"
-              )
-          if (
-              terminalization_elapsed_monotonic_ns
-              < exhaustion.observed_elapsed_monotonic_ns
-          ):
-              raise SchemaValidationError(
-                  "terminalization elapsed time precedes exhaustion detection"
-              )
-          cleanup_limit_ns = (
-              int(self.limits["lifecycle_wall_time_ms"])
-              + int(self.limits["cleanup_grace_ms"])
-          ) * 1_000_000
-          if terminalization_elapsed_monotonic_ns > cleanup_limit_ns:
-              raise BudgetExhaustedError(
-                  "protected cleanup grace exhausted before lifecycle terminalization"
-              )
-          self.semantic_steps_used = semantic_steps_used
-          self.elapsed_monotonic_ns = terminalization_elapsed_monotonic_ns
-          self.exhaustion = exhaustion
-          ''',
+          lines[elapsed_line] = (
+              '    assert result.budget_ledger["elapsed_monotonic_ns"] == 2_010_000_000\n'
           )
-          replace_once(
-              "src/sudachi_life/lifecycle.py",
-              '''        if budget_exhaustion is not None:
-              finished = pre_action
-              ledger.finish_exhausted(
-                  semantic_steps_used=12,
-                  exhaustion=budget_exhaustion,
-              )
-          ''',
-              '''        if budget_exhaustion is not None:
-              finished = clock.read()
-              ledger.finish_exhausted(
-                  semantic_steps_used=12,
-                  exhaustion=budget_exhaustion,
-                  terminalization_elapsed_monotonic_ns=(
-                      finished.monotonic_ns - started.monotonic_ns
-                  ),
-              )
-          ''',
-          )
-          replace_once(
-              "tests/test_budget_exhaustion.py",
-              "            ClockReading(303, 2_030_000_000),\n",
-              "            ClockReading(303, 2_030_000_000),\n            ClockReading(304, 2_040_000_000),\n",
-          )
-          replace_once(
-              "tests/test_budget_exhaustion.py",
-              "    assert clock.read_count == 4\n",
-              "    assert clock.read_count == 5\n",
-          )
-          replace_once(
-              "tests/test_budget_exhaustion.py",
-              "    assert result.budget_ledger[\"elapsed_monotonic_ns\"] == 2_001_000_000\n",
-              "    assert result.budget_ledger[\"elapsed_monotonic_ns\"] == 2_010_000_000\n",
-          )
+          tests.write_text("".join(lines))
+          print("test_budget_exhaustion.py: structural patch applied")
           PY
 
           git config user.name github-actions[bot]
