@@ -8,6 +8,14 @@ from pathlib import Path
 import sys
 from typing import Sequence
 
+from .authority import (
+    ADMINISTRATION,
+    ORGANISM,
+    AuthorityProvenance,
+    AuthorityProvenanceError,
+    build_authority_report,
+    classify_authority_source,
+)
 from .checkpoint_repair import repair_pending_checkpoint_registration
 from .errors import SudachiError
 from .event_export import export_stable_events
@@ -172,6 +180,50 @@ def _format_human(payload: dict[str, object]) -> str:
     return "\n".join(f"{key}: {value}" for key, value in payload.items())
 
 
+def _command_report_authority(args: argparse.Namespace) -> AuthorityProvenance:
+    """Return the exact protected authority source for one CLI report."""
+
+    if args.command == "wake":
+        return classify_authority_source(
+            "organism:phase1-fixed-policy",
+            expected_category=ORGANISM,
+        )
+    if args.command == "init":
+        source = "administration:init"
+    elif args.command == "enqueue":
+        source = "administration:cli"
+    elif args.command == "status":
+        source = "administration:status"
+    elif args.command == "maintenance" and args.maintenance_command == "inspect":
+        source = "administration:maintenance-inspect"
+    elif args.command == "maintenance" and args.maintenance_command == "clear":
+        source = "administration:maintenance-clear"
+    elif args.command == "checkpoint" and args.checkpoint_command == "repair-pending":
+        source = "administration:checkpoint-repair"
+    elif args.command == "export" and args.export_command == "events":
+        source = "administration:event-export"
+    elif args.command == "rollback" and args.rollback_command == "prepare":
+        source = "administration:rollback-prepare"
+    elif args.command == "rollback" and args.rollback_command == "begin":
+        source = "administration:rollback"
+    elif args.command == "rollback" and args.rollback_command == "build-candidate":
+        source = "administration:rollback-candidate"
+    elif args.command == "rollback" and args.rollback_command == "transform-candidate":
+        source = "administration:rollback"
+    elif args.command == "rollback" and args.rollback_command == "replace-active":
+        source = "administration:rollback-replace"
+    elif args.command == "rollback" and args.rollback_command == "complete":
+        source = "administration:rollback"
+    else:
+        raise AuthorityProvenanceError(
+            "CLI report has no protected Phase 1 authority source"
+        )
+    return classify_authority_source(
+        source,
+        expected_category=ADMINISTRATION,
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -252,6 +304,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             parser.error(f"unknown command: {args.command}")
             return 2
+        provenance = _command_report_authority(args)
+        payload = build_authority_report(
+            payload,
+            source=provenance.source,
+            expected_category=provenance.category,
+        )
     except SudachiError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

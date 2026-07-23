@@ -267,7 +267,11 @@ def test_transform_restore_candidate_prepares_new_lineage_without_active_mutatio
             "--json",
         ]
     ) == 0
-    assert json.loads(capsys.readouterr().out) == result.as_dict()
+    assert json.loads(capsys.readouterr().out) == {
+        "authority_category": "administration",
+        "authority_source": "administration:rollback",
+        **result.as_dict(),
+    }
     assert _active_snapshot(paths) == active_before
     assert _tree_snapshot(source.candidate_dir) == source_before
 

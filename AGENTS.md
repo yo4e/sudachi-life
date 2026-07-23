@@ -60,15 +60,15 @@ Do not hide a new architecture inside implementation code. If implementation rev
 
 SUDACHI's organism, metabolism, body, lineage, growth, and caregiver vocabulary describes deterministic local software. Phase 1 uses Python, SQLite, immutable artifacts, and a synthetic garden only. It has no wet-lab biology, pathogens, genetic engineering, medical intervention, weapons work, offensive cybersecurity, third-party system access, network activity, or organism subprocess execution.
 
-Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Accept delayed, blocked, or refused requests. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and conversation rollover.
+Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and conversation rollover.
 
-Two merged slices are not an automatic rollover trigger. Continue through multiple bounded slices while repository and CI state remain directly reconstructable. Reassess after several substantial slices, normally around eight to twelve, or earlier when a long debugging trail, repeated CI repair, stale context, or branch-state confusion creates a material reliability risk. Do not deliberately approach a roughly twenty-slice conversation limit.
+Continue through multiple bounded slices only while repository, branch, pull-request, and CI state remain directly reconstructable. Phase 1 is now complete; do not create an automatic next slice merely to continue activity.
 
 ## Current work streams
 
 ### Issue #13 — Phase 1 implementation
 
-Repository state containing this file includes Slices 1–34:
+Repository state containing this file includes Slices 1–35:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -104,22 +104,21 @@ Repository state containing this file includes Slices 1–34:
 32. explicit second-wake rejection behind a committed pending checkpoint and resumed progress after repair
 33. guarded proof that registered organism actions have no external workspace or effect route
 34. action-scoped SQLite authority restricted to exact registered garden transition columns
+35. protected organism and administration provenance across canonical sources and public reports
 
-ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
+All 41 fixed Contract v0.2 evaluations have complete protected coverage. PR #54 closes the final row with **142 protected tests** on its verified implementation head.
 
-PR #53 closes Contract evaluation 39. GitHub Actions run 307 passes clean installation, compileall, genesis CLI smoke, and **139 protected tests in 7.69 seconds** on Python 3.12.
-
-Phase 1 remains incomplete.
+After PR #54 is merged, Issue #13 is complete. Do not reopen it to add Phase 2 features.
 
 ### Issue #3 — prior work and provider review
 
 Research stream. Preliminary review is active, but no strong novelty claim and no live caregiver selection are authorized.
 
-Do not connect a human or model caregiver to Phase 1. Do not treat ChatGPT and an API as the same product. Provider permissions, retention, pricing, limits, and transformation classes must be re-verified from current first-party sources before any live integration.
+Do not connect a human or model caregiver automatically. Do not treat ChatGPT and an API as the same product. Provider permissions, retention, pricing, limits, and transformation classes must be reverified from current first-party sources before any live integration.
 
 ## Phase 1 invariants
 
-Phase 1 remains deterministic, local, network-free, organism-subprocess-free, caregiver-free, bounded, auditable, SQLite-canonical, and checkpointed after every committed wake.
+Phase 1 is deterministic, local, network-free, organism-subprocess-free, caregiver-free, bounded, auditable, SQLite-canonical, checkpointed after every committed wake, and explicit about organism versus administrative authority.
 
 The organism runtime must not:
 
@@ -131,114 +130,59 @@ The organism runtime must not:
 - add unrestricted retries or backtracking
 - weaken protected tests or budgets
 - modify protected actions, evaluators, schema, contract, or environment
+- claim administrative authority
 
-Administration is distinct from organism autonomy. Administrative operations and protected test harnesses have narrow typed boundaries and preserve authority separation.
+Administration is distinct from organism autonomy. Canonical and report sources use protected `organism:` and `administration:` namespaces. Administrative operations and protected test harnesses retain narrow typed boundaries.
 
 ## Complete protected rollback path
 
-### Archive and intent
+Rollback archive preparation validates one retained source, snapshots the complete active future through SQLite Online Backup, and publishes immutable evidence without canonical mutation.
 
-Rollback archive preparation validates one retained source, snapshots the complete active future through SQLite Online Backup, and publishes immutable `rollback-archives/pre-rb-.../` without canonical mutation.
+Rollback begin records durable intent. Candidate construction restores the selected checkpoint. Candidate transformation creates a distinct lineage and records `rollback_lineage_prepared`. Active replacement transfers authority atomically and remains blocked. Completion records `rollback_completed`, restores wakeability, and preserves the abandoned future.
 
-Rollback begin revalidates the archive and active body, atomically changes status to `rollback_in_progress`, appends exactly one `rollback_started`, and blocks normal wakes.
+ADR 0007 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-### Candidate construction and lineage transformation
-
-Source-candidate construction restores the selected checkpoint through SQLite Online Backup and publishes an exact immutable `source_restored_untransformed` candidate.
-
-Candidate transformation derives `abandoned_active_generation + 1`, changes only an isolated working candidate, clears source pending fields, reconstructs the selected registry row, preserves source history, appends one candidate-local `rollback_lineage_prepared`, and publishes an immutable `lineage_transformed_replacement_ready` candidate.
-
-### Canonical authority transfer
-
-Active replacement revalidates the complete provenance chain, stages an exact candidate copy through SQLite Online Backup, atomically replaces canonical `organism.sqlite3`, immediately validates the new active body, preserves every artifact, and leaves the new body blocked in `rollback_in_progress`.
-
-A post-transfer interruption is detectable and exact repeated validation recovers without rewriting.
-
-### Completion and wakeability
-
-Rollback completion:
-
-- exposes `complete_rollback(...)` and `sudachi rollback complete`
-- acquires fail-fast ownership of the replaced body
-- revalidates the checkpoint, archive, both candidates, and exact active-candidate equality
-- reads one administrative clock only after validation
-- atomically changes `rollback_in_progress` to `sleeping`
-- clears restored failure and maintenance state
-- appends exactly one next-sequence `rollback_completed`
-- binds target, abandoned future, lineages, candidate identifiers and digests, replacement validation, and the original administrative reason
-- rolls back status and event together on injected failure
-- recognizes an exact completed state without another clock read or mutation
-- restores normal wakeability only after commit
-
-Protected tests prove the first post-rollback wake runs in the new lineage and creates a new stable lifecycle checkpoint while every rollback artifact remains unchanged.
-
-### Accepted retention boundary and Slice 23 enforcement
-
-ADR 0007 resolves rollback-artifact retention for Phase 1:
-
-- one organism may contain at most one completed rollback
-- the pre-rollback archive, source-restored candidate, and lineage-transformed candidate remain immutable and retained
-- rollback artifacts are not pruned or deleted
-- repeated rollback experiments use separate organism identities
-- later phases require a new accepted decision before repeated rollback or artifact pruning
-
-Slice 23 enforces that boundary at rollback preparation. After fail-fast ownership and canonical validation, preparation counts canonical `rollback_completed` events and requires zero before latest-source lookup, source selection, or archive-root creation. Rejection is typed, zero-clock, and non-mutating. A separately initialized organism remains eligible for its own first rollback.
-
-## Fixed-evaluation closures in Slices 24–34
+## Fixed-evaluation closures in Slices 24–35
 
 - Slice 24: backward wall time cannot reorder canonical events.
-- Slice 25: different declared seeds do not change fixed seed-garden behavior.
+- Slice 25: different declared seeds do not change fixed behavior.
 - Slice 26: identical declared inputs produce exact canonical and artifact equivalence.
 - Slice 27: cleanup grace permits terminalization only and rejects overrun atomically.
-- Slice 28: lexicographic action tie breaking ignores physical row insertion order.
-- Slice 29: replay of a consumed external identifier cannot create a duplicate action.
-- Slice 30: a real child-process exit rolls back an uncommitted wake and releases ownership.
-- Slice 31: nested wakes and hidden write connections fail fast without queueing or mutation.
-- Slice 32: a second wake cannot advance behind a pending boundary; existing repair restores progress.
-- Slice 33: registered actions receive no workspace handle, invoke no guarded filesystem/network/subprocess interface, and treat a path-like target only as a nonexistent SQLite identifier.
-- Slice 34: registered actions execute under an action-scoped SQLite authorizer; valid actions change only their exact declared columns, while identity, budgets, registry, inbox, history, schema, triggers, source, contract, ADRs, and administrative artifacts remain protected.
+- Slice 28: lexicographic selection ignores physical row insertion order.
+- Slice 29: consumed input replay cannot create duplicate action.
+- Slice 30: a real process exit rolls back uncommitted wake state.
+- Slice 31: nested wakes and hidden writers fail fast.
+- Slice 32: pending checkpoint state blocks later wakes until repair.
+- Slice 33: registered actions have no external workspace or effect route.
+- Slice 34: action SQL authority is restricted to exact declared garden transitions.
+- Slice 35: organism and administration are distinguishable in canonical records and public reports.
 
 Read the corresponding durable notes in `docs/phase1/` for exact boundaries and CI evidence.
 
-## Exact restart point: Slice 35
+## Exact restart point — Phase 2 decision gate
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 35 branch.
+There is no authorized Slice 36.
 
-The next bounded subject is Contract evaluation 41: administrative actions are distinguishable from organism actions in records and reports.
+After reconstructing current `main`, Issue #13, and open pull requests:
 
-Required selection discipline:
+1. verify PR #54 is merged and Issue #13 is closed
+2. verify all 41 matrix rows and the complete Phase 1 regression suite
+3. read Issue #3 and current research documents
+4. decide through an explicit reviewed issue or ADR whether Phase 2 caregiver-neutral consultation plumbing should begin
+5. define source-neutral request/response schemas, consultation budgets, provenance, evaluation separation, and adoption boundaries before code
+6. preserve the Phase 1 zero-caregiver path and its full regression suite
 
-1. confirm no newer repository decision or open pull request changes the ordering
-2. inventory every canonical event-creation boundary and every explicit administrative API or CLI operation
-3. inventory operations that intentionally create no canonical event and the external typed result or artifact that identifies them as administration
-4. define and protect the Phase 1 source namespaces, at minimum `organism:` and `administration:`
-5. add protected tests before changing production code
-6. run representative organism lifecycle, input, checkpoint, maintenance, export, and rollback paths and require their records, results, manifests, and reports to preserve the correct authority category
-7. require organism action and lifecycle records never to claim an administrative source
-8. require administrative records never to claim an organism source
-9. require unknown, empty, or cross-category source values to fail before canonical append or report publication
-10. preserve operations that intentionally have no canonical event without inventing false history; prove their typed result or immutable artifact still identifies administrative provenance
-11. make a production correction only where source/category validation is incomplete
-12. do not redesign the event schema, add a generic identity framework, or force every read-only or pre-authority rejection into canonical history
-13. update the Slice 35 note, matrix, this handoff, `AGENTS.md`, and Issue #13
-14. run GitHub Actions through a pull request
-
-Evaluation 41 concerns authority provenance, not merely string prefixes. Existing source fields are substantial partial coverage; Slice 35 must make the distinction complete across canonical records and non-event administrative reports without fabricating events for operations that had no write authority.
-
-Do not add caregiver integration, learning, memory, skills, self-modification, generic recovery machinery, or a generic autonomous-agent framework.
+Do not begin live human or model caregiving, API integration, learning, memory, skills, self-modification, or a generic agent framework without that reviewed scope decision.
 
 ## End-of-work protocol
 
 Before ending substantial work:
 
-- update `docs/HANDOFF.md` with the true state and one exact next action
-- update `docs/PHASE1_TEST_MATRIX.md`
-- add or update a durable slice or decision note
-- update the relevant Issue checklist or status
-- report tests and CI honestly
-- report failures, skipped checks, and incomplete work
+- update `docs/HANDOFF.md` with the true state and one exact next gate
+- update protected-test mapping and durable notes
+- update relevant Issue and PR status
+- report tests, CI, failures, and skipped checks honestly
 - ensure no critical decision exists only in chat or model memory
 - preserve the repository language policy
-- apply the calibrated rollover guidance in `docs/AI_COLLABORATION_OPERATIONS.md`
 
 Repository prose, code, issues, ADRs, and tests are written in English. The intentional Japanese lines in `README.md` remain the only standing exception.
