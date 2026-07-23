@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #48 GitHub Actions run 290 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **127 protected tests in 7.66 seconds**. No production correction was required.
+PR #50 exact-head GitHub Actions runs 293 and 294 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **127 protected tests in 6.73 and 13.73 seconds**. No production correction was required. Draft PRs #48 and #49 were closed without merge after GitHub workflow/head synchronization failures; no code or history was discarded.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
