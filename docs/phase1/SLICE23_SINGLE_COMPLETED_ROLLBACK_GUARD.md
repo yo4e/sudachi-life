@@ -1,6 +1,6 @@
 # Phase 1 Slice 23: Single Completed Rollback Admission Guard
 
-Status: **implemented; pull-request verification pending**
+Status: **implemented and verified in PR #38**
 
 Tracked by: Issue #13
 
@@ -84,8 +84,15 @@ The test completes one rollback for the first organism, initializes a separate s
 
 ## Verification
 
-The branch adds two protected tests to the existing 115-test baseline. The exact GitHub Actions result must be recorded here, in `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13 after the pull-request run completes.
+GitHub Actions run 219 on Python 3.12 completed successfully for PR #38:
+
+- clean editable installation
+- source and test compilation
+- **117 protected tests passed in 6.31 seconds**
+- genesis CLI smoke test
+
+No implementation correction was required. The workflow remains the existing public-repository `ubuntu-latest` runner with the existing bounded pytest-log artifact.
 
 ## Exact next action
 
-Run the standard public-repository GitHub Actions workflow through the Slice 23 pull request. Correct only failures within this narrow admission-guard boundary, then record the verified test count and leave the pull request ready for review.
+Keep PR #38 ready for human review and merge. After merge, reconstruct current `main`, open issues, and open pull requests before selecting Slice 24. Do not extend this branch into rollback-artifact deletion, pruning, repeated rollback support, or another Phase 1 evaluation.
