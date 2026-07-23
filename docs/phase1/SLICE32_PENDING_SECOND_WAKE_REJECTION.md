@@ -65,4 +65,4 @@ GitHub Actions run 290 on Python 3.12 proved the protected test and initial dura
 - genesis CLI smoke test
 - **127 protected tests in 7.66 seconds**
 
-The complete continuity head remains subject to the standard pull-request workflow before merge.
+The complete branch head also contains the updated Phase 1 matrix, `AGENTS.md`, and `docs/HANDOFF.md`; that exact continuity head remains subject to the standard pull-request workflow before merge.
