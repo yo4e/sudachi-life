@@ -96,7 +96,7 @@ Primary implementation stream. Repository state containing this file includes Sl
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions for the PR #36 implementation head passed clean install, compileall, genesis CLI smoke, and **115 protected tests** after one completion exception-classification correction. Slice 23 adds two protected tests; its pull-request verification is pending.
+GitHub Actions run 219 for PR #38 passed clean install, compileall, genesis CLI smoke, and **117 protected tests** on Python 3.12. No implementation correction was required.
 
 Phase 1 remains incomplete.
 
@@ -173,16 +173,16 @@ ADR 0007 resolves rollback-artifact retention for Phase 1:
 
 Slice 23 enforces that boundary at rollback preparation. After fail-fast ownership and canonical validation, preparation counts canonical `rollback_completed` events and requires zero before latest-source lookup, source selection, or archive-root creation. Rejection is typed, zero-clock, and non-mutating. A separately initialized organism remains eligible for its own first rollback.
 
-## Exact restart point: Slice 23 pull-request verification
+## Exact restart point: review and merge PR #38
 
-Complete only the current Slice 23 verification and review boundary:
+PR #38 contains the verified Slice 23 boundary. Do not extend its scope.
 
-1. open or inspect the pull request from `agent/slice-23-single-rollback-guard` to current `main`
-2. run the existing public-repository GitHub Actions workflow
-3. correct only failures within the accepted admission guard and its two protected tests
-4. record the exact CI result in `docs/phase1/SLICE23_SINGLE_COMPLETED_ROLLBACK_GUARD.md`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-5. leave the pull request ready for human review and merge
-6. after merge, reconstruct current `main`, open issues, and open pull requests before selecting Slice 24
+After merge:
+
+1. reconstruct current `main`
+2. inspect current open issues and pull requests
+3. confirm Issue #13 and continuity documents reflect the merged result
+4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 24 branch
 
 Do not begin:
 
