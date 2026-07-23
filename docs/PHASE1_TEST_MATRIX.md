@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–30 implemented and verified — Phase 1 incomplete**
+Status: **Slices 1–31 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -8,7 +8,7 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | --- | --- |
 | 1. Identical declared inputs produce identical canonical results | `tests/test_repeated_run_equivalence.py::test_identical_declared_inputs_produce_exact_first_wake_results` runs two independent complete first-water lifecycles with identical organism identity, versions, queued tick, seed, and fake-clock readings; without normalization it requires identical results, status, schema, every canonical table row, SQLite sequence state, active database digest, checkpoint manifests and digests, digest-derived identifiers, complete checkpoint-store artifacts, and acceptance of the same next tick |
 | 2. Unexpected clock reads fail | Lifecycle clock counts are protected; Slice 27 adds one explicit exhaustion-terminalization reading, requires five reads for the committed classified path, and requires exactly three before cleanup-overrun rollback; maintenance inspection, export, archive preparation, source-candidate construction, active replacement, repeated completion, and completed-rollback preparation rejection consume no clock; rollback begin, candidate transformation, and first completion read their declared clock only after complete validation; rejection paths consume zero |
-| 3. Backward wall time does not reorder events | `tests/test_backward_wall_time_ordering.py::test_backward_wall_time_does_not_reorder_complete_first_wake` runs the complete first-water lifecycle and checkpoint with repeatedly decreasing wall timestamps, increasing monotonic readings, exact event sequences 1–14, and stable sleep |
+| 3. Backward wall time does not reorder events | `tests/test_backward_wall_time_orderING.py::test_backward_wall_time_does_not_reorder_complete_first_wake` runs the complete first-water lifecycle and checkpoint with repeatedly decreasing wall timestamps, increasing monotonic readings, exact event sequences 1–14, and stable sleep |
 | 4. Seed does not change seed-garden behavior | `tests/test_seed_independence.py::test_different_declared_seeds_preserve_first_wake_behavior` runs two complete first-water lifecycles with identical declared inputs except seeds `1` and `2`; after normalizing only the audited seed and digest-derived checkpoint identity fields, policy, transition, evaluation, budgets, canonical state, event history, pending boundary 13, checkpoint snapshot, stabilization event 14, and sleeping wakeability are identical |
 | 5. One tick/observation/attempt/mutation maximum | Water and harvest assert one attempt/mutation; abstentions and maintenance-threshold entry assert zero; classified action failure asserts one attempt and zero successful mutations; classified pre-action exhaustion and cleanup-grace boundary tests assert zero attempts and mutations |
 | 6. Twelve-step and monotonic deadline | First-water ledger records twelve steps; `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` proves typed lifecycle deadline exhaustion before action |
@@ -33,10 +33,10 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 25. JSONL export deterministic and non-canonical | `tests/test_event_export.py` proves stable-boundary validation, canonical byte-identical output, atomic publication, isolation, and preserved wakeability |
 | 26. Competing wake has one winner and one non-queued rejection | Wake and every write-owning rollback administrative boundary through completion have protected fail-fast competing-writer rejection |
 | 27. Crash before commit preserves prior state | `tests/test_process_crash_rollback.py::test_process_exit_rolls_back_uncommitted_wake_and_releases_lock` uses a spawned external harness process to claim input and mutate event, sequence, garden, inventory, environment, inbox, and organism rows inside one uncommitted wake, exits through `os._exit`, then proves exact database/canonical/artifact rollback, released `BEGIN IMMEDIATE` ownership, and normal completion of the original tick |
-| 28. Nested wake is rejected | Planned |
+| 28. Nested wake is rejected | `tests/test_nested_wake_rejection.py::test_nested_wake_and_hidden_writer_fail_without_queued_work` holds one outer wake owner, proves nested acquisition raises typed `WakeBusyError`, proves a hidden connection cannot acquire `BEGIN IMMEDIATE`, requires zero clock and exact database/canonical/artifact preservation, then closes the outer owner and processes the original tick exactly once |
 | 29. Stable genesis checkpoint before wakeable | Initialization and genesis checkpoint tests |
 | 30. Successful wake commits an exact pending boundary | Canonical wake fixture boundaries are asserted; Slice 22 additionally proves the first post-rollback new-lineage wake commits and stabilizes a new checkpoint |
-| 31. No later wake advances while checkpoint is pending | Pending-state rejection is protected; rollback remains non-wakeable through replacement and becomes wakeable only after atomic completion |
+| 31. No later wake advances while checkpoint is pending | Pending-state rejection is protected; rollback remains non-wakeable through replacement and becomes wakeable only after atomic completion; a complete explicit second-wake scenario remains planned |
 | 32. Invalid checkpoint is not stable | Digest and directory-name mismatch tests |
 | 33. Checkpoint validation covers protected identity and boundary | Initialization, lifecycle, repair, export, and all rollback stages revalidate declared checkpoint identity, lineage, registry metadata, digest, and event boundary; first post-rollback checkpoint is new-lineage validated |
 | 34. Checkpoint failure preserves committed pending state | Checkpoint timeout preserves pending state; pending-checkpoint repair proves exact registration repair |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #46 GitHub Actions run 276 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **125 protected tests in 6.38 seconds**. No production correction was required; one test-only rollback-journal pathname overconstraint from run 275 was removed.
+PR #47 GitHub Actions run 286 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **126 protected tests in 8.88 seconds**. No production correction was required.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
