@@ -68,7 +68,7 @@ Two merged slices are not an automatic rollover trigger. Continue through multip
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–28:
+Primary implementation stream. Current `main` includes Slices 1–29:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -98,10 +98,11 @@ Primary implementation stream. Current `main` includes Slices 1–28:
 26. exact repeated-run canonical and artifact equivalence for identical declared inputs
 27. protected cleanup-grace terminalization boundary and overrun rollback
 28. complete lexicographic action tie breaking under reversed physical row insertion order
+29. complete consumed-input replay rejection without duplicate action
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 263 for the Slice 28 test-first head passed twice on Python 3.12. The exact rerun passed clean install, compileall, genesis CLI smoke, and **123 protected tests in 6.92 seconds**. No production correction was required.
+GitHub Actions run 269 for the Slice 29 test-first head passed clean install, compileall, genesis CLI smoke, and **124 protected tests in 10.15 seconds** on Python 3.12. No production correction was required.
 
 Phase 1 remains incomplete.
 
@@ -198,35 +199,31 @@ Slice 27 closes Contract evaluation 7. Normal work detected at 2001 ms stops bef
 
 Slice 28 closes Contract evaluation 13 without production changes. A protected stable fixture physically stores `bed-b` before `bed-a` while both are executable water targets. Canonical observation sorts plots and applicable targets as `bed-a`, `bed-b`; the policy waters `bed-a`, commits exact lifecycle boundary 16, stabilizes event 17, preserves reversed physical row order, returns to sleep, and accepts a later distinct input.
 
-## Exact restart point: Slice 29
+## Consumed-input replay protection
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 29 branch.
+Slice 29 closes Contract evaluation 16 without production changes. After the original identifier produces and stabilizes one water action, replay returns the original inbox row with zero clock reads and no canonical, database-byte, sequence, registry, or checkpoint-artifact change. A wake with no distinct input raises `NoInputEventError` after one declared start reading and rolls back all tentative history. Only a later distinct identifier produces the second harvest action.
 
-The next bounded subject is Contract evaluation 16: replaying a consumed external tick identifier after its successful action must never create a duplicate action.
+## Exact restart point: Slice 30
+
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 30 branch.
+
+The next bounded subject is the remaining execution proof for Contract evaluation 27: a real process exit while a wake transaction is uncommitted must restore the exact prior canonical state and release the SQLite write lock.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. run and stabilize one complete successful canonical action for a declared external event identifier
-3. capture exact canonical state, event history, inbox row, SQLite sequence state, checkpoint registry, and checkpoint artifacts after that action
-4. replay the same consumed external event identifier through `enqueue_garden_tick(...)` with a zero-reading fake clock
-5. require `inserted=False`, the original inbox identity and received time, zero clock reads, no new event, no new inbox row, and no canonical or artifact mutation
-6. prove the replay leaves no claimable duplicate input and cannot create a second lifecycle or action
-7. prove a later distinct event identifier remains independently accepted and processable
-8. add the narrow protected scenario before changing production code
-9. make a production correction only if the existing implementation violates the accepted contract
+2. use an external protected test harness process, not an organism subprocess capability
+3. initialize and enqueue one normal tick, then capture exact stable canonical and artifact state
+4. in the child process acquire `WakeTransaction`, claim the tick, create representative uncommitted wake/event/state changes, and exit without commit or connection cleanup
+5. require the parent to observe the child exit within a strict timeout
+6. require exact rollback of inbox claim, events, state, SQLite sequences, active database bytes, and checkpoint artifacts
+7. require the parent to acquire the released lock and complete the original tick normally
+8. add the narrow process-crash test before changing production code
+9. make a production correction only if the existing SQLite/transaction boundary violates the accepted contract
 10. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
 11. run GitHub Actions through a pull request
 
-Do not begin:
-
-- generic replay or random-number machinery
-- rollback artifact deletion or pruning
-- schema, contract, action, evaluator, or environment-version changes
-- repeated rollback support within one organism
-- JSONL import
-- caregiver consultation
-- learning, memory, skills, or generic recovery machinery
+Do not add subprocess access to the organism, production crash hooks, generic fault injection, replay machinery, rollback artifact deletion, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## End-of-work protocol
 
