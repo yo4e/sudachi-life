@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–31 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–32 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -26,7 +26,7 @@ Use this precedence:
 
 Phase 1 has one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, deterministic `seed-garden-v1`, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable checkpoints, bounded retention, rollback lineage rules, and explicit administrative boundaries.
 
-Phase 1 has no caregiver, model adapter, chat interface, network access, organism subprocess access, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
+Phase 1 has no caregiver, model adapter, chat interface, network access, organism subprocess access, organism-writable external workspace, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
 
 ## AI collaboration operations
 
@@ -40,7 +40,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–31 are merged on `main`. The exact next implementation boundary is Slice 32 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–32 are merged on `main`. The exact next implementation boundary is Slice 33 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -56,8 +56,6 @@ Research stream. Preliminary evidence and provider-neutral strategy exist, but n
 - deterministic non-canonical JSONL export
 - complete bounded rollback path from verified archive through restored wakeability
 - one-completed-rollback retention boundary under ADR 0007
-
-Read the corresponding durable notes in `docs/phase1/`.
 
 ### Slices 24–26 — declared determinism
 
@@ -94,14 +92,22 @@ Read the corresponding durable notes in `docs/phase1/`.
 
 ### Slice 31 — nested wake and hidden writer rejection
 
-- one outer `WakeTransaction` owns the body
-- nested acquisition raises typed `WakeBusyError` and is explicitly not queued
+- nested `WakeTransaction.acquire(...)` raises typed `WakeBusyError` and is not queued
 - a separate hidden connection cannot acquire `BEGIN IMMEDIATE`
-- both paths consume zero organism clock input
-- database bytes, canonical state, inbox, events, sequences, registry, and artifacts remain exact
-- after outer rollback and close, the original tick completes normally exactly once
+- both paths consume zero organism clock input and preserve exact state
+- after outer close, the original tick completes exactly once
 
-See `docs/phase1/SLICE31_NESTED_WAKE_REJECTION.md`.
+### Slice 32 — second wake blocked behind pending checkpoint
+
+- two distinct ticks are queued before the first wake
+- the first water action commits pending boundary 14 while checkpoint stabilization times out
+- the second tick remains unclaimed and unconsumed
+- a second wake raises typed `CheckpointRequiredError` before any clock read or event append
+- active database bytes, canonical state, sequences, registry, and artifacts remain exact
+- existing orphan registration repair restores stable sleep and records audit event 15
+- the already queued second tick then harvests `bed-b`, completes the objective, stabilizes boundary 24, and returns to sleep
+
+See `docs/phase1/SLICE32_PENDING_SECOND_WAKE_REJECTION.md`.
 
 ## Accepted ADR 0007 retention boundary
 
@@ -109,46 +115,50 @@ Phase 1 permits at most one completed rollback per organism. The complete pre-ro
 
 ## Validation state
 
-Slice 31 GitHub Actions run 286 on Python 3.12 completed:
+Slice 32 GitHub Actions run 290 on Python 3.12 completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **126 protected tests passed in 8.88 seconds**
+- **127 protected tests passed in 7.66 seconds**
 
-No Slice 31 production correction was required. Existing `BEGIN IMMEDIATE`, typed wake-busy translation, and connection isolation passed unchanged.
+No Slice 32 production correction was required. Existing pending-state validation and administrative repair passed unchanged.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
 ## Known incomplete Phase 1 work
 
-Major incomplete areas include:
+Major incomplete areas are the remaining protected-authority evaluations:
 
-- complete explicit second-wake rejection while a prior checkpoint is pending
-- broader protected-authority tests
+- no organism-writable external workspace
+- broader proof that organism actions cannot modify protected authority
+- complete proof that administrative effects are distinguishable from organism effects
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 32
+## Exact next task: Slice 33
 
-The next bounded subject is evaluation 31: an explicit second wake must not advance while the prior committed lifecycle remains `checkpoint_pending`.
+The next bounded subject is evaluation 40: Phase 1 exposes no organism-writable external workspace.
 
 Before implementation:
 
 1. reconstruct current `main`, Issue #13, and open pull requests
-2. enqueue two distinct ticks before the first wake
-3. use an existing protected checkpoint-failure or deferred-stabilization path so the first action commits an exact pending boundary
-4. capture both inbox rows, canonical events and state, SQLite sequences, registry, database bytes, and checkpoint artifacts
-5. attempt a second normal wake and require typed rejection before the second tick is claimed or consumed
-6. require exact pending-body and artifact equality after rejection
-7. repair or stabilize the existing pending boundary through the current administrative path
-8. prove the second tick then proceeds normally
-9. add the protected scenario before changing production code
-10. make a production correction only if the accepted pending-state boundary is violated
-11. update the Slice 32 note, matrix, this handoff, `AGENTS.md`, and Issue #13
-12. run GitHub Actions through a pull request
+2. inspect `OrganismPaths`, the registered action executor signature, and imports reachable from `execute_garden_action(...)`
+3. acquire a normal wake transaction, claim the queued tick, build the canonical observation, and select the fixed action before installing guards
+4. during action execution only, fail closed on Python filesystem mutation, network connection, and subprocess APIs
+5. require the valid SQLite action transition to succeed without invoking any guarded external interface
+6. require the action executor surface to receive no path or workspace handle
+7. pass a path-like target identifier and require typed rejection as a nonexistent SQLite plot without creating or touching an external path
+8. require no export, diagnostics, rollback archive, restore candidate, or other workspace directory to be created by organism action execution
+9. roll back the probe and prove a normal complete wake still succeeds with hard-zero external capability budgets
+10. add protected tests before changing production code
+11. make a production correction only if organism action execution can reach an external effect or workspace
+12. update the Slice 33 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+13. run GitHub Actions through a pull request
 
-Do not add queued wakes, automatic checkpoint repair, hidden retries, reentrant wake support, schema changes, new crash hooks, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Checkpoint publication, export, diagnostics, and rollback artifacts remain explicit runtime or administrative operations outside the guarded organism-action boundary.
+
+Do not add a workspace API, connection pool, subprocess access, generic sandbox framework, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## Restart protocol
 
@@ -158,8 +168,8 @@ At the next session or clean reconstruction point:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #47 is merged on current `main`, or reconcile newer repository truth
-6. begin only from the exact Slice 32 boundary above
+5. verify PR #48 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 33 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
 
