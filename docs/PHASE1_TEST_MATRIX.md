@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–23 implemented; ADR 0007 enforced — Phase 1 incomplete**
+Status: **Slices 1–23 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -46,8 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #36 passed GitHub Actions on Python 3.12 with **115 protected tests** on the Slice 22 implementation head after correcting one completion-boundary exception-classification failure.
-
-Slice 23 adds two protected tests. Its exact GitHub Actions result is pending and must replace this sentence before the implementation pull request is marked ready for review.
+PR #38 GitHub Actions run 219 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **117 protected tests**. No implementation correction was required.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
