@@ -39,4 +39,17 @@ The hidden connection is a protected-test probe of SQLite ownership. It is not a
 
 ## Result
 
-The protected test was committed before this note. Standard pull-request validation remains pending, and no provisional pass or production conclusion is claimed until GitHub Actions completes.
+The existing locking implementation passed unchanged.
+
+`WakeTransaction.acquire(...)` converts SQLite busy or locked ownership failure into typed `WakeBusyError` and explicitly states that the rejected attempt was not queued. A raw hidden connection cannot acquire `BEGIN IMMEDIATE` while the outer wake owns the body. Closing the rejected connection and rolling back the outer transaction restores normal ownership availability.
+
+No production source, schema, contract, clock, action, evaluator, budget, checkpoint, rollback, or connection-pool behavior changed.
+
+## Validation
+
+GitHub Actions run 286 on Python 3.12 passed:
+
+- clean editable installation
+- source and test compilation
+- genesis CLI smoke test
+- **126 protected tests in 8.88 seconds**
