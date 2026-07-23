@@ -68,7 +68,7 @@ A chat is temporary. At a clean boundary, prefer rollover after two substantial 
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–25:
+Primary implementation stream. Current `main` includes Slices 1–26:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -95,10 +95,11 @@ Primary implementation stream. Current `main` includes Slices 1–25:
 23. single-completed-rollback admission enforcement at preparation
 24. complete first-wake event ordering under backward wall time
 25. complete first-wake behavior independence from different declared seeds
+26. exact repeated-run canonical and artifact equivalence for identical declared inputs
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 237 for the complete Slice 25 implementation-and-continuity head passed clean install, compileall, genesis CLI smoke, and **119 protected tests in 6.57 seconds** on Python 3.12. No production correction was required.
+GitHub Actions run 241 for the Slice 26 test-first head passed clean install, compileall, genesis CLI smoke, and **120 protected tests in 6.75 seconds** on Python 3.12. No production correction was required.
 
 Phase 1 remains incomplete.
 
@@ -183,21 +184,26 @@ Slice 24 closes Contract evaluation 3 without production changes. One protected 
 
 Slice 25 closes Contract evaluation 4 without production changes. Two independently initialized organisms receive identical external input and injected clock readings but declare seeds `1` and `2`. The seed remains visible in `WakeResult` and canonical `wake_accepted` history, so snapshot digests and digest-derived checkpoint identifiers differ. After normalizing only those declared and derived identity fields, the complete active bodies, pending checkpoint snapshots, policy choice, transition, evaluation, budgets, event history, boundary 13, stabilization event 14, and final sleeping wakeability are identical.
 
-## Exact restart point: Slice 26
+## Exact repeated-run equivalence
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 26 branch.
+Slice 26 closes Contract evaluation 1 without production changes. Two independent runtime roots receive identical organism identity, versions, genesis time, external tick, seed, and fake-clock readings. Without normalizing any field, they produce identical `WakeResult`, status, schema, canonical rows, SQLite sequence state, active database SHA-256, checkpoint identifiers, manifests, checkpoint database digests, complete checkpoint-store file sets and digests, final sleeping state, and acceptance of the same next tick.
 
-The next bounded subject is Contract evaluation 1: complete repeated-run canonical equivalence for identical declared inputs.
+## Exact restart point: Slice 27
+
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 27 branch.
+
+The next bounded subject is Contract evaluation 7: protected cleanup grace cannot be used for additional organism work.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. define two independent complete canonical runs with identical organism identity, external input, seed, and injected clock readings
-3. define an exact comparison that normalizes no declared input and requires identical logical canonical state, event history, SQLite sequence state, lifecycle boundaries, checkpoint manifests, database and manifest digests, digest-derived checkpoint identifiers, final status, and wakeability
-4. add the narrow comparative protected test before changing production code
-5. make a production correction only if the existing implementation violates the accepted contract
-6. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-7. run GitHub Actions through a pull request
+2. inspect the existing lifecycle deadline and cleanup-grace accounting in `WakeBudgetLedger`
+3. define the exact protected boundary between action time, typed terminalization inside cleanup grace, and exhaustion of cleanup capacity
+4. add the narrow protected test before changing production code
+5. prove no action attempt, environment mutation, retry, second decision, or caregiver call can occur after the 2000 ms organism-work deadline
+6. make a production correction only if the existing implementation violates the accepted contract
+7. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+8. run GitHub Actions through a pull request
 
 Do not begin:
 
