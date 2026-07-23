@@ -68,7 +68,7 @@ Two merged slices are not an automatic rollover trigger. Continue through multip
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–31:
+Primary implementation stream. Current `main` includes Slices 1–32:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -101,10 +101,11 @@ Primary implementation stream. Current `main` includes Slices 1–31:
 29. complete consumed-input replay rejection without duplicate action
 30. real process-exit rollback of an uncommitted wake with released write ownership
 31. nested wake and hidden writer fail-fast rejection with restored normal wakeability
+32. explicit second-wake rejection behind a committed pending checkpoint and resumed progress after repair
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 286 for the Slice 31 test-first head passed clean install, compileall, genesis CLI smoke, and **126 protected tests in 8.88 seconds** on Python 3.12. No production correction was required.
+GitHub Actions run 290 for the Slice 32 test-first-and-note head passed clean install, compileall, genesis CLI smoke, and **127 protected tests in 7.66 seconds** on Python 3.12. No production correction was required.
 
 Phase 1 remains incomplete.
 
@@ -181,7 +182,7 @@ ADR 0007 resolves rollback-artifact retention for Phase 1:
 
 Slice 23 enforces that boundary at rollback preparation. After fail-fast ownership and canonical validation, preparation counts canonical `rollback_completed` events and requires zero before latest-source lookup, source selection, or archive-root creation. Rejection is typed, zero-clock, and non-mutating. A separately initialized organism remains eligible for its own first rollback.
 
-## Fixed-evaluation closures in Slices 24–31
+## Fixed-evaluation closures in Slices 24–32
 
 - Slice 24: backward wall time cannot reorder canonical events.
 - Slice 25: different declared seeds do not change fixed seed-garden behavior.
@@ -191,30 +192,34 @@ Slice 23 enforces that boundary at rollback preparation. After fail-fast ownersh
 - Slice 29: replay of a consumed external identifier cannot create a duplicate action.
 - Slice 30: a real child-process exit rolls back an uncommitted wake and releases ownership.
 - Slice 31: nested wakes and hidden write connections fail fast without queueing or mutation.
+- Slice 32: a second wake cannot advance behind a pending boundary; existing repair restores progress.
 
 Read the corresponding durable notes in `docs/phase1/` for exact boundaries and CI evidence.
 
-## Exact restart point: Slice 32
+## Exact restart point: Slice 33
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 32 branch.
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 33 branch.
 
-The next bounded subject is Contract evaluation 31: an explicit second wake must not advance while the prior committed lifecycle remains `checkpoint_pending`.
+The next bounded subject is Contract evaluation 40: Phase 1 exposes no organism-writable external workspace.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. enqueue two distinct ticks before the first wake
-3. force the first wake to commit its canonical action and exact pending checkpoint boundary while stabilization fails or is deliberately deferred through an existing protected mechanism
-4. capture the committed pending body, both inbox rows, event history, sequence state, registry, and artifact state
-5. attempt a second normal wake and require typed rejection before claiming the second tick or changing any canonical or artifact state
-6. require the second input to remain unclaimed and unconsumed
-7. repair or stabilize the exact pending boundary through the existing administrative path, then prove the second tick can proceed normally
-8. add the narrow protected scenario before changing production code
-9. make a production correction only if the existing pending-state boundary violates the accepted contract
-10. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-11. run GitHub Actions through a pull request
+2. inspect `OrganismPaths`, the registered action executor signature, and all imports reachable from `execute_garden_action(...)`
+3. acquire one normal wake transaction, claim the tick, build the canonical observation, and select the fixed valid action before installing external-effect guards
+4. during action execution only, fail closed on Python filesystem mutation, network connection, and subprocess APIs; require the valid SQLite transition to succeed without invoking any guarded interface
+5. prove the action executor receives only a canonical SQLite connection, typed decision, protected ledger, and the existing protected test flag—no path or workspace handle
+6. submit a path-like target identifier and require typed action rejection as a nonexistent SQLite plot without creating or touching any external path
+7. require no export, diagnostics, rollback archive, restore candidate, or other workspace directory to be created by organism action execution
+8. roll back the protected probe and prove a normal complete wake still succeeds with hard-zero external capability budgets
+9. add the narrow protected tests before changing production code
+10. make a production correction only if an organism action can reach an external effect or workspace
+11. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+12. run GitHub Actions through a pull request
 
-Do not add queued wakes, automatic checkpoint repair, hidden retries, reentrant wake support, schema changes, new crash hooks, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Checkpoint publication, export, diagnostics, and rollback artifacts remain explicit runtime or administrative operations outside the guarded organism-action boundary. Do not remove those mechanisms or confuse them with organism-writable workspace.
+
+Do not add a workspace API, connection pool, subprocess access, generic sandbox framework, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## End-of-work protocol
 
