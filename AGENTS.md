@@ -68,7 +68,7 @@ A chat is temporary. At a clean boundary, prefer rollover after two substantial 
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–24:
+Primary implementation stream. Current `main` includes Slices 1–25:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -94,10 +94,11 @@ Primary implementation stream. Current `main` includes Slices 1–24:
 22. atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
 23. single-completed-rollback admission enforcement at preparation
 24. complete first-wake event ordering under backward wall time
+25. complete first-wake behavior independence from different declared seeds
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-Final GitHub Actions run 229 for PR #39 passed clean install, compileall, genesis CLI smoke, and **118 protected tests** on Python 3.12. No implementation correction was required.
+Final GitHub Actions run 233 for PR #41 passed clean install, compileall, genesis CLI smoke, and **119 protected tests** on Python 3.12. No production correction was required.
 
 Phase 1 remains incomplete.
 
@@ -178,19 +179,23 @@ Slice 23 enforces that boundary at rollback preparation. After fail-fast ownersh
 
 Slice 24 closes Contract evaluation 3 without production changes. One protected complete first-water wake uses decreasing wall timestamps from genesis through enqueue, wake, lifecycle completion, and checkpoint stabilization while monotonic readings increase. The organism still waters `bed-a`, commits boundary 13, stabilizes event 14, and returns to sleep. Canonical event identity and order remain the exact database sequence 1–14; timestamps are metadata only.
 
-## Exact restart point: Slice 25
+## Declared seed independence
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 25 branch.
+Slice 25 closes Contract evaluation 4 without production changes. Two independently initialized organisms receive identical external input and injected clock readings but declare seeds `1` and `2`. The seed remains visible in `WakeResult` and canonical `wake_accepted` history, so snapshot digests and digest-derived checkpoint identifiers differ. After normalizing only those declared and derived identity fields, the complete active bodies, pending checkpoint snapshots, policy choice, transition, evaluation, budgets, event history, boundary 13, stabilization event 14, and final sleeping wakeability are identical.
 
-The earliest remaining explicit comparison is Contract evaluation 4: different declared seeds must not change `seed-garden-v1` behavior.
+## Exact restart point: Slice 26
+
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 26 branch.
+
+The next bounded subject is Contract evaluation 1: complete repeated-run canonical equivalence for identical declared inputs.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. inspect how the declared seed appears in result and audit payloads
-3. define a protected behavior projection that permits the declared seed field to differ but requires identical policy choice, transition, evaluation, budgets, lifecycle boundary, checkpoint stability, and wakeability
+2. define two independent complete canonical runs with identical organism identity, external input, seed, and injected clock readings
+3. define an exact comparison that normalizes no declared input and requires identical logical canonical state, event history, SQLite sequence state, lifecycle boundaries, checkpoint manifests, database and manifest digests, digest-derived checkpoint identifiers, final status, and wakeability
 4. add the narrow comparative protected test before changing production code
-5. make a production correction only if the existing fixed policy violates the accepted contract
+5. make a production correction only if the existing implementation violates the accepted contract
 6. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
 7. run GitHub Actions through a pull request
 
