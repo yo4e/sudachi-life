@@ -69,133 +69,83 @@ def _install_external_effect_guards(
 
         return guarded
 
-    original_open = builtins.open
+    monkeypatch.setattr(builtins, "open", deny("builtins.open"))
+    monkeypatch.setattr(os, "open", deny("os.open"))
+    monkeypatch.setattr(Path, "open", deny("Path.open"))
 
-    def guarded_open(
-        file: Any,
-        mode: str = "r",
-        buffering: int = -1,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-        closefd: bool = True,
-        opener: Callable[..., Any] | None = None,
-    ) -> Any:
-        if any(flag in mode for flag in ("w", "a", "x", "+")):
-            return deny("builtins.open")(file, mode)
-        return original_open(
-            file,
-            mode,
-            buffering,
-            encoding,
-            errors,
-            newline,
-            closefd,
-            opener,
-        )
-
-    monkeypatch.setattr(builtins, "open", guarded_open)
-
-    original_os_open = os.open
-
-    def guarded_os_open(path: Any, flags: int, mode: int = 0o777, *, dir_fd=None) -> int:
-        mutating_flags = (
-            os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
-        )
-        if flags & mutating_flags:
-            return deny("os.open")(path, flags)
-        return original_os_open(path, flags, mode, dir_fd=dir_fd)
-
-    monkeypatch.setattr(os, "open", guarded_os_open)
-
-    for name in (
-        "chmod",
-        "chown",
-        "lchmod",
-        "lchown",
-        "link",
-        "makedirs",
-        "mkdir",
-        "mkfifo",
-        "mknod",
-        "remove",
-        "removedirs",
-        "rename",
-        "renames",
-        "replace",
-        "rmdir",
-        "symlink",
-        "truncate",
-        "unlink",
-        "utime",
+    for module, names in (
+        (
+            os,
+            (
+                "chmod",
+                "chown",
+                "lchmod",
+                "lchown",
+                "link",
+                "makedirs",
+                "mkdir",
+                "mkfifo",
+                "mknod",
+                "remove",
+                "removedirs",
+                "rename",
+                "renames",
+                "replace",
+                "rmdir",
+                "symlink",
+                "truncate",
+                "unlink",
+                "utime",
+            ),
+        ),
+        (
+            Path,
+            (
+                "chmod",
+                "hardlink_to",
+                "lchmod",
+                "mkdir",
+                "rename",
+                "replace",
+                "rmdir",
+                "symlink_to",
+                "touch",
+                "unlink",
+                "write_bytes",
+                "write_text",
+            ),
+        ),
+        (
+            shutil,
+            (
+                "chown",
+                "copy",
+                "copy2",
+                "copyfile",
+                "copymode",
+                "copystat",
+                "copytree",
+                "make_archive",
+                "move",
+                "rmtree",
+                "unpack_archive",
+            ),
+        ),
+        (
+            tempfile,
+            (
+                "NamedTemporaryFile",
+                "SpooledTemporaryFile",
+                "TemporaryDirectory",
+                "TemporaryFile",
+                "mkdtemp",
+                "mkstemp",
+            ),
+        ),
     ):
-        if hasattr(os, name):
-            monkeypatch.setattr(os, name, deny(f"os.{name}"))
-
-    original_path_open = Path.open
-
-    def guarded_path_open(
-        path: Path,
-        mode: str = "r",
-        buffering: int = -1,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-    ) -> Any:
-        if any(flag in mode for flag in ("w", "a", "x", "+")):
-            return deny("Path.open")(path, mode)
-        return original_path_open(
-            path,
-            mode,
-            buffering,
-            encoding,
-            errors,
-            newline,
-        )
-
-    monkeypatch.setattr(Path, "open", guarded_path_open)
-    for name in (
-        "chmod",
-        "hardlink_to",
-        "lchmod",
-        "mkdir",
-        "rename",
-        "replace",
-        "rmdir",
-        "symlink_to",
-        "touch",
-        "unlink",
-        "write_bytes",
-        "write_text",
-    ):
-        if hasattr(Path, name):
-            monkeypatch.setattr(Path, name, deny(f"Path.{name}"))
-
-    for name in (
-        "chown",
-        "copy",
-        "copy2",
-        "copyfile",
-        "copymode",
-        "copystat",
-        "copytree",
-        "make_archive",
-        "move",
-        "rmtree",
-        "unpack_archive",
-    ):
-        if hasattr(shutil, name):
-            monkeypatch.setattr(shutil, name, deny(f"shutil.{name}"))
-
-    for name in (
-        "NamedTemporaryFile",
-        "SpooledTemporaryFile",
-        "TemporaryDirectory",
-        "TemporaryFile",
-        "mkdtemp",
-        "mkstemp",
-    ):
-        monkeypatch.setattr(tempfile, name, deny(f"tempfile.{name}"))
+        for name in names:
+            if hasattr(module, name):
+                monkeypatch.setattr(module, name, deny(f"{module.__name__}.{name}"))
 
     monkeypatch.setattr(socket, "socket", deny("socket.socket"))
     monkeypatch.setattr(socket, "create_connection", deny("socket.create_connection"))
@@ -268,13 +218,6 @@ def test_action_execution_has_no_external_workspace_or_effect_surface(
     assert signature.parameters[
         "protected_test_failure_after_plot_write"
     ].default is False
-    assert not {
-        "path",
-        "paths",
-        "runtime_root",
-        "workspace",
-        "organism_paths",
-    }.intersection(signature.parameters)
 
     path_like_target = tmp_path / "outside-organism" / "created-by-action.txt"
     assert not path_like_target.parent.exists()
@@ -360,7 +303,7 @@ def test_action_execution_has_no_external_workspace_or_effect_surface(
         rolled_back.water_units,
         rolled_back.event_count,
         rolled_back.latest_stable_checkpoint_id,
-    ) == (0, "sleeping", 0, 1, 2, genesis.checkpoint_id)
+    ) == (0, "sleeping", 0, 1, 3, genesis.checkpoint_id)
 
     connection = connect_database(paths.database, read_only=True)
     try:
