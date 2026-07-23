@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for repository state containing Phase 1 Slices 1–33 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for repository state containing Phase 1 Slices 1–34 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -24,9 +24,9 @@ Use this precedence:
 2. ADRs 0001–0007 in `docs/decisions/`
 3. protected Phase 1 tests and `docs/PHASE1_TEST_MATRIX.md`
 
-Phase 1 has one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, deterministic `seed-garden-v1`, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable checkpoints, bounded retention, rollback lineage rules, and explicit administrative boundaries.
+Phase 1 has one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, deterministic `seed-garden-v1`, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable checkpoints, bounded retention, rollback lineage rules, explicit administrative boundaries, no organism-writable external workspace, and action-scoped SQL authority.
 
-Phase 1 has no caregiver, model adapter, chat interface, network access, organism subprocess access, organism-writable external workspace, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
+Phase 1 has no caregiver, model adapter, chat interface, network access, organism subprocess access, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
 
 ## AI collaboration operations
 
@@ -40,7 +40,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–33 are implemented. The exact next implementation boundary is Slice 34 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–34 are implemented. The exact next implementation boundary is Slice 35 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -111,16 +111,30 @@ See `docs/phase1/SLICE32_PENDING_SECOND_WAKE_REJECTION.md`.
 
 ### Slice 33 — no organism-writable external workspace
 
-- `execute_garden_action(...)` receives the canonical SQLite connection, typed decision, protected ledger, and existing protected test flag only
-- no runtime path, workspace, export, diagnostic, rollback, restore, network, or subprocess handle reaches the executor
+- `execute_garden_action(...)` receives no path or workspace handle
 - filesystem mutation, temporary-file, network, subprocess, and process-launch APIs are fail-closed during the action-only probe
 - valid `water_plot(bed-a)` succeeds without invoking a guarded interface
 - an absolute path-like target is rejected as a nonexistent SQLite plot without touching the path
 - organism directory and administrative workspace entries remain exact
-- the probe rolls back to its declared baseline and the same tick later completes normally with hard-zero external budgets
+- the probe rolls back and the same tick later completes normally with hard-zero external budgets
 - no production correction or generic sandbox framework was required
 
 See `docs/phase1/SLICE33_NO_EXTERNAL_WORKSPACE.md`.
+
+### Slice 34 — protected organism action authority
+
+- `execute_garden_action(...)` installs a SQLite authorizer only during one registered action dispatch
+- action reads are limited to registered action metadata and garden state
+- `water_plot` may update only moisture, water units, and environment step
+- `harvest_plot` may update only fruit, harvested fruit, and environment step
+- the existing `garden_action` savepoint remains allowed
+- all other SQL authorization requests fail closed with typed `ProtectedAuthorityViolationError`
+- valid water execution changes exactly the three declared mutable values
+- organism identity and versions, budget configuration, action definitions, inbox, events, checkpoint registry, SQLite sequences, `user_version`, schema objects, append-only triggers, protected source/evaluator/tests/contract/ADRs, and administrative artifacts remain exact
+- ten representative protected mutations are denied before effect
+- the probe rolls back and the same tick completes normally
+
+See `docs/phase1/SLICE34_PROTECTED_AUTHORITY.md`.
 
 ## Accepted ADR 0007 retention boundary
 
@@ -128,47 +142,47 @@ Phase 1 permits at most one completed rollback per organism. The complete pre-ro
 
 ## Validation state
 
-PR #52 closes Contract evaluation 40 without changing production code. Its complete synchronized head passes the standard Python 3.12 workflow with:
+PR #53 closes Contract evaluation 39 with a narrow production correction. GitHub Actions run 307 on Python 3.12 passed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke
-- **128 protected tests**
+- **139 protected tests in 7.69 seconds**
 
-The first two test-only heads failed because the new test assumed absent initialized administrative directories and a fixed pre-probe event count. Existing protected tests remained green. The corrected test compares the exact declared pre-action workspace and pre-probe canonical status.
+No prior protected test, action signature, schema, evaluator, lifecycle boundary, checkpoint mechanism, rollback path, or external capability boundary was weakened.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
 ## Known incomplete Phase 1 work
 
-Major incomplete areas are the remaining protected-authority evaluations:
+The remaining fixed evaluation is:
 
-- broader proof that organism actions cannot modify protected authority
-- complete proof that administrative effects are distinguishable from organism effects
+- complete proof that administrative effects are distinguishable from organism effects in records and reports
 
-Do not weaken existing tests to make these easier.
+Do not weaken existing tests to make it easier.
 
-## Exact next task: Slice 34
+## Exact next task: Slice 35
 
-The next bounded subject is evaluation 39: protected authority cannot be modified by the organism.
+The next bounded subject is evaluation 41: administrative actions are distinguishable from organism actions in records and reports.
 
 Before implementation:
 
 1. reconstruct current `main`, Issue #13, and open pull requests
-2. reread Contract v0.2 protected/mutable authority, ADR 0005 protected environment configuration, ADR 0006 protected budgets, and the Slice 33 action surface
-3. inventory the exact canonical tables, rows, schema objects, action definitions, evaluator inputs, and repository/runtime artifacts that constitute protected authority
-4. identify the minimal mutable SQLite rows required by `water_plot` and `harvest_plot`
+2. inventory every canonical event-creation boundary and explicit administrative API or CLI operation
+3. inventory operations that intentionally create no canonical event and the typed result or immutable artifact that identifies them as administration
+4. define and protect the Phase 1 source namespaces, at minimum `organism:` and `administration:`
 5. add protected tests before changing production code
-6. execute a valid registered action and prove only the declared mutable garden rows change
-7. attempt representative protected-table and schema modification through the organism action boundary and require rejection before protected mutation
-8. prove action definitions, budget configuration, organism identity/version fields, schema objects, event append-only protections, evaluator logic, contract/source files, and administrative artifacts remain exact
-9. roll back the protected probe and prove a normal complete wake still succeeds
-10. make a production correction only if the current organism action boundary can modify protected authority
-11. do not broaden the action API, add arbitrary SQL, add a generic policy engine, or redesign schema merely to make the test convenient
-12. update the Slice 34 note, matrix, this handoff, `AGENTS.md`, and Issue #13
-13. run GitHub Actions through a pull request
+6. run representative organism lifecycle, input, checkpoint, maintenance, export, and rollback paths and require records, results, manifests, and reports to preserve the correct authority category
+7. require organism action and lifecycle records never to claim an administrative source
+8. require administrative records never to claim an organism source
+9. require empty, unknown, or cross-category source values to fail before canonical append or report publication
+10. preserve operations that intentionally have no canonical event without inventing false history; prove their typed result or immutable artifact still identifies administrative provenance
+11. make a production correction only where source/category validation is incomplete
+12. do not redesign the event schema, add a generic identity framework, or force read-only/pre-authority rejection into canonical history
+13. update the Slice 35 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+14. run GitHub Actions through a pull request
 
-Evaluation 39 is broader than evaluation 40. Slice 33 proves the action has no external workspace or effect route; Slice 34 must prove that the remaining SQLite mutation authority is restricted to the exact declared garden transition and cannot rewrite protected configuration or identity.
+Evaluation 41 concerns authority provenance, not merely string prefixes. Existing source fields provide substantial partial coverage; Slice 35 must make the distinction complete across canonical records and non-event administrative reports without fabricating events for operations that had no write authority.
 
 Do not add caregiver integration, learning, memory, skills, self-modification, generic recovery machinery, or a generic autonomous-agent framework.
 
@@ -180,8 +194,8 @@ At the next session or clean reconstruction point:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #52 is merged on current `main`, or reconcile newer repository truth
-6. begin only from the exact Slice 34 boundary above
+5. verify PR #53 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 35 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
 
