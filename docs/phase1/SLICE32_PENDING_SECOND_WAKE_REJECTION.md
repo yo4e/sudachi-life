@@ -65,4 +65,4 @@ GitHub Actions run 290 on Python 3.12 proved the protected test and initial dura
 - genesis CLI smoke test
 - **127 protected tests in 7.66 seconds**
 
-Draft PR #48 was closed without merge after GitHub failed to generate workflow runs for later continuity commits. Replacement PR #49 contains the same test-first history plus the completed Phase 1 matrix, `AGENTS.md`, and `docs/HANDOFF.md`. Its new synchronized head must pass the standard pull-request workflow before merge.
+Draft PRs #48 and #49 were closed without merge after GitHub failed to attach workflow runs to their later branch-head updates. The final replacement branch was created directly from the complete recorded commit, then received this new commit before its pull request was opened. The resulting pull-request workflow must pass on the exact complete head before merge.
