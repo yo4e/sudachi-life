@@ -75,14 +75,15 @@ No classified committed lifecycle is allowed to claim cleanup success after the 
 
 ## Validation
 
-Standard GitHub Actions run 255 on Python 3.12 passed:
+Standard GitHub Actions on Python 3.12 passed:
 
-- clean editable installation
-- source and test compilation
-- genesis CLI smoke test
-- **122 protected tests in 7.02 seconds**
+- run 255 proved the production-and-test head: **122 protected tests in 7.02 seconds**
+- run 260 proved the complete implementation, durable note, matrix, collaboration guidance, and continuity head: **122 protected tests in 8.38 seconds**
+- clean editable installation passed
+- source and test compilation passed
+- genesis CLI smoke passed
 
-The temporary branch-only patch workflow used to work around connector whole-file editing limits was removed before this validation. The final pull-request diff contains only production source, protected tests, and durable documentation.
+The temporary branch-only patch workflow used to work around connector whole-file editing limits was removed before standard validation. The final pull-request diff contains only production source, protected tests, and durable documentation.
 
 ## Boundary preserved
 
