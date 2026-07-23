@@ -216,12 +216,12 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-Final GitHub Actions run 233 for PR #41 on Python 3.12 completed:
+GitHub Actions run 237 for the complete Slice 25 implementation-and-continuity head on Python 3.12 completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **119 protected tests passed in 5.44 seconds**
+- **119 protected tests passed in 6.57 seconds**
 
 No Slice 25 production correction was required. The existing fixed policy passed the complete seed-independence comparison unchanged.
 
