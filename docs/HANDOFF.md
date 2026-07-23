@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for repository state containing Phase 1 Slices 1–24 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–24 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -42,7 +42,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–23 are merged. Slice 24 is implemented and verified in PR #39 on `agent/slice-24-backward-wall-time-ordering`; it is ready for review and merge.
+Primary implementation stream. Slices 1–24 are merged on `main`. The exact next implementation boundary is Slice 25 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -203,12 +203,12 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-GitHub Actions run 225 for PR #39 on Python 3.12 completed:
+Final GitHub Actions run 229 for PR #39 on Python 3.12 completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **118 protected tests passed in 8.37 seconds**
+- **118 protected tests passed in 19.01 seconds**
 
 No Slice 24 implementation correction was required. The existing event-sequence design passed the complete backward-wall-time scenario unchanged.
 
@@ -230,20 +230,24 @@ Major incomplete areas include:
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task
+## Exact next task: Slice 25
 
-Review and merge PR #39 without extending its scope.
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate branch.
 
-After merge:
+The earliest remaining explicit comparison is evaluation 4: different declared seeds must not change `seed-garden-v1` behavior.
 
-1. reconstruct current `main`
-2. inspect current open issues and pull requests
-3. confirm Issue #13 and continuity documents reflect the merged result
-4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 25 branch
+Before implementation:
 
-The earliest remaining explicit comparison is evaluation 4, seed independence. Verify repository truth before creating the branch.
+1. confirm no newer repository decision or open pull request changes this ordering
+2. inspect seed use in the wake result and canonical `wake_accepted` audit payload
+3. define a behavior projection that allows only the declared seed field and downstream artifact digests to differ
+4. require identical policy choice, environment transition, evaluation, budgets, lifecycle boundary, checkpoint stability, and wakeability
+5. add the comparative protected test before changing production code
+6. make a production correction only if the existing fixed policy violates the accepted contract
+7. update the Slice 25 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+8. run GitHub Actions through a pull request
 
-Do not begin rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery while closing Slice 24.
+Do not begin generic replay or random-number machinery, rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## Restart protocol
 
@@ -253,8 +257,8 @@ At the next session:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #39 and its final CI state against current `main`
-6. finish the exact review-and-merge task above before choosing a later slice
+5. verify current `main` contains merge commits `dec5c1dd32634cc66c20c269768487431c150bbe` and `486a56deb538d4741089c78c288b2ae77bffcdf1`, or reconcile newer repository truth
+6. begin only from the exact Slice 25 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply the early chat-rollover triggers rather than waiting for a hard conversation limit.
 
