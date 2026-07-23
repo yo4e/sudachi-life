@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–32 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for repository state containing Phase 1 Slices 1–33 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -40,7 +40,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–32 are merged on `main`. The exact next implementation boundary is Slice 33 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–33 are implemented. The exact next implementation boundary is Slice 34 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -109,23 +109,33 @@ Research stream. Preliminary evidence and provider-neutral strategy exist, but n
 
 See `docs/phase1/SLICE32_PENDING_SECOND_WAKE_REJECTION.md`.
 
+### Slice 33 — no organism-writable external workspace
+
+- `execute_garden_action(...)` receives the canonical SQLite connection, typed decision, protected ledger, and existing protected test flag only
+- no runtime path, workspace, export, diagnostic, rollback, restore, network, or subprocess handle reaches the executor
+- filesystem mutation, temporary-file, network, subprocess, and process-launch APIs are fail-closed during the action-only probe
+- valid `water_plot(bed-a)` succeeds without invoking a guarded interface
+- an absolute path-like target is rejected as a nonexistent SQLite plot without touching the path
+- organism directory and administrative workspace entries remain exact
+- the probe rolls back to its declared baseline and the same tick later completes normally with hard-zero external budgets
+- no production correction or generic sandbox framework was required
+
+See `docs/phase1/SLICE33_NO_EXTERNAL_WORKSPACE.md`.
+
 ## Accepted ADR 0007 retention boundary
 
 Phase 1 permits at most one completed rollback per organism. The complete pre-rollback archive and candidate evidence set remains immutable and retained. There is no rollback-artifact deletion or pruning in Phase 1.
 
 ## Validation state
 
-Slice 32 final replacement PR #50 passed the exact complete head on Python 3.12 twice:
+PR #52 closes Contract evaluation 40 without changing production code. Its complete synchronized head passes the standard Python 3.12 workflow with:
 
-- run 293: **127 protected tests passed in 6.73 seconds**
-- run 294: **127 protected tests passed in 13.73 seconds**
-- clean editable installation passed
-- source and test compilation passed
-- genesis CLI smoke passed
+- clean editable installation
+- source and test compilation
+- genesis CLI smoke
+- **128 protected tests**
 
-No Slice 32 production correction was required. Existing pending-state validation and administrative repair passed unchanged.
-
-Draft PRs #48 and #49 were closed without merge after GitHub failed to attach workflow runs to their later branch-head updates. PR #50 used a fresh branch created directly from the complete recorded commit and received exact-head validation before merge. No code or history was discarded.
+The first two test-only heads failed because the new test assumed absent initialized administrative directories and a fixed pre-probe event count. Existing protected tests remained green. The corrected test compares the exact declared pre-action workspace and pre-probe canonical status.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -133,35 +143,34 @@ The workflow remains the public-repository standard `ubuntu-latest` runner with 
 
 Major incomplete areas are the remaining protected-authority evaluations:
 
-- no organism-writable external workspace
 - broader proof that organism actions cannot modify protected authority
 - complete proof that administrative effects are distinguishable from organism effects
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 33
+## Exact next task: Slice 34
 
-The next bounded subject is evaluation 40: Phase 1 exposes no organism-writable external workspace.
+The next bounded subject is evaluation 39: protected authority cannot be modified by the organism.
 
 Before implementation:
 
 1. reconstruct current `main`, Issue #13, and open pull requests
-2. inspect `OrganismPaths`, the registered action executor signature, and imports reachable from `execute_garden_action(...)`
-3. acquire a normal wake transaction, claim the queued tick, build the canonical observation, and select the fixed action before installing guards
-4. during action execution only, fail closed on Python filesystem mutation, network connection, and subprocess APIs
-5. require the valid SQLite action transition to succeed without invoking any guarded external interface
-6. require the action executor surface to receive no path or workspace handle
-7. pass a path-like target identifier and require typed rejection as a nonexistent SQLite plot without creating or touching an external path
-8. require no export, diagnostics, rollback archive, restore candidate, or other workspace directory to be created by organism action execution
-9. roll back the probe and prove a normal complete wake still succeeds with hard-zero external capability budgets
-10. add protected tests before changing production code
-11. make a production correction only if organism action execution can reach an external effect or workspace
-12. update the Slice 33 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+2. reread Contract v0.2 protected/mutable authority, ADR 0005 protected environment configuration, ADR 0006 protected budgets, and the Slice 33 action surface
+3. inventory the exact canonical tables, rows, schema objects, action definitions, evaluator inputs, and repository/runtime artifacts that constitute protected authority
+4. identify the minimal mutable SQLite rows required by `water_plot` and `harvest_plot`
+5. add protected tests before changing production code
+6. execute a valid registered action and prove only the declared mutable garden rows change
+7. attempt representative protected-table and schema modification through the organism action boundary and require rejection before protected mutation
+8. prove action definitions, budget configuration, organism identity/version fields, schema objects, event append-only protections, evaluator logic, contract/source files, and administrative artifacts remain exact
+9. roll back the protected probe and prove a normal complete wake still succeeds
+10. make a production correction only if the current organism action boundary can modify protected authority
+11. do not broaden the action API, add arbitrary SQL, add a generic policy engine, or redesign schema merely to make the test convenient
+12. update the Slice 34 note, matrix, this handoff, `AGENTS.md`, and Issue #13
 13. run GitHub Actions through a pull request
 
-Checkpoint publication, export, diagnostics, and rollback artifacts remain explicit runtime or administrative operations outside the guarded organism-action boundary.
+Evaluation 39 is broader than evaluation 40. Slice 33 proves the action has no external workspace or effect route; Slice 34 must prove that the remaining SQLite mutation authority is restricted to the exact declared garden transition and cannot rewrite protected configuration or identity.
 
-Do not add a workspace API, connection pool, subprocess access, generic sandbox framework, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Do not add caregiver integration, learning, memory, skills, self-modification, generic recovery machinery, or a generic autonomous-agent framework.
 
 ## Restart protocol
 
@@ -171,8 +180,8 @@ At the next session or clean reconstruction point:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #50 is merged on current `main`, or reconcile newer repository truth
-6. begin only from the exact Slice 33 boundary above
+5. verify PR #52 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 34 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
 
