@@ -39,4 +39,4 @@ The hidden connection is a protected-test probe of SQLite ownership. It is not a
 
 ## Result
 
-Pending test-first GitHub Actions evidence.
+The protected test was committed before this note. Standard pull-request validation remains pending, and no provisional pass or production conclusion is claimed until GitHub Actions completes.
