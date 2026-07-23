@@ -7,6 +7,7 @@ import json
 import re
 import sqlite3
 
+from .authority import ADMINISTRATION, classify_authority_source
 from .clock import Clock, RealClock
 from .errors import SudachiError, OrganismNotFoundError
 from .paths import OrganismPaths
@@ -69,6 +70,10 @@ def _append_enqueue_event(
     external_event_id: str,
     inbox_id: int,
 ) -> None:
+    source = classify_authority_source(
+        source,
+        expected_category=ADMINISTRATION,
+    ).source
     connection.execute(
         """
         INSERT INTO event (
@@ -108,6 +113,10 @@ def enqueue_garden_tick(
 ) -> EnqueueResult:
     """Insert one unique tick or return the existing row without another clock read."""
 
+    source = classify_authority_source(
+        source,
+        expected_category=ADMINISTRATION,
+    ).source
     external_event_id = validate_external_event_id(external_event_id)
     if not paths.database.is_file():
         raise OrganismNotFoundError(f"organism database not found: {paths.database}")
