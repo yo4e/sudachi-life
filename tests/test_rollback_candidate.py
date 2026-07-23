@@ -176,7 +176,11 @@ def test_build_restore_candidate_publishes_exact_source_without_active_mutation(
             "--json",
         ]
     ) == 0
-    assert json.loads(capsys.readouterr().out) == result.as_dict()
+    assert json.loads(capsys.readouterr().out) == {
+        "authority_category": "administration",
+        "authority_source": "administration:rollback-candidate",
+        **result.as_dict(),
+    }
     assert _active_snapshot(paths) == before
 
 
