@@ -1,13 +1,13 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–22 implemented; ADR 0007 accepted — Phase 1 incomplete**
+Status: **Slices 1–23 implemented; ADR 0007 enforced — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
 | Contract evaluation | Protected test status |
 | --- | --- |
 | 1. Identical declared inputs produce identical canonical results | Partial: deterministic initialization, the canonical three-wake policy, blocked-state, classified failures, maintenance, byte-identical JSONL export, deterministic rollback candidates, exact repeated replacement, and exact repeated completion are covered; full repeated-run canonical equivalence remains planned |
-| 2. Unexpected clock reads fail | Lifecycle clock counts are protected; maintenance inspection, export, archive preparation, source-candidate construction, active replacement, and repeated completion consume no clock; rollback begin, candidate transformation, and first completion read their declared clock only after complete validation; rejection paths consume zero |
+| 2. Unexpected clock reads fail | Lifecycle clock counts are protected; maintenance inspection, export, archive preparation, source-candidate construction, active replacement, repeated completion, and completed-rollback preparation rejection consume no clock; rollback begin, candidate transformation, and first completion read their declared clock only after complete validation; rejection paths consume zero |
 | 3. Backward wall time does not reorder events | Event sequence is canonical; complete first-wake backward-time scenario remains planned |
 | 4. Seed does not change seed-garden behavior | Fixed first-water policy ignores the declared seed; explicit comparative test remains planned |
 | 5. One tick/observation/attempt/mutation maximum | Water and harvest assert one attempt/mutation; abstentions and maintenance-threshold entry assert zero; classified action failure asserts one attempt and zero successful mutations; classified pre-action exhaustion asserts zero attempts and mutations |
@@ -40,14 +40,14 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 32. Invalid checkpoint is not stable | Digest and directory-name mismatch tests |
 | 33. Checkpoint validation covers protected identity and boundary | Initialization, lifecycle, repair, export, and all rollback stages revalidate declared checkpoint identity, lineage, registry metadata, digest, and event boundary; first post-rollback checkpoint is new-lineage validated |
 | 34. Checkpoint failure preserves committed pending state | Checkpoint timeout preserves pending state; pending-checkpoint repair proves exact registration repair |
-| 35. Retention is bounded and safe | Ordinary checkpoint pruning and classified pruning failure are protected. ADR 0007 accepts one completed rollback per organism, retains the complete archive and candidate evidence set, and forbids Phase 1 rollback-artifact pruning. Slice 23 must add protected admission enforcement before this row is complete |
-| 36–38. Rollback archive, lineage, and failure recovery | Slices 17–22 protect the complete rollback path: abandoned-future archive, durable intent, exact source restoration, new-lineage transformation, atomic active replacement, immediate validation, recoverable post-transfer interruption, atomic `rollback_completed`, restored wakeability, and a first successful new-lineage checkpoint. ADR 0007 bounds the path to one completed rollback per organism; enforcement remains the exact next slice |
+| 35. Retention is bounded and safe | Ordinary checkpoint pruning and classified pruning failure are protected. ADR 0007 permits one completed rollback per organism, retains the complete archive and candidate evidence set, and forbids Phase 1 rollback-artifact pruning. `tests/test_single_rollback_retention.py` proves second preparation rejects before source selection or second-archive creation while a separately initialized organism remains independently eligible |
+| 36–38. Rollback archive, lineage, and failure recovery | Slices 17–22 protect the complete rollback path: abandoned-future archive, durable intent, exact source restoration, new-lineage transformation, atomic active replacement, immediate validation, recoverable post-transfer interruption, atomic `rollback_completed`, restored wakeability, and a first successful new-lineage checkpoint. Slice 23 enforces ADR 0007 at preparation without changing the first path or its evidence |
 | 39. Protected authority cannot be modified by organism | Protected actions and evaluators are used; every rollback operation is an explicit offline administrative boundary; broader authority tests remain planned |
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
-| 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback` |
+| 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #36 passed GitHub Actions on Python 3.12 with **115 protected tests** on the implementation head after correcting one completion-boundary exception-classification failure.
+PR #36 passed GitHub Actions on Python 3.12 with **115 protected tests** on the Slice 22 implementation head after correcting one completion-boundary exception-classification failure.
 
-This decision-only branch adds no tests. Slice 23 must update this matrix with the single-completed-rollback admission tests.
+Slice 23 adds two protected tests. Its exact GitHub Actions result is pending and must replace this sentence before the implementation pull request is marked ready for review.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
