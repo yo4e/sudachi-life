@@ -217,6 +217,7 @@ def test_action_execution_has_no_external_workspace_or_effect_surface(
         "slice-33-external-workspace-probe",
         clock=FakeClock([ClockReading(200, 2_000_000)]),
     )
+    pre_probe_status = read_status(paths)
 
     signature = inspect.signature(execute_garden_action)
     assert tuple(signature.parameters) == (
@@ -302,14 +303,8 @@ def test_action_execution_has_no_external_workspace_or_effect_surface(
         wake.rollback_and_close()
 
     rolled_back = read_status(paths)
-    assert (
-        rolled_back.lifecycle_number,
-        rolled_back.status,
-        rolled_back.environment_step,
-        rolled_back.water_units,
-        rolled_back.event_count,
-        rolled_back.latest_stable_checkpoint_id,
-    ) == (0, "sleeping", 0, 1, 3, genesis.checkpoint_id)
+    assert rolled_back.as_dict() == pre_probe_status.as_dict()
+    assert rolled_back.latest_stable_checkpoint_id == genesis.checkpoint_id
 
     connection = connect_database(paths.database, read_only=True)
     try:
