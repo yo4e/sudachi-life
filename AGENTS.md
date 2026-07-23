@@ -68,7 +68,7 @@ Two merged slices are not an automatic rollover trigger. Continue through multip
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Repository state containing this file includes Slices 1–33:
+Repository state containing this file includes Slices 1–34:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -103,10 +103,11 @@ Primary implementation stream. Repository state containing this file includes Sl
 31. nested wake and hidden writer fail-fast rejection with restored normal wakeability
 32. explicit second-wake rejection behind a committed pending checkpoint and resumed progress after repair
 33. guarded proof that registered organism actions have no external workspace or effect route
+34. action-scoped SQLite authority restricted to exact registered garden transition columns
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-PR #52 closes Contract evaluation 40 without a production correction. Its complete synchronized head passes clean installation, compileall, genesis CLI smoke, and **128 protected tests** on Python 3.12.
+PR #53 closes Contract evaluation 39. GitHub Actions run 307 passes clean installation, compileall, genesis CLI smoke, and **139 protected tests in 7.69 seconds** on Python 3.12.
 
 Phase 1 remains incomplete.
 
@@ -183,7 +184,7 @@ ADR 0007 resolves rollback-artifact retention for Phase 1:
 
 Slice 23 enforces that boundary at rollback preparation. After fail-fast ownership and canonical validation, preparation counts canonical `rollback_completed` events and requires zero before latest-source lookup, source selection, or archive-root creation. Rejection is typed, zero-clock, and non-mutating. A separately initialized organism remains eligible for its own first rollback.
 
-## Fixed-evaluation closures in Slices 24–33
+## Fixed-evaluation closures in Slices 24–34
 
 - Slice 24: backward wall time cannot reorder canonical events.
 - Slice 25: different declared seeds do not change fixed seed-garden behavior.
@@ -195,33 +196,36 @@ Slice 23 enforces that boundary at rollback preparation. After fail-fast ownersh
 - Slice 31: nested wakes and hidden write connections fail fast without queueing or mutation.
 - Slice 32: a second wake cannot advance behind a pending boundary; existing repair restores progress.
 - Slice 33: registered actions receive no workspace handle, invoke no guarded filesystem/network/subprocess interface, and treat a path-like target only as a nonexistent SQLite identifier.
+- Slice 34: registered actions execute under an action-scoped SQLite authorizer; valid actions change only their exact declared columns, while identity, budgets, registry, inbox, history, schema, triggers, source, contract, ADRs, and administrative artifacts remain protected.
 
 Read the corresponding durable notes in `docs/phase1/` for exact boundaries and CI evidence.
 
-## Exact restart point: Slice 34
+## Exact restart point: Slice 35
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 34 branch.
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 35 branch.
 
-The next bounded subject is Contract evaluation 39: protected authority cannot be modified by the organism.
+The next bounded subject is Contract evaluation 41: administrative actions are distinguishable from organism actions in records and reports.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. reread Contract v0.2 protected and mutable authority, ADR 0005, ADR 0006, and the Slice 33 action boundary
-3. inventory the exact canonical tables, rows, schema objects, action definitions, evaluator inputs, and repository/runtime artifacts that constitute protected authority
-4. identify the minimal mutable SQLite rows required by the registered water and harvest actions
-5. add a narrow protected test before changing production code
-6. execute a valid registered action and prove only the exact declared mutable garden rows change
-7. attempt representative protected-table or schema mutation through the organism action boundary and require typed rejection before protected mutation
-8. prove action definitions, budget configuration, organism identity and version fields, schema objects, append-only event protections, evaluator logic, contract/source files, and administrative artifacts remain exact
-9. roll back the protected probe and prove a normal complete wake still succeeds
-10. make a production correction only if the current action boundary can modify protected authority
-11. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-12. run GitHub Actions through a pull request
+2. inventory every canonical event-creation boundary and every explicit administrative API or CLI operation
+3. inventory operations that intentionally create no canonical event and the external typed result or artifact that identifies them as administration
+4. define and protect the Phase 1 source namespaces, at minimum `organism:` and `administration:`
+5. add protected tests before changing production code
+6. run representative organism lifecycle, input, checkpoint, maintenance, export, and rollback paths and require their records, results, manifests, and reports to preserve the correct authority category
+7. require organism action and lifecycle records never to claim an administrative source
+8. require administrative records never to claim an organism source
+9. require unknown, empty, or cross-category source values to fail before canonical append or report publication
+10. preserve operations that intentionally have no canonical event without inventing false history; prove their typed result or immutable artifact still identifies administrative provenance
+11. make a production correction only where source/category validation is incomplete
+12. do not redesign the event schema, add a generic identity framework, or force every read-only or pre-authority rejection into canonical history
+13. update the Slice 35 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+14. run GitHub Actions through a pull request
 
-Evaluation 39 is broader than the completed evaluation 40. Slice 33 proves no external workspace or effect route; Slice 34 must prove that the remaining SQLite mutation authority is restricted to the exact declared garden transition.
+Evaluation 41 concerns authority provenance, not merely string prefixes. Existing source fields are substantial partial coverage; Slice 35 must make the distinction complete across canonical records and non-event administrative reports without fabricating events for operations that had no write authority.
 
-Do not add arbitrary SQL, a broader action API, a generic policy engine, schema redesign for test convenience, caregiver integration, learning, memory, skills, self-modification, or generic recovery machinery.
+Do not add caregiver integration, learning, memory, skills, self-modification, generic recovery machinery, or a generic autonomous-agent framework.
 
 ## End-of-work protocol
 
