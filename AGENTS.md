@@ -58,7 +58,7 @@ Do not hide a new architecture inside implementation code. If implementation rev
 
 ## AI collaboration safety and continuity
 
-SUDACHI's organism, metabolism, body, lineage, growth, and caregiver vocabulary describes deterministic local software. Phase 1 uses Python, SQLite, immutable artifacts, and a synthetic garden only. It has no wet-lab biology, pathogens, genetic engineering, medical intervention, weapons work, offensive cybersecurity, third-party system access, network activity, or subprocess execution.
+SUDACHI's organism, metabolism, body, lineage, growth, and caregiver vocabulary describes deterministic local software. Phase 1 uses Python, SQLite, immutable artifacts, and a synthetic garden only. It has no wet-lab biology, pathogens, genetic engineering, medical intervention, weapons work, offensive cybersecurity, third-party system access, network activity, or organism subprocess execution.
 
 Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Accept delayed, blocked, or refused requests. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and conversation rollover.
 
@@ -68,7 +68,7 @@ Two merged slices are not an automatic rollover trigger. Continue through multip
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–30:
+Primary implementation stream. Current `main` includes Slices 1–31:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -100,10 +100,11 @@ Primary implementation stream. Current `main` includes Slices 1–30:
 28. complete lexicographic action tie breaking under reversed physical row insertion order
 29. complete consumed-input replay rejection without duplicate action
 30. real process-exit rollback of an uncommitted wake with released write ownership
+31. nested wake and hidden writer fail-fast rejection with restored normal wakeability
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 276 for the corrected Slice 30 test-first head passed clean install, compileall, genesis CLI smoke, and **125 protected tests in 6.38 seconds** on Python 3.12. No production correction was required. Run 275 exposed and removed only a test-side rollback-journal pathname overconstraint.
+GitHub Actions run 286 for the Slice 31 test-first head passed clean install, compileall, genesis CLI smoke, and **126 protected tests in 8.88 seconds** on Python 3.12. No production correction was required.
 
 Phase 1 remains incomplete.
 
@@ -115,7 +116,7 @@ Do not connect a human or model caregiver to Phase 1. Do not treat ChatGPT and a
 
 ## Phase 1 invariants
 
-Phase 1 remains deterministic, local, network-free, subprocess-free, caregiver-free, bounded, auditable, SQLite-canonical, and checkpointed after every committed wake.
+Phase 1 remains deterministic, local, network-free, organism-subprocess-free, caregiver-free, bounded, auditable, SQLite-canonical, and checkpointed after every committed wake.
 
 The organism runtime must not:
 
@@ -128,7 +129,7 @@ The organism runtime must not:
 - weaken protected tests or budgets
 - modify protected actions, evaluators, schema, contract, or environment
 
-Administration is distinct from organism autonomy. Administrative operations have narrow typed boundaries and preserve authority separation.
+Administration is distinct from organism autonomy. Administrative operations and protected test harnesses have narrow typed boundaries and preserve authority separation.
 
 ## Complete protected rollback path
 
@@ -180,54 +181,40 @@ ADR 0007 resolves rollback-artifact retention for Phase 1:
 
 Slice 23 enforces that boundary at rollback preparation. After fail-fast ownership and canonical validation, preparation counts canonical `rollback_completed` events and requires zero before latest-source lookup, source selection, or archive-root creation. Rejection is typed, zero-clock, and non-mutating. A separately initialized organism remains eligible for its own first rollback.
 
-## Canonical event ordering under backward wall time
+## Fixed-evaluation closures in Slices 24–31
 
-Slice 24 closes Contract evaluation 3 without production changes. One protected complete first-water wake uses decreasing wall timestamps from genesis through enqueue, wake, lifecycle completion, and checkpoint stabilization while monotonic readings increase. The organism still waters `bed-a`, commits boundary 13, stabilizes event 14, and returns to sleep. Canonical event identity and order remain the exact database sequence 1–14; timestamps are metadata only.
+- Slice 24: backward wall time cannot reorder canonical events.
+- Slice 25: different declared seeds do not change fixed seed-garden behavior.
+- Slice 26: identical declared inputs produce exact canonical and artifact equivalence.
+- Slice 27: cleanup grace permits terminalization only and rejects overrun atomically.
+- Slice 28: lexicographic action tie breaking ignores physical row insertion order.
+- Slice 29: replay of a consumed external identifier cannot create a duplicate action.
+- Slice 30: a real child-process exit rolls back an uncommitted wake and releases ownership.
+- Slice 31: nested wakes and hidden write connections fail fast without queueing or mutation.
 
-## Declared seed independence
+Read the corresponding durable notes in `docs/phase1/` for exact boundaries and CI evidence.
 
-Slice 25 closes Contract evaluation 4 without production changes. Two independently initialized organisms receive identical external input and injected clock readings but declare seeds `1` and `2`. The seed remains visible in `WakeResult` and canonical `wake_accepted` history, so snapshot digests and digest-derived checkpoint identifiers differ. After normalizing only those declared and derived identity fields, the complete active bodies, pending checkpoint snapshots, policy choice, transition, evaluation, budgets, event history, boundary 13, stabilization event 14, and final sleeping wakeability are identical.
+## Exact restart point: Slice 32
 
-## Exact repeated-run equivalence
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 32 branch.
 
-Slice 26 closes Contract evaluation 1 without production changes. Two independent runtime roots receive identical organism identity, versions, genesis time, external tick, seed, and fake-clock readings. Without normalizing any field, they produce identical `WakeResult`, status, schema, canonical rows, SQLite sequence state, active database SHA-256, checkpoint identifiers, manifests, checkpoint database digests, complete checkpoint-store file sets and digests, final sleeping state, and acceptance of the same next tick.
-
-## Protected cleanup-grace boundary
-
-Slice 27 closes Contract evaluation 7. Normal work detected at 2001 ms stops before executor entry with zero action, mutation, retry, caregiver, or external effects. One explicit injected reading measures terminalization completion. Exactly 2250 ms is accepted and recorded in the budget ledger; 2250 ms plus one nanosecond raises `BudgetExhaustedError`, performs no checkpoint work, and rolls back every uncommitted event, sequence, state, and inbox-claim change.
-
-## Insertion-order-independent tie breaking
-
-Slice 28 closes Contract evaluation 13 without production changes. A protected stable fixture physically stores `bed-b` before `bed-a` while both are executable water targets. Canonical observation sorts plots and applicable targets as `bed-a`, `bed-b`; the policy waters `bed-a`, commits exact lifecycle boundary 16, stabilizes event 17, preserves reversed physical row order, returns to sleep, and accepts a later distinct input.
-
-## Consumed-input replay protection
-
-Slice 29 closes Contract evaluation 16 without production changes. After the original identifier produces and stabilizes one water action, replay returns the original inbox row with zero clock reads and no canonical, database-byte, sequence, registry, or checkpoint-artifact change. A wake with no distinct input raises `NoInputEventError` after one declared start reading and rolls back all tentative history. Only a later distinct identifier produces the second harvest action.
-
-## Real process-crash rollback
-
-Slice 30 closes Contract evaluation 27 without production changes. A spawned external test process acquires a wake, claims input, creates representative uncommitted event, sequence, garden, inventory, environment, inbox, and organism changes, proves them inside its transaction, and exits through `os._exit(73)`. The parent reacquires `BEGIN IMMEDIATE`, recovers exact database bytes and canonical/artifact state, observes the original input unclaimed, and completes that tick normally. No subprocess capability or crash hook was added to the organism.
-
-## Exact restart point: Slice 31
-
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 31 branch.
-
-The next bounded subject is Contract evaluation 28: nested wakes and hidden write connections must be rejected without queued work or canonical mutation.
+The next bounded subject is Contract evaluation 31: an explicit second wake must not advance while the prior committed lifecycle remains `checkpoint_pending`.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. acquire one outer `WakeTransaction` through the normal fail-fast ownership boundary
-3. attempt a nested `WakeTransaction.acquire(...)` for the same organism and require typed `WakeBusyError`
-4. attempt a separate hidden write connection and require its `BEGIN IMMEDIATE` to fail while the outer wake owns the database
-5. require both rejection paths to consume zero organism clock reads, create no queued request, event, inbox row, sequence change, state change, or artifact
-6. roll back and close the outer transaction, then prove a normal wake can acquire ownership and process the original tick
-7. add the narrow protected tests before changing production code
-8. make a production correction only if the existing locking boundary violates the accepted contract
-9. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-10. run GitHub Actions through a pull request
+2. enqueue two distinct ticks before the first wake
+3. force the first wake to commit its canonical action and exact pending checkpoint boundary while stabilization fails or is deliberately deferred through an existing protected mechanism
+4. capture the committed pending body, both inbox rows, event history, sequence state, registry, and artifact state
+5. attempt a second normal wake and require typed rejection before claiming the second tick or changing any canonical or artifact state
+6. require the second input to remain unclaimed and unconsumed
+7. repair or stabilize the exact pending boundary through the existing administrative path, then prove the second tick can proceed normally
+8. add the narrow protected scenario before changing production code
+9. make a production correction only if the existing pending-state boundary violates the accepted contract
+10. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+11. run GitHub Actions through a pull request
 
-Do not add reentrant wake support, queued wakes, hidden connection pools, subprocess access, generic concurrency machinery, retries, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Do not add queued wakes, automatic checkpoint repair, hidden retries, reentrant wake support, schema changes, new crash hooks, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## End-of-work protocol
 
