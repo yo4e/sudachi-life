@@ -14,19 +14,20 @@ Read these files in order:
 
 1. `README.md`
 2. `docs/CHATGPT_PROJECT_HANDOFF.md`
-3. `docs/ORIGIN.md`
-4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-5. accepted files in `docs/decisions/`, in numeric order
-6. `docs/ARCHITECTURE.md`
-7. `docs/ROADMAP.md`
-8. `docs/IMPLEMENTATION_DISCIPLINE.md`
-9. `docs/PHASE1_TEST_MATRIX.md`
-10. implemented notes in `docs/phase1/`, in slice order
-11. `docs/RESEARCH_QUESTIONS.md`
-12. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-13. preliminary notes in `docs/research/`
-14. `docs/HANDOFF.md`
-15. current open GitHub issues and pull requests
+3. `docs/AI_COLLABORATION_OPERATIONS.md`
+4. `docs/ORIGIN.md`
+5. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+6. accepted files in `docs/decisions/`, in numeric order
+7. `docs/ARCHITECTURE.md`
+8. `docs/ROADMAP.md`
+9. `docs/IMPLEMENTATION_DISCIPLINE.md`
+10. `docs/PHASE1_TEST_MATRIX.md`
+11. implemented notes in `docs/phase1/`, in slice order
+12. `docs/RESEARCH_QUESTIONS.md`
+13. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+14. preliminary notes in `docs/research/`
+15. `docs/HANDOFF.md`
+16. current open GitHub issues and pull requests
 
 Repository state and current GitHub state outrank conversation history.
 
@@ -49,11 +50,19 @@ Do not flatten SUDACHI into a generic autonomous agent, chatbot, virtual pet, or
 For Phase 1, use this precedence:
 
 1. Minimal Organism Contract v0.2
-2. accepted ADRs 0001–0006
+2. accepted ADRs 0001–0007
 3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
 4. explicit current repository decisions
 
 Do not hide a new architecture inside implementation code. If implementation reveals a contradiction, stop and resolve the contract or ADR through review before proceeding.
+
+## AI collaboration safety and continuity
+
+SUDACHI's organism, metabolism, body, lineage, growth, and caregiver vocabulary describes deterministic local software. Phase 1 uses Python, SQLite, immutable artifacts, and a synthetic garden only. It has no wet-lab biology, pathogens, genetic engineering, medical intervention, weapons work, offensive cybersecurity, third-party system access, network activity, or subprocess execution.
+
+Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Accept delayed, blocked, or refused requests. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and early chat rollover.
+
+A chat is temporary. At a clean boundary, prefer rollover after two substantial merged slices or pull requests, one long debugging trail, or one major decision plus implementation. Do not exceed three substantial merged slices in one chat unless needed to leave the current unit safe and explicit.
 
 ## Current work streams
 
@@ -83,6 +92,8 @@ Primary implementation stream. Repository state containing this file includes Sl
 20. isolated candidate lineage transformation with `rollback_lineage_prepared`
 21. atomic active-database replacement with immediate validation and recoverable interruption
 22. atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
+
+ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
 GitHub Actions for the PR #36 implementation head passed clean install, compileall, genesis CLI smoke, and **115 protected tests** after one completion exception-classification correction.
 
@@ -149,24 +160,42 @@ Rollback completion:
 
 Protected tests prove the first post-rollback wake runs in the new lineage and creates a new stable lifecycle checkpoint while every rollback artifact remains unchanged.
 
-## Exact restart point: rollback-artifact retention decision
+### Accepted retention boundary
 
-The complete rollback path now preserves all artifacts. Do not implement deletion or pruning until an accepted decision record defines a bounded retention policy.
+ADR 0007 resolves rollback-artifact retention for Phase 1:
 
-Required next work:
+- one organism may contain at most one completed rollback
+- the pre-rollback archive, source-restored candidate, and lineage-transformed candidate remain immutable and retained
+- rollback artifacts are not pruned or deleted
+- repeated rollback experiments use separate organism identities
+- later phases require a new accepted decision before repeated rollback or artifact pruning
 
-1. reconcile current `main`, Issue #13, and open pull requests
-2. review Contract v0.2 rollback retention requirements, ADR 0004, runtime working-set limits, and Slices 17–22
-3. author a proposed decision record before implementation
-4. define which pre-rollback archives, source candidates, and transformed candidates remain protected after a first post-rollback stable checkpoint
-5. define whether candidates are reconstructible or independently audit-critical
-6. define how multiple completed rollbacks remain bounded
-7. define what evidence permits abandoned-future archive removal
-8. define atomic pruning and recoverable failure behavior
-9. decide whether Phase 1 permits pruning at all or instead imposes a bounded completed-rollback count
-10. update roadmap, handoff, and Issue #13 after review
+## Exact restart point: Slice 23
 
-No rollback artifact deletion, remote backup assumption, or generic cleanup machinery may precede that accepted decision.
+After reconciling current `main`, Issue #13, and open pull requests, implement only enforcement of ADR 0007 at rollback preparation.
+
+Required Slice 23 boundary:
+
+1. create a new `agent/...` branch from current `main`
+2. add a narrow protected check after fail-fast `BEGIN IMMEDIATE` and canonical validation
+3. inspect canonical event history for `rollback_completed`
+4. require zero completed rollback events before source selection or archive-root creation
+5. reject one or more completed rollback events with a typed `RollbackPreparationRejectedError`
+6. consume no clock and create, modify, or delete no checkpoint, archive, candidate, inbox, registry, environment, or event state on rejection
+7. protect the complete first rollback path and first post-rollback stable checkpoint unchanged
+8. prove a second rollback preparation attempt rejects before any second archive is created
+9. prove a newly initialized organism remains independently eligible for its first rollback
+10. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+11. run GitHub Actions through a pull request
+
+Slice 23 must stop before:
+
+- rollback artifact deletion or pruning
+- schema or contract changes
+- repeated rollback support within one organism
+- JSONL import
+- caregiver consultation
+- learning, memory, skills, or generic recovery machinery
 
 ## End-of-work protocol
 
@@ -180,5 +209,6 @@ Before ending substantial work:
 - report failures, skipped checks, and incomplete work
 - ensure no critical decision exists only in chat or model memory
 - preserve the repository language policy
+- apply the rollover triggers in `docs/AI_COLLABORATION_OPERATIONS.md`
 
 Repository prose, code, issues, ADRs, and tests are written in English. The intentional Japanese lines in `README.md` remain the only standing exception.

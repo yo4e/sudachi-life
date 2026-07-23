@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–22 implemented — Phase 1 incomplete**
+Status: **Slices 1–22 implemented; ADR 0007 accepted — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -40,12 +40,14 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 32. Invalid checkpoint is not stable | Digest and directory-name mismatch tests |
 | 33. Checkpoint validation covers protected identity and boundary | Initialization, lifecycle, repair, export, and all rollback stages revalidate declared checkpoint identity, lineage, registry metadata, digest, and event boundary; first post-rollback checkpoint is new-lineage validated |
 | 34. Checkpoint failure preserves committed pending state | Checkpoint timeout preserves pending state; pending-checkpoint repair proves exact registration repair |
-| 35. Retention is bounded and safe | Ordinary checkpoint pruning and classified pruning failure are protected; rollback artifacts remain protected outside checkpoint retention. A bounded rollback-artifact retention decision is still required before any deletion implementation |
-| 36–38. Rollback archive, lineage, and failure recovery | Slices 17–22 now protect the complete rollback path: abandoned-future archive, durable intent, exact source restoration, new-lineage transformation, atomic active replacement, immediate validation, recoverable post-transfer interruption, atomic `rollback_completed`, restored wakeability, and a first successful new-lineage checkpoint. Long-term rollback-artifact retention remains undecided |
+| 35. Retention is bounded and safe | Ordinary checkpoint pruning and classified pruning failure are protected. ADR 0007 accepts one completed rollback per organism, retains the complete archive and candidate evidence set, and forbids Phase 1 rollback-artifact pruning. Slice 23 must add protected admission enforcement before this row is complete |
+| 36–38. Rollback archive, lineage, and failure recovery | Slices 17–22 protect the complete rollback path: abandoned-future archive, durable intent, exact source restoration, new-lineage transformation, atomic active replacement, immediate validation, recoverable post-transfer interruption, atomic `rollback_completed`, restored wakeability, and a first successful new-lineage checkpoint. ADR 0007 bounds the path to one completed rollback per organism; enforcement remains the exact next slice |
 | 39. Protected authority cannot be modified by organism | Protected actions and evaluators are used; every rollback operation is an explicit offline administrative boundary; broader authority tests remain planned |
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback` |
 
 PR #36 passed GitHub Actions on Python 3.12 with **115 protected tests** on the implementation head after correcting one completion-boundary exception-classification failure.
+
+This decision-only branch adds no tests. Slice 23 must update this matrix with the single-completed-rollback admission tests.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
