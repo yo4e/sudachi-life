@@ -65,4 +65,4 @@ GitHub Actions run 290 on Python 3.12 proved the protected test and initial dura
 - genesis CLI smoke test
 - **127 protected tests in 7.66 seconds**
 
-The complete branch head also contains the updated Phase 1 matrix, `AGENTS.md`, and `docs/HANDOFF.md`. Standard pull-request validation must rerun after those continuity changes before merge.
+Draft PR #48 was closed without merge after GitHub failed to generate workflow runs for later continuity commits. Replacement PR #49 contains the same test-first history plus the completed Phase 1 matrix, `AGENTS.md`, and `docs/HANDOFF.md`. Its new synchronized head must pass the standard pull-request workflow before merge.
