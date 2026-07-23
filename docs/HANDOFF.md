@@ -38,7 +38,7 @@ Repository and GitHub state outrank conversation memory. Do not introduce a paid
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Slices 1–35 implement all 41 fixed Minimal Organism Contract v0.2 evaluations. After PR #54 is merged and current `main` is reverified, Issue #13 is complete and should remain closed unless a Phase 1 regression is found.
+**Completed and closed.** Slices 1–35 implement all 41 fixed Minimal Organism Contract v0.2 evaluations. PR #54 is merged on `main`. Reopen Issue #13 only for a demonstrated Phase 1 regression, not to add Phase 2 features.
 
 ### Issue #3 — prior work and provider review
 
@@ -115,18 +115,20 @@ This establishes trustworthy metabolism only. It does not demonstrate learning, 
 
 ## Validation state
 
-PR #54 closes evaluation 41 and the fixed Phase 1 matrix.
+PR #54 is squash-merged as commit `1f46ea5817414dbaa11b5ac65039477bcaf10a42` and closes evaluation 41 and the fixed Phase 1 matrix.
 
 GitHub Actions run 313 failed four existing exact CLI JSON assertions because Slice 35 intentionally added authority provenance fields. All other protected tests passed. The four assertions were strengthened rather than weakened.
 
-GitHub Actions run 317 then passed on Python 3.12:
+GitHub Actions run 317 passed the implementation head with **142 protected tests in 7.25 seconds**.
+
+GitHub Actions run 323 passed the complete synchronized documentation head on Python 3.12 with:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke
-- **142 protected tests in 7.25 seconds**
+- **142 protected tests in 7.95 seconds**
 
-A final synchronized documentation head must also pass before merge.
+Issue #13 is closed as completed. No Phase 1 implementation work remains known.
 
 ## Exact next gate — no automatic Phase 2 implementation
 
