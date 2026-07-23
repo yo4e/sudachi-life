@@ -338,6 +338,18 @@ def prepare_rollback_archive(
             raise RollbackPreparationRejectedError(
                 "rollback preparation requires no pending checkpoint"
             )
+
+        completed_rollbacks = int(
+            connection.execute(
+                "SELECT COUNT(*) FROM event WHERE event_type = 'rollback_completed'"
+            ).fetchone()[0]
+        )
+        if completed_rollbacks != 0:
+            raise RollbackPreparationRejectedError(
+                "rollback preparation requires no completed rollback history; "
+                f"found {completed_rollbacks} rollback_completed event(s)"
+            )
+
         latest_checkpoint_id = organism["latest_stable_checkpoint_id"]
         if latest_checkpoint_id is None:
             raise RollbackPreparationRejectedError(

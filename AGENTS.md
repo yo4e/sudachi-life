@@ -68,7 +68,7 @@ A chat is temporary. At a clean boundary, prefer rollover after two substantial 
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Repository state containing this file includes Slices 1–22:
+Primary implementation stream. Repository state containing this file includes Slices 1–23:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -92,10 +92,11 @@ Primary implementation stream. Repository state containing this file includes Sl
 20. isolated candidate lineage transformation with `rollback_lineage_prepared`
 21. atomic active-database replacement with immediate validation and recoverable interruption
 22. atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
+23. single-completed-rollback admission enforcement at preparation
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions for the PR #36 implementation head passed clean install, compileall, genesis CLI smoke, and **115 protected tests** after one completion exception-classification correction.
+GitHub Actions run 219 for PR #38 passed clean install, compileall, genesis CLI smoke, and **117 protected tests** on Python 3.12. No implementation correction was required.
 
 Phase 1 remains incomplete.
 
@@ -160,7 +161,7 @@ Rollback completion:
 
 Protected tests prove the first post-rollback wake runs in the new lineage and creates a new stable lifecycle checkpoint while every rollback artifact remains unchanged.
 
-### Accepted retention boundary
+### Accepted retention boundary and Slice 23 enforcement
 
 ADR 0007 resolves rollback-artifact retention for Phase 1:
 
@@ -170,25 +171,20 @@ ADR 0007 resolves rollback-artifact retention for Phase 1:
 - repeated rollback experiments use separate organism identities
 - later phases require a new accepted decision before repeated rollback or artifact pruning
 
-## Exact restart point: Slice 23
+Slice 23 enforces that boundary at rollback preparation. After fail-fast ownership and canonical validation, preparation counts canonical `rollback_completed` events and requires zero before latest-source lookup, source selection, or archive-root creation. Rejection is typed, zero-clock, and non-mutating. A separately initialized organism remains eligible for its own first rollback.
 
-After reconciling current `main`, Issue #13, and open pull requests, implement only enforcement of ADR 0007 at rollback preparation.
+## Exact restart point: review and merge PR #38
 
-Required Slice 23 boundary:
+PR #38 contains the verified Slice 23 boundary. Do not extend its scope.
 
-1. create a new `agent/...` branch from current `main`
-2. add a narrow protected check after fail-fast `BEGIN IMMEDIATE` and canonical validation
-3. inspect canonical event history for `rollback_completed`
-4. require zero completed rollback events before source selection or archive-root creation
-5. reject one or more completed rollback events with a typed `RollbackPreparationRejectedError`
-6. consume no clock and create, modify, or delete no checkpoint, archive, candidate, inbox, registry, environment, or event state on rejection
-7. protect the complete first rollback path and first post-rollback stable checkpoint unchanged
-8. prove a second rollback preparation attempt rejects before any second archive is created
-9. prove a newly initialized organism remains independently eligible for its first rollback
-10. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-11. run GitHub Actions through a pull request
+After merge:
 
-Slice 23 must stop before:
+1. reconstruct current `main`
+2. inspect current open issues and pull requests
+3. confirm Issue #13 and continuity documents reflect the merged result
+4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 24 branch
+
+Do not begin:
 
 - rollback artifact deletion or pruning
 - schema or contract changes

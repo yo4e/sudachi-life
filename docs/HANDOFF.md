@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for repository state containing Phase 1 Slices 1–22 plus accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for repository state containing Phase 1 Slices 1–23 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -42,7 +42,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–22 are implemented. ADR 0007 is accepted and awaiting narrow enforcement in Slice 23.
+Primary implementation stream. Slices 1–22 are merged. Slice 23 is implemented and verified in PR #38 on `agent/slice-23-single-rollback-guard`; it is ready for human review and merge.
 
 ### Issue #3 — prior work and provider review
 
@@ -160,6 +160,21 @@ See `docs/phase1/SLICE21_ACTIVE_DATABASE_REPLACEMENT.md`.
 
 See `docs/phase1/SLICE22_ROLLBACK_COMPLETION.md`.
 
+### Slice 23 — single completed rollback admission guard
+
+- preserves fail-fast `BEGIN IMMEDIATE` as the administrative ownership boundary
+- validates canonical state before reading mutable rollback history
+- counts exact canonical `rollback_completed` events
+- requires zero completed rollback events before latest-source lookup or archive-root creation
+- rejects one or more events with typed `RollbackPreparationRejectedError`
+- consumes no clock and changes no canonical or artifact state on rejection
+- proves selected-source validation is not reached on the second attempt
+- proves the complete first rollback and first new-lineage stable checkpoint remain unchanged
+- proves no second archive is created
+- proves a separately initialized organism remains independently eligible for its first rollback
+
+See `docs/phase1/SLICE23_SINGLE_COMPLETED_ROLLBACK_GUARD.md`.
+
 ## Accepted ADR 0007 retention boundary
 
 Phase 1 permits at most one completed rollback per organism.
@@ -176,14 +191,14 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-GitHub Actions on Python 3.12 for the final PR #36 head completed:
+GitHub Actions run 219 for PR #38 on Python 3.12 completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **115 protected tests**
+- **117 protected tests passed in 6.31 seconds**
 
-The first Slice 22 run found one exception-classification failure. The lower-level archive drift detection was correct; the completion boundary was corrected to classify the cause as `RollbackCompletionRejectedError`. Subsequent implementation and final-continuity runs passed.
+No Slice 23 implementation correction was required. The guard and both new protected tests passed on the first pull-request run.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -191,7 +206,6 @@ The workflow remains the public-repository standard `ubuntu-latest` runner with 
 
 Major incomplete areas include:
 
-- ADR 0007 enforcement at rollback preparation
 - complete repeated-run canonical equivalence
 - backward-wall-time ordering scenario
 - explicit seed-independence comparison
@@ -205,24 +219,18 @@ Major incomplete areas include:
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 23
+## Exact next task
 
-Implement only the single-completed-rollback admission guard required by ADR 0007.
+Review and merge PR #38 without extending its scope.
 
-1. create a new `agent/...` branch from current `main`
-2. acquire fail-fast ownership exactly as existing rollback preparation does
-3. validate canonical state before reading mutable rollback history
-4. count canonical `rollback_completed` events before source selection or archive-root creation
-5. require exactly zero completed rollbacks for preparation eligibility
-6. reject one or more with typed `RollbackPreparationRejectedError`
-7. consume no clock and create or modify no archive, candidate, checkpoint, inbox, registry, environment, organism row, or event on rejection
-8. prove the complete first rollback path remains unchanged
-9. prove a second preparation attempt after completion and the first new-lineage checkpoint creates no second archive
-10. prove a newly initialized separate organism remains eligible for its first rollback
-11. update tests, matrix, this handoff, Issue #13, and a Slice 23 note
-12. run GitHub Actions through a pull request
+After merge:
 
-Slice 23 stops before artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery.
+1. reconstruct current `main`
+2. inspect current open issues and pull requests
+3. confirm Issue #13 and continuity documents reflect the merged result
+4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 24 branch
+
+Do not begin rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery while closing Slice 23.
 
 ## Restart protocol
 
@@ -232,8 +240,8 @@ At the next session:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify the ADR 0007 decision PR is merged or reconcile repository truth
-6. begin only from the Slice 23 boundary above
+5. verify PR #38 and its final CI state against current `main`
+6. finish the exact review-and-merge task above before choosing a later slice
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply the early chat-rollover triggers rather than waiting for a hard conversation limit.
 
