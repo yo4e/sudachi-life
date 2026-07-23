@@ -2,11 +2,11 @@
 
 This roadmap is developmental rather than feature-driven. Each phase must establish a measurable invariant before the next layer of assistance or autonomy is introduced.
 
-The normative Phase 1 baseline is Minimal Organism Contract v0.2 plus ADRs 0001–0006.
+The normative Phase 1 baseline is Minimal Organism Contract v0.2 plus ADRs 0001–0007.
 
 ## Phase 0 — Freeze the seed organism contract
 
-**Status:** Complete when the Contract v0.2 reconciliation pull request is merged and Issue #1 is closed.
+**Status:** Complete.
 
 **Goal:** Define the smallest trustworthy lifecycle that may be called SUDACHI-0.
 
@@ -31,6 +31,8 @@ Exit criteria:
 - No unresolved seed architecture choice remains for implementation code to invent.
 
 ## Phase 1 — Build SUDACHI-0 metabolism
+
+**Status:** Complete after Slices 1–35 and closure of all 41 fixed evaluations.
 
 **Goal:** Implement Contract v0.2 exactly in local Python.
 
@@ -68,6 +70,7 @@ Deliverables:
 - concrete budget ledger and storage limits
 - checkpoint publication, repair, retention, and rollback lineage
 - deterministic JSONL export
+- exact organism-versus-administration provenance
 - all protected Contract v0.2 tests
 
 Exit criteria:
@@ -82,6 +85,8 @@ Exit criteria:
 Phase 1 does not demonstrate learning, intelligence, personality, or caregiver independence. It demonstrates trustworthy metabolism.
 
 ## Phase 2 — Build caregiver-neutral consultation plumbing
+
+**Status:** Not started. Requires an explicit reviewed scope decision before implementation.
 
 **Goal:** Prove the consultation boundary without a live human or model caregiver.
 
@@ -314,6 +319,16 @@ SUDACHI should earn complexity by demonstrating that a simpler body is insuffici
 
 ## Immediate next milestone
 
-After Contract v0.2 and its aligned documentation are merged, create the Python package skeleton and implement protected tests before filling in organism behavior.
+Do not begin Phase 2 implementation automatically.
 
-The first code milestone is not a caregiver or chat window. It is a deterministic initialization path that creates a validated SQLite organism and stable genesis checkpoint.
+The next milestone is a reviewed Phase 2 scope decision that:
+
+- preserves the complete 142-test Phase 1 regression baseline
+- keeps caregiver budget zero in the Phase 1 condition
+- defines source-neutral consultation requests and typed responses
+- separates consultation, interpretation, evaluation, and adoption
+- specifies provenance and concrete consultation costs
+- uses a deterministic fixture before any live human or model caregiver
+- decides the relationship between Issue #3 research and implementation evidence
+
+Only after that decision is accepted should a Phase 2 implementation issue and first test-first slice be created.
