@@ -115,14 +115,17 @@ Phase 1 permits at most one completed rollback per organism. The complete pre-ro
 
 ## Validation state
 
-Slice 32 GitHub Actions run 290 on Python 3.12 completed:
+Slice 32 final replacement PR #50 passed the exact complete head on Python 3.12 twice:
 
-- clean editable installation
-- source and test compilation
-- genesis CLI smoke test
-- **127 protected tests passed in 7.66 seconds**
+- run 293: **127 protected tests passed in 6.73 seconds**
+- run 294: **127 protected tests passed in 13.73 seconds**
+- clean editable installation passed
+- source and test compilation passed
+- genesis CLI smoke passed
 
 No Slice 32 production correction was required. Existing pending-state validation and administrative repair passed unchanged.
+
+Draft PRs #48 and #49 were closed without merge after GitHub failed to attach workflow runs to their later branch-head updates. PR #50 used a fresh branch created directly from the complete recorded commit and received exact-head validation before merge. No code or history was discarded.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -168,7 +171,7 @@ At the next session or clean reconstruction point:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #48 is merged on current `main`, or reconcile newer repository truth
+5. verify PR #50 is merged on current `main`, or reconcile newer repository truth
 6. begin only from the exact Slice 33 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
