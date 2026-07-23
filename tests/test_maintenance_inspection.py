@@ -230,7 +230,11 @@ def test_read_only_maintenance_inspection_reports_without_mutation(
             "--json",
         ]
     ) == 0
-    assert json.loads(capsys.readouterr().out) == inspection.as_dict()
+    assert json.loads(capsys.readouterr().out) == {
+        "authority_category": "administration",
+        "authority_source": "administration:maintenance-inspect",
+        **inspection.as_dict(),
+    }
 
     after_status = read_status(paths)
     after_files = _file_snapshot(paths.organism_dir)
