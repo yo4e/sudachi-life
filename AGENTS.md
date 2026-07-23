@@ -68,7 +68,7 @@ Two merged slices are not an automatic rollover trigger. Continue through multip
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–29:
+Primary implementation stream. Current `main` includes Slices 1–30:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -99,10 +99,11 @@ Primary implementation stream. Current `main` includes Slices 1–29:
 27. protected cleanup-grace terminalization boundary and overrun rollback
 28. complete lexicographic action tie breaking under reversed physical row insertion order
 29. complete consumed-input replay rejection without duplicate action
+30. real process-exit rollback of an uncommitted wake with released write ownership
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 269 for the Slice 29 test-first head passed clean install, compileall, genesis CLI smoke, and **124 protected tests in 10.15 seconds** on Python 3.12. No production correction was required.
+GitHub Actions run 276 for the corrected Slice 30 test-first head passed clean install, compileall, genesis CLI smoke, and **125 protected tests in 6.38 seconds** on Python 3.12. No production correction was required. Run 275 exposed and removed only a test-side rollback-journal pathname overconstraint.
 
 Phase 1 remains incomplete.
 
@@ -203,27 +204,30 @@ Slice 28 closes Contract evaluation 13 without production changes. A protected s
 
 Slice 29 closes Contract evaluation 16 without production changes. After the original identifier produces and stabilizes one water action, replay returns the original inbox row with zero clock reads and no canonical, database-byte, sequence, registry, or checkpoint-artifact change. A wake with no distinct input raises `NoInputEventError` after one declared start reading and rolls back all tentative history. Only a later distinct identifier produces the second harvest action.
 
-## Exact restart point: Slice 30
+## Real process-crash rollback
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 30 branch.
+Slice 30 closes Contract evaluation 27 without production changes. A spawned external test process acquires a wake, claims input, creates representative uncommitted event, sequence, garden, inventory, environment, inbox, and organism changes, proves them inside its transaction, and exits through `os._exit(73)`. The parent reacquires `BEGIN IMMEDIATE`, recovers exact database bytes and canonical/artifact state, observes the original input unclaimed, and completes that tick normally. No subprocess capability or crash hook was added to the organism.
 
-The next bounded subject is the remaining execution proof for Contract evaluation 27: a real process exit while a wake transaction is uncommitted must restore the exact prior canonical state and release the SQLite write lock.
+## Exact restart point: Slice 31
+
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 31 branch.
+
+The next bounded subject is Contract evaluation 28: nested wakes and hidden write connections must be rejected without queued work or canonical mutation.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. use an external protected test harness process, not an organism subprocess capability
-3. initialize and enqueue one normal tick, then capture exact stable canonical and artifact state
-4. in the child process acquire `WakeTransaction`, claim the tick, create representative uncommitted wake/event/state changes, and exit without commit or connection cleanup
-5. require the parent to observe the child exit within a strict timeout
-6. require exact rollback of inbox claim, events, state, SQLite sequences, active database bytes, and checkpoint artifacts
-7. require the parent to acquire the released lock and complete the original tick normally
-8. add the narrow process-crash test before changing production code
-9. make a production correction only if the existing SQLite/transaction boundary violates the accepted contract
-10. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-11. run GitHub Actions through a pull request
+2. acquire one outer `WakeTransaction` through the normal fail-fast ownership boundary
+3. attempt a nested `WakeTransaction.acquire(...)` for the same organism and require typed `WakeBusyError`
+4. attempt a separate hidden write connection and require its `BEGIN IMMEDIATE` to fail while the outer wake owns the database
+5. require both rejection paths to consume zero organism clock reads, create no queued request, event, inbox row, sequence change, state change, or artifact
+6. roll back and close the outer transaction, then prove a normal wake can acquire ownership and process the original tick
+7. add the narrow protected tests before changing production code
+8. make a production correction only if the existing locking boundary violates the accepted contract
+9. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+10. run GitHub Actions through a pull request
 
-Do not add subprocess access to the organism, production crash hooks, generic fault injection, replay machinery, rollback artifact deletion, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Do not add reentrant wake support, queued wakes, hidden connection pools, subprocess access, generic concurrency machinery, retries, schema changes, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## End-of-work protocol
 
