@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–29 implemented and verified — Phase 1 incomplete**
+Status: **Slices 1–30 implemented and verified — Phase 1 incomplete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Partial coverage is labeled honestly and is not evidence that the full evaluation has passed.
 
@@ -27,12 +27,12 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 19. Savepoint removes partial mutation while preserving failure cost | `tests/test_action_failure_savepoint.py::test_classified_action_failure_rolls_back_partial_write_and_preserves_cost` |
 | 20. Budget exhaustion occurs before forbidden mutation | `tests/test_budget_exhaustion.py::test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints` and both cleanup-grace tests prove the executor is never entered after the normal-work deadline |
 | 21. Failure streak and maintenance threshold | Slices 5–12 protect justified zero, classified increments, successful reset, exact threshold entry, inspection, and explicit clear; rollback completion resets restored failure and maintenance state before wakeability |
-| 22. Atomic state/event commit | Genesis and lifecycle commits are protected; maintenance clear and pending repair are atomic; rollback intent commits status and `rollback_started` together; candidate transformation commits isolated lineage and restoration history together; active replacement transfers a validated body atomically; Slice 22 proves `sleeping` and `rollback_completed` commit or roll back together; Slice 27 proves cleanup-grace overrun rolls back all uncommitted lifecycle events, state, sequence, and inbox claim changes; Slice 29 proves no-input rejection rolls back tentative wake history |
+| 22. Atomic state/event commit | Genesis and lifecycle commits are protected; maintenance clear and pending repair are atomic; rollback intent commits status and `rollback_started` together; candidate transformation commits isolated lineage and restoration history together; active replacement transfers a validated body atomically; Slice 22 proves `sleeping` and `rollback_completed` commit or roll back together; Slice 27 proves cleanup-grace overrun rolls back all uncommitted lifecycle events, state, sequence, and inbox claim changes; Slice 29 proves no-input rejection rolls back tentative wake history; Slice 30 proves a real process exit restores exact prior canonical and artifact state |
 | 23. Sequence order is canonical | Canonical lifecycles and administrative events are sequence-asserted; Slice 24 proves exact order under decreasing wall timestamps; rollback preserves source history, appends `rollback_lineage_prepared` at source plus one, and appends `rollback_completed` at exactly the next sequence |
 | 24. Event update/delete rejected | `tests/test_initialization.py::test_event_history_rejects_update_and_delete` |
 | 25. JSONL export deterministic and non-canonical | `tests/test_event_export.py` proves stable-boundary validation, canonical byte-identical output, atomic publication, isolation, and preserved wakeability |
 | 26. Competing wake has one winner and one non-queued rejection | Wake and every write-owning rollback administrative boundary through completion have protected fail-fast competing-writer rejection |
-| 27. Crash before commit preserves prior state | Transaction/context rollback is covered; Slice 21 protects both sides of authority transfer; Slice 22 protects status/event rollback before completion commit; Slice 27 adds exact logical rollback after cleanup-capacity exhaustion; process-crash execution remains planned |
+| 27. Crash before commit preserves prior state | `tests/test_process_crash_rollback.py::test_process_exit_rolls_back_uncommitted_wake_and_releases_lock` uses a spawned external harness process to claim input and mutate event, sequence, garden, inventory, environment, inbox, and organism rows inside one uncommitted wake, exits through `os._exit`, then proves exact database/canonical/artifact rollback, released `BEGIN IMMEDIATE` ownership, and normal completion of the original tick |
 | 28. Nested wake is rejected | Planned |
 | 29. Stable genesis checkpoint before wakeable | Initialization and genesis checkpoint tests |
 | 30. Successful wake commits an exact pending boundary | Canonical wake fixture boundaries are asserted; Slice 22 additionally proves the first post-rollback new-lineage wake commits and stabilizes a new checkpoint |
@@ -46,6 +46,6 @@ This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected te
 | 40. No organism-writable external workspace | Canonical organism paths remain SQLite-only; exports, archives, and candidates are administrative artifacts never read or written by normal runtime |
 | 41. Administration is distinguishable | Sources are explicit. Rollback preparation and source-candidate construction create no event; rollback begin records `rollback_started`; transformation records `rollback_lineage_prepared`; replacement creates no event; completion records `rollback_completed` from `administration:rollback`; completed-history admission rejection creates no event |
 
-PR #45 GitHub Actions run 269 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **124 protected tests in 10.15 seconds**. No production correction was required.
+PR #46 GitHub Actions run 276 passed on Python 3.12 with clean editable installation, compileall, genesis CLI smoke, and **125 protected tests in 6.38 seconds**. No production correction was required; one test-only rollback-journal pathname overconstraint from run 275 was removed.
 
 Every future pull request must update this matrix when it adds or changes protected tests.
