@@ -42,7 +42,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–22 are merged. Slice 23 implements the accepted ADR 0007 admission guard on `agent/slice-23-single-rollback-guard`; pull-request verification is pending.
+Primary implementation stream. Slices 1–22 are merged. Slice 23 is implemented and verified in PR #38 on `agent/slice-23-single-rollback-guard`; it is ready for human review and merge.
 
 ### Issue #3 — prior work and provider review
 
@@ -191,16 +191,14 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-GitHub Actions on Python 3.12 for the final PR #36 head completed:
+GitHub Actions run 219 for PR #38 on Python 3.12 completed:
 
 - clean editable installation
 - source and test compilation
 - genesis CLI smoke test
-- **115 protected tests**
+- **117 protected tests passed in 6.31 seconds**
 
-The first Slice 22 run found one exception-classification failure. The lower-level archive drift detection was correct; the completion boundary was corrected to classify the cause as `RollbackCompletionRejectedError`. Subsequent implementation and final-continuity runs passed.
-
-Slice 23 adds two protected tests to that baseline. The exact pull-request CI result is pending and must be recorded before the branch is marked ready for review.
+No Slice 23 implementation correction was required. The guard and both new protected tests passed on the first pull-request run.
 
 The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
@@ -223,14 +221,14 @@ Do not weaken existing tests to make these easier.
 
 ## Exact next task
 
-Complete only the Slice 23 pull-request verification and review boundary.
+Review and merge PR #38 without extending its scope.
 
-1. open the Slice 23 pull request from `agent/slice-23-single-rollback-guard` to current `main`
-2. run the existing public-repository GitHub Actions workflow
-3. correct only failures inside the accepted single-completed-rollback admission boundary
-4. record the exact protected-test count and CI result in the Slice 23 note, test matrix, this handoff, and Issue #13
-5. leave the pull request ready for human review and merge
-6. after merge, reconstruct current `main`, open issues, and open pull requests before selecting Slice 24
+After merge:
+
+1. reconstruct current `main`
+2. inspect current open issues and pull requests
+3. confirm Issue #13 and continuity documents reflect the merged result
+4. select the next incomplete fixed Phase 1 evaluation as a separate Slice 24 branch
 
 Do not begin rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery while closing Slice 23.
 
@@ -242,8 +240,8 @@ At the next session:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify the Slice 23 pull-request and CI state against current `main`
-6. finish only the exact task above before choosing a later slice
+5. verify PR #38 and its final CI state against current `main`
+6. finish the exact review-and-merge task above before choosing a later slice
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply the early chat-rollover triggers rather than waiting for a hard conversation limit.
 
