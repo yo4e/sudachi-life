@@ -28,17 +28,20 @@ If an obviously benign repository task is repeatedly blocked, record only the mi
 
 Repository state is the continuity authority. A chat is a temporary working surface and must never be the only location of a decision, test result, failure, or restart instruction.
 
-Exact context-window usage is not visible or reliably inferable from character count. Therefore rollover uses structural triggers rather than a guessed token threshold.
+Exact context-window usage is not visible or reliably inferable from character count. Therefore rollover uses structural and reliability signals rather than a guessed token threshold or an automatic slice count.
 
-At the next clean boundary, recommend starting a new chat when any of these conditions is true:
+Two merged slices or pull requests are not, by themselves, a reason to end a clear and reliable working chat. In ordinary steady work, continue through multiple bounded slices while the assistant can still reconstruct decisions directly from current repository state, distinguish active branches and CI evidence, and respond without relying on compressed summaries.
 
-- two substantial slices or pull requests have been merged in the current chat
-- one slice required a long debugging trail or repeated CI repair
-- the current chat spans a major decision plus its implementation
-- responses begin relying on large summaries instead of direct repository reconstruction
-- the user or assistant notices omitted, confused, or stale context
+At each clean boundary after several substantial slices, reassess rollover. Recommend a new chat when one or more material context-risk signals are present:
 
-Do not continue beyond three substantial merged slices in one chat unless stopping would leave a branch, pull request, or canonical transition in an unsafe intermediate state. Finish or safely park that unit, update continuity documents, and then roll over.
+- the chat has accumulated roughly eight to twelve substantial merged slices or pull requests
+- one slice required a long debugging trail, repeated CI repair, or several abandoned implementation paths
+- the current chat spans a major decision plus enough implementation that the decision context is becoming difficult to inspect directly
+- responses begin relying on large summaries instead of fresh repository reconstruction
+- branch, pull-request, CI, or restart state becomes easy to confuse
+- the user or assistant notices omitted, stale, or contradictory context
+
+A long debugging trail may justify rolling over earlier, but only after the current unit is merged or safely parked. Conversely, a series of small, clean slices may continue beyond the review point when context remains precise. Do not deliberately approach the scale of a roughly twenty-slice chat that is likely to hit the conversation limit.
 
 Before recommending rollover:
 

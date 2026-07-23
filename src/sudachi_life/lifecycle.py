@@ -478,10 +478,13 @@ def perform_garden_wake(
         )
 
         if budget_exhaustion is not None:
-            finished = pre_action
+            finished = clock.read()
             ledger.finish_exhausted(
                 semantic_steps_used=12,
                 exhaustion=budget_exhaustion,
+                terminalization_elapsed_monotonic_ns=(
+                    finished.monotonic_ns - started.monotonic_ns
+                ),
             )
         else:
             finished = clock.read()

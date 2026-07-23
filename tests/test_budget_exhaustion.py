@@ -137,6 +137,7 @@ def _exhausted_wake_clock() -> FakeClock:
             ClockReading(301, 2_011_000_000),
             ClockReading(302, 2_020_000_000),
             ClockReading(303, 2_030_000_000),
+            ClockReading(304, 2_040_000_000),
         ]
     )
 
@@ -162,7 +163,7 @@ def test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints(
     )
     status = read_status(paths)
 
-    assert clock.read_count == 4
+    assert clock.read_count == 5
     assert result.decision.as_dict() == {
         "decision_type": "action",
         "action_id": "water_plot",
@@ -214,7 +215,7 @@ def test_lifecycle_budget_exhaustion_prevents_action_and_checkpoints(
         "external_mutable_writes": 0,
     }
     assert result.budget_ledger["canonical_records_used"] == 9
-    assert result.budget_ledger["elapsed_monotonic_ns"] == 2_001_000_000
+    assert result.budget_ledger["elapsed_monotonic_ns"] == 2_010_000_000
     assert result.budget_ledger["exhaustion"] == result.budget_exhaustion.as_dict()
 
     assert (status.lifecycle_number, status.status, status.consecutive_failures) == (

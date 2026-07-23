@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–26 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–27 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -34,7 +34,7 @@ Read `docs/AI_COLLABORATION_OPERATIONS.md`.
 
 SUDACHI's biological vocabulary describes local deterministic software and a synthetic garden, not wet-lab biology. Repository work must not evade product safeguards. State concrete benign software context when relevant, accept delayed or blocked requests, and never conceal material intent.
 
-Use structural chat rollover instead of guessed token counts. Prefer a new chat at the next clean boundary after two substantial merged slices, a long debugging trail, or one major decision plus implementation. Do not exceed three substantial merged slices in one chat unless required to leave the current unit safe and explicit.
+Conversation rollover is based on reliability signals, not an automatic count of two merged slices. Continue through multiple bounded slices while repository, branch, pull-request, and CI state remain directly reconstructable. Reassess after several substantial slices, normally around eight to twelve, or earlier after a long debugging trail, repeated CI repair, stale context, or state confusion. Do not deliberately approach a roughly twenty-slice conversation likely to hit the platform limit.
 
 Do not introduce a paid runner, larger or GPU runner, private-repository Actions usage, paid external service, or model/API call without explicit owner approval.
 
@@ -42,7 +42,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–26 are merged on `main`. The exact next implementation boundary is Slice 27 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–27 are merged on `main`. The exact next implementation boundary is Slice 28 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -214,6 +214,20 @@ See `docs/phase1/SLICE25_SEED_INDEPENDENCE.md`.
 
 See `docs/phase1/SLICE26_REPEATED_RUN_EQUIVALENCE.md`.
 
+### Slice 27 — protected cleanup-grace boundary
+
+- detects the exhausted normal-work budget before executor entry
+- preserves zero action attempts, zero environment mutations, zero retries, and zero caregiver or external effects after the 2000 ms deadline
+- adds one declared injected clock read after terminal events are prepared
+- records the complete terminalization elapsed time in the budget ledger
+- accepts typed terminalization at exactly 2250 ms
+- rejects 2250 ms plus one nanosecond with typed `BudgetExhaustedError`
+- prevents checkpoint work after cleanup-capacity exhaustion
+- rolls back every uncommitted lifecycle event, SQLite sequence increment, state change, and inbox claim on overrun
+- leaves the queued input unclaimed and unconsumed
+
+See `docs/phase1/SLICE27_CLEANUP_GRACE_BOUNDARY.md`.
+
 ## Accepted ADR 0007 retention boundary
 
 Phase 1 permits at most one completed rollback per organism.
@@ -230,22 +244,22 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-GitHub Actions run 241 for the Slice 26 test-first head on Python 3.12 completed:
+Slice 27 validation on Python 3.12 completed through the standard public-repository workflow:
 
-- clean editable installation
-- source and test compilation
-- genesis CLI smoke test
-- **120 protected tests passed in 6.75 seconds**
+- test-first run 247 failed as intended because the existing runtime did not read or enforce the terminalization boundary
+- production-and-test run 255 passed clean editable installation
+- source and test compilation passed
+- genesis CLI smoke passed
+- **122 protected tests passed in 7.02 seconds**
 
-No Slice 26 production correction was required. The existing implementation produced exact repeated-run canonical and artifact equivalence unchanged.
+Slice 27 required one production correction. `WakeBudgetLedger.finish_exhausted(...)` now validates the measured terminalization elapsed time against the already accepted 2250 ms upper boundary, and `perform_garden_wake(...)` supplies one explicit injected reading at that boundary.
 
-The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
+The temporary branch-only workflow used to apply the small source patch through connector limitations was deleted before standard validation. The repository workflow is restored byte-for-byte to the read-only public-repository standard with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
 ## Known incomplete Phase 1 work
 
 Major incomplete areas include:
 
-- cleanup-grace boundary coverage
 - altered insertion-order tie-breaking scenario
 - post-action duplicate-input replay scenario
 - process-crash-before-commit execution test
@@ -255,38 +269,38 @@ Major incomplete areas include:
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 27
+## Exact next task: Slice 28
 
 After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate branch.
 
-The next bounded subject is evaluation 7: cleanup grace cannot be used for additional organism work.
+The next bounded subject is evaluation 13: lexicographic action tie breaking must remain independent of physical row insertion order.
 
 Before implementation:
 
 1. confirm no newer repository decision or open pull request changes this ordering
-2. inspect `WakeBudgetLedger.detect_lifecycle_wall_time_exhaustion(...)` and `finish_exhausted(...)`
-3. define the exact boundary between the 2000 ms organism-work deadline and the protected 250 ms terminalization-only cleanup grace
-4. add the narrow protected test before changing production code
-5. prove no action attempt, environment mutation, retry, second decision, or caregiver call occurs after the organism-work deadline
-6. prove a typed budget-exhaustion outcome may be finalized only while elapsed time remains within cleanup grace
-7. prove exhaustion beyond cleanup grace cannot be misreported as a successfully classified organism lifecycle
+2. inspect seed-garden storage, sorted observation construction, and fixed-policy target selection
+3. construct a protected stable fixture in which both plots are executable watering targets but physical insertion order is `bed-b` before `bed-a`
+4. add the narrow complete-wake test before changing production code
+5. require the observation and decision to choose lexicographically smallest `bed-a`
+6. verify the exact transition, budget ledger, event order, lifecycle checkpoint boundary, final sleeping status, and later wakeability
+7. prove rowid, insertion order, dictionary order, timestamp, and seed are not tie breakers
 8. make a production correction only if the existing implementation violates the accepted contract
-9. update the Slice 27 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+9. update the Slice 28 note, matrix, this handoff, `AGENTS.md`, and Issue #13
 10. run GitHub Actions through a pull request
 
-Do not begin generic replay or random-number machinery, rollback-artifact deletion, pruning, schema changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Do not begin generic replay or random-number machinery, rollback-artifact deletion, pruning, schema or contract changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## Restart protocol
 
-At the next session:
+At the next session or clean reconstruction point:
 
 1. read `AGENTS.md`
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #42 is merged on current `main`, or reconcile newer repository truth
-6. begin only from the exact Slice 27 boundary above
+5. verify PR #43 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 28 boundary above
 
-At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply the early chat-rollover triggers rather than waiting for a hard conversation limit.
+At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
 
 No critical decision may remain only in chat history.
