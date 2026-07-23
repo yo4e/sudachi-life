@@ -2,7 +2,7 @@
 
 Updated: **2026-07-23**
 
-This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–27 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This file is the operational restart point for current `main`, which contains Phase 1 Slices 1–28 and accepted ADR 0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -42,7 +42,7 @@ Do not introduce a paid runner, larger or GPU runner, private-repository Actions
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Primary implementation stream. Slices 1–27 are merged on `main`. The exact next implementation boundary is Slice 28 after a fresh repository and GitHub-state reconstruction.
+Primary implementation stream. Slices 1–28 are merged on `main`. The exact next implementation boundary is Slice 29 after a fresh repository and GitHub-state reconstruction.
 
 ### Issue #3 — prior work and provider review
 
@@ -146,7 +146,7 @@ See `docs/phase1/SLICE21_ACTIVE_DATABASE_REPLACEMENT.md`.
 
 - `complete_rollback(...)`
 - `sudachi rollback complete <organism_id> --candidate-id <ID>`
-- fail-fast ownership of the replaced active body
+- fail-fast ownership of the replaced body
 - complete provenance-chain revalidation before clock use
 - one injected administrative clock read only after validation
 - atomic `rollback_in_progress -> sleeping` plus one exact `rollback_completed`
@@ -228,6 +228,20 @@ See `docs/phase1/SLICE26_REPEATED_RUN_EQUIVALENCE.md`.
 
 See `docs/phase1/SLICE27_CLEANUP_GRACE_BOUNDARY.md`.
 
+### Slice 28 — insertion-order-independent tie breaking
+
+- stabilizes a protected fixture whose physical rowid order is `bed-b`, then `bed-a`
+- makes both plots executable watering targets
+- requires canonical observation and applicable-target order `bed-a`, `bed-b`
+- requires fixed-policy selection of lexicographically smallest `bed-a`
+- verifies one exact successful mutation, concrete budgets, event order, checkpoint boundary 16, stabilization event 17, and final sleep
+- preserves the reversed physical row order after action
+- preserves the declared seed as audit input without using it as a tie breaker
+- accepts a later distinct input
+- adds protected coverage only; no production behavior changes
+
+See `docs/phase1/SLICE28_INSERTION_ORDER_TIE_BREAKING.md`.
+
 ## Accepted ADR 0007 retention boundary
 
 Phase 1 permits at most one completed rollback per organism.
@@ -244,24 +258,23 @@ There is no rollback-artifact deletion or pruning in Phase 1. A second rollback 
 
 ## Validation state
 
-Slice 27 validation on Python 3.12 completed through the standard public-repository workflow:
+Slice 28 GitHub Actions run 263 on Python 3.12 completed twice on the exact test-first head:
 
-- test-first run 247 failed as intended because the existing runtime did not read or enforce the terminalization boundary
-- production-and-test run 255 passed clean editable installation
+- initial attempt: **123 protected tests passed in 99.70 seconds**
+- exact rerun: **123 protected tests passed in 6.92 seconds**
+- clean editable installation passed
 - source and test compilation passed
 - genesis CLI smoke passed
-- **122 protected tests passed in 7.02 seconds**
 
-Slice 27 required one production correction. `WakeBudgetLedger.finish_exhausted(...)` now validates the measured terminalization elapsed time against the already accepted 2250 ms upper boundary, and `perform_garden_wake(...)` supplies one explicit injected reading at that boundary.
+The slow initial attempt did not reproduce on the exact rerun and is treated as transient runner latency. No Slice 28 production correction was required.
 
-The temporary branch-only workflow used to apply the small source patch through connector limitations was deleted before standard validation. The repository workflow is restored byte-for-byte to the read-only public-repository standard with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
+The workflow remains the public-repository standard `ubuntu-latest` runner with a ten-minute timeout and seven-day small pytest-log artifact. No paid runner or expanded artifact retention is enabled.
 
 ## Known incomplete Phase 1 work
 
 Major incomplete areas include:
 
-- altered insertion-order tie-breaking scenario
-- post-action duplicate-input replay scenario
+- complete post-action duplicate-input replay scenario
 - process-crash-before-commit execution test
 - nested-wake rejection
 - explicit second-wake rejection while a prior checkpoint is pending
@@ -269,26 +282,27 @@ Major incomplete areas include:
 
 Do not weaken existing tests to make these easier.
 
-## Exact next task: Slice 28
+## Exact next task: Slice 29
 
 After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate branch.
 
-The next bounded subject is evaluation 13: lexicographic action tie breaking must remain independent of physical row insertion order.
+The next bounded subject is evaluation 16: replaying a consumed external tick identifier after its successful action must never produce another action.
 
 Before implementation:
 
 1. confirm no newer repository decision or open pull request changes this ordering
-2. inspect seed-garden storage, sorted observation construction, and fixed-policy target selection
-3. construct a protected stable fixture in which both plots are executable watering targets but physical insertion order is `bed-b` before `bed-a`
-4. add the narrow complete-wake test before changing production code
-5. require the observation and decision to choose lexicographically smallest `bed-a`
-6. verify the exact transition, budget ledger, event order, lifecycle checkpoint boundary, final sleeping status, and later wakeability
-7. prove rowid, insertion order, dictionary order, timestamp, and seed are not tie breakers
-8. make a production correction only if the existing implementation violates the accepted contract
-9. update the Slice 28 note, matrix, this handoff, `AGENTS.md`, and Issue #13
-10. run GitHub Actions through a pull request
+2. run and stabilize one complete successful action for a declared external event identifier
+3. capture exact canonical state, event history, inbox row, SQLite sequence state, checkpoint registry, and immutable checkpoint artifacts
+4. replay the same consumed external identifier through `enqueue_garden_tick(...)` with a fake clock that has no readings
+5. require `inserted=False`, the original inbox identity and received timestamp, zero clock reads, no new event, no new inbox row, and no canonical or artifact change
+6. prove no claimable duplicate input, second lifecycle, or second action can result from the replay
+7. prove a later distinct event identifier remains accepted and processable
+8. add the protected scenario before changing production code
+9. make a production correction only if the existing implementation violates the accepted contract
+10. update the Slice 29 note, matrix, this handoff, `AGENTS.md`, and Issue #13
+11. run GitHub Actions through a pull request
 
-Do not begin generic replay or random-number machinery, rollback-artifact deletion, pruning, schema or contract changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery.
+Do not begin generic replay machinery, rollback-artifact deletion, pruning, schema or contract changes, repeated rollback support, JSONL import, caregiver integration, learning, memory, skills, or generic recovery machinery.
 
 ## Restart protocol
 
@@ -298,8 +312,8 @@ At the next session or clean reconstruction point:
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
 4. inspect current open issues and pull requests
-5. verify PR #43 is merged on current `main`, or reconcile newer repository truth
-6. begin only from the exact Slice 28 boundary above
+5. verify PR #44 is merged on current `main`, or reconcile newer repository truth
+6. begin only from the exact Slice 29 boundary above
 
 At the end of substantial work, leave updated continuity documents, protected-test mapping, Issue status, CI results, exact unfinished work, and one precise next action. Apply calibrated rollover guidance instead of an automatic two-slice cutoff.
 
