@@ -60,15 +60,15 @@ Do not hide a new architecture inside implementation code. If implementation rev
 
 SUDACHI's organism, metabolism, body, lineage, growth, and caregiver vocabulary describes deterministic local software. Phase 1 uses Python, SQLite, immutable artifacts, and a synthetic garden only. It has no wet-lab biology, pathogens, genetic engineering, medical intervention, weapons work, offensive cybersecurity, third-party system access, network activity, or subprocess execution.
 
-Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Accept delayed, blocked, or refused requests. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and early chat rollover.
+Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Accept delayed, blocked, or refused requests. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and conversation rollover.
 
-A chat is temporary. At a clean boundary, prefer rollover after two substantial merged slices or pull requests, one long debugging trail, or one major decision plus implementation. Do not exceed three substantial merged slices in one chat unless needed to leave the current unit safe and explicit.
+Two merged slices are not an automatic rollover trigger. Continue through multiple bounded slices while repository and CI state remain directly reconstructable. Reassess after several substantial slices, normally around eight to twelve, or earlier when a long debugging trail, repeated CI repair, stale context, or branch-state confusion creates a material reliability risk. Do not deliberately approach a roughly twenty-slice conversation limit.
 
 ## Current work streams
 
 ### Issue #13 — Phase 1 implementation
 
-Primary implementation stream. Current `main` includes Slices 1–26:
+Primary implementation stream. Current `main` includes Slices 1–27:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -96,10 +96,11 @@ Primary implementation stream. Current `main` includes Slices 1–26:
 24. complete first-wake event ordering under backward wall time
 25. complete first-wake behavior independence from different declared seeds
 26. exact repeated-run canonical and artifact equivalence for identical declared inputs
+27. protected cleanup-grace terminalization boundary and overrun rollback
 
 ADR 0007 is accepted: Phase 1 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-GitHub Actions run 241 for the Slice 26 test-first head passed clean install, compileall, genesis CLI smoke, and **120 protected tests in 6.75 seconds** on Python 3.12. No production correction was required.
+GitHub Actions run 255 for the complete Slice 27 production-and-test head passed clean install, compileall, genesis CLI smoke, and **122 protected tests in 7.02 seconds** on Python 3.12. Slice 27 required one production correction: an explicit exhaustion-terminalization clock reading and enforcement of the accepted 2250 ms cleanup limit.
 
 Phase 1 remains incomplete.
 
@@ -188,28 +189,33 @@ Slice 25 closes Contract evaluation 4 without production changes. Two independen
 
 Slice 26 closes Contract evaluation 1 without production changes. Two independent runtime roots receive identical organism identity, versions, genesis time, external tick, seed, and fake-clock readings. Without normalizing any field, they produce identical `WakeResult`, status, schema, canonical rows, SQLite sequence state, active database SHA-256, checkpoint identifiers, manifests, checkpoint database digests, complete checkpoint-store file sets and digests, final sleeping state, and acceptance of the same next tick.
 
-## Exact restart point: Slice 27
+## Protected cleanup-grace boundary
 
-After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 27 branch.
+Slice 27 closes Contract evaluation 7. Normal work detected at 2001 ms stops before executor entry with zero action, mutation, retry, caregiver, or external effects. One explicit injected reading measures terminalization completion. Exactly 2250 ms is accepted and recorded in the budget ledger; 2250 ms plus one nanosecond raises `BudgetExhaustedError`, performs no checkpoint work, and rolls back every uncommitted event, sequence, state, and inbox-claim change.
 
-The next bounded subject is Contract evaluation 7: protected cleanup grace cannot be used for additional organism work.
+## Exact restart point: Slice 28
+
+After reconstructing current `main`, Issue #13, and open pull requests, implement only the next incomplete fixed Phase 1 evaluation as a separate Slice 28 branch.
+
+The next bounded subject is Contract evaluation 13: lexicographic action tie breaking must remain independent of physical row insertion order.
 
 Required selection discipline:
 
 1. confirm no newer repository decision or open pull request changes the ordering
-2. inspect the existing lifecycle deadline and cleanup-grace accounting in `WakeBudgetLedger`
-3. define the exact protected boundary between action time, typed terminalization inside cleanup grace, and exhaustion of cleanup capacity
-4. add the narrow protected test before changing production code
-5. prove no action attempt, environment mutation, retry, second decision, or caregiver call can occur after the 2000 ms organism-work deadline
-6. make a production correction only if the existing implementation violates the accepted contract
-7. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
-8. run GitHub Actions through a pull request
+2. inspect seed-garden storage, sorted observation construction, and fixed-policy target selection
+3. build a protected stable fixture in which both plots are executable watering targets but physical insertion order is `bed-b` before `bed-a`
+4. add the narrow complete-wake test before changing production code
+5. require the observation and decision to choose lexicographically smallest `bed-a`, then verify the exact transition, budget ledger, event order, checkpoint boundary, and sleeping wakeability
+6. prove no rowid, insertion order, dictionary order, timestamp, or seed becomes a tie breaker
+7. make a production correction only if the existing implementation violates the accepted contract
+8. update `docs/phase1/`, `docs/PHASE1_TEST_MATRIX.md`, `docs/HANDOFF.md`, and Issue #13
+9. run GitHub Actions through a pull request
 
 Do not begin:
 
 - generic replay or random-number machinery
 - rollback artifact deletion or pruning
-- schema or contract changes
+- schema, contract, action, evaluator, or environment-version changes
 - repeated rollback support within one organism
 - JSONL import
 - caregiver consultation
@@ -227,6 +233,6 @@ Before ending substantial work:
 - report failures, skipped checks, and incomplete work
 - ensure no critical decision exists only in chat or model memory
 - preserve the repository language policy
-- apply the rollover triggers in `docs/AI_COLLABORATION_OPERATIONS.md`
+- apply the calibrated rollover guidance in `docs/AI_COLLABORATION_OPERATIONS.md`
 
 Repository prose, code, issues, ADRs, and tests are written in English. The intentional Japanese lines in `README.md` remain the only standing exception.
