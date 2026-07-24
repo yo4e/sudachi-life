@@ -9,8 +9,9 @@ import sqlite3
 
 from .authority import ADMINISTRATION, classify_authority_source
 from .clock import Clock, RealClock
-from .errors import SudachiError, OrganismNotFoundError
+from .errors import SchemaValidationError, SudachiError, OrganismNotFoundError
 from .paths import OrganismPaths
+from .runtime_storage import ensure_active_database_within_limit
 from .storage import connect_database, validate_canonical_state
 
 GARDEN_TICK_EVENT_TYPE = "synthetic:garden_tick"
@@ -104,6 +105,16 @@ def _append_enqueue_event(
     )
 
 
+def _ensure_enqueue_storage(connection: sqlite3.Connection, *, context: str) -> None:
+    try:
+        ensure_active_database_within_limit(connection, context=context)
+    except SchemaValidationError as exc:
+        raise InputRejectedError(
+            "active database storage limit blocks input enqueue; use the audited rollback "
+            "path to a verified stable checkpoint or quarantine the organism"
+        ) from exc
+
+
 def enqueue_garden_tick(
     paths: OrganismPaths,
     external_event_id: str,
@@ -160,6 +171,7 @@ def enqueue_garden_tick(
                 received_wall_time_utc_us=existing["received_wall_time_utc_us"],
             )
 
+        _ensure_enqueue_storage(connection, context="input enqueue preflight")
         reading = (clock or RealClock()).read()
         cursor = connection.execute(
             """
@@ -185,6 +197,7 @@ def enqueue_garden_tick(
             external_event_id=external_event_id,
             inbox_id=inbox_id,
         )
+        _ensure_enqueue_storage(connection, context="input enqueue")
         connection.commit()
         return EnqueueResult(
             external_event_id=external_event_id,

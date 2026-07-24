@@ -2,7 +2,7 @@
 
 Updated: **2026-07-24**
 
-This is the operational restart point for repository state containing Phase 1 Slices 1–35 and accepted ADRs 0001–0007. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
+This is the operational restart point for repository state containing Phase 1 Slices 1–35, accepted ADRs 0001–0007, and the independent Phase 1 completion-audit repair work in PR #57. Read `AGENTS.md` first, then the normative contract and ADRs before changing implementation.
 
 ## Project thesis
 
@@ -38,7 +38,11 @@ Repository and GitHub state outrank conversation memory. Do not introduce a paid
 
 ### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-**Completed and closed.** Slices 1–35 implement all 41 fixed Minimal Organism Contract v0.2 evaluations. PR #54 is merged on `main`. Reopen Issue #13 only for a demonstrated Phase 1 regression, not to add Phase 2 features.
+Issue #13 was reopened only because the independent completion audit in Issue #56 demonstrated six Phase 1 regressions. PR #57 is the bounded repair stream. Do not use the reopened issue to add Phase 2 behavior.
+
+### Issue #56 — independent Phase 1 completion audit
+
+The first read-only audit at baseline commit `54b2be47107cd9fbad3301812d23ab90f7ea9c4e` confirmed the original 142-test baseline and found six cross-boundary failures. After PR #57 is documentation-complete and green, the exact next external task is a read-only Codex re-audit of the latest PR head. Phase 1 is not re-frozen until that re-audit concludes that the specified repairs are sufficient.
 
 ### Issue #3 — prior work and provider review
 
@@ -96,13 +100,26 @@ See `docs/phase1/SLICE34_PROTECTED_AUTHORITY.md`.
 
 See `docs/phase1/SLICE35_AUTHORITY_PROVENANCE.md`.
 
+## Independent completion-audit repairs — PR #57
+
+PR #57 repairs the six findings from Issue #56 without changing Contract v0.2 or adding Phase 2 capability:
+
+1. required protected table and trigger definitions, singleton cardinality, seed layout, action registry, and budget configuration are validated before active-state or checkpoint acceptance; unexpected mutating schema objects fail closed
+2. one valid published pending checkpoint can be registered for genesis, ordinary lifecycle, or maintenance-bound failure-threshold state
+3. normal registration and repaired registration share one retention policy that restores the protected limit even from an already-over-limit registry
+4. administrative enqueue checks the active SQLite allocation before and after its writes and rolls the transaction back before crossing the protected limit
+5. post-commit retention artifact cleanup failure records explicit maintenance and is recoverable through bounded reconciliation
+6. ordinary checkpoint creation and repair use one no-symlink working-set accountant covering the active database, SQLite sidecars, checkpoint store and staging, rollback archives, and restore candidates
+
+Eight adversarial tests protect these intersections. See `docs/phase1/PHASE1_INDEPENDENT_AUDIT_REPAIRS.md`.
+
 ## Accepted ADR 0007 retention boundary
 
 Phase 1 permits at most one completed rollback per organism. The complete pre-rollback archive and candidate evidence set remains immutable and retained. There is no rollback-artifact deletion or pruning in Phase 1.
 
 ## Phase 1 completion review
 
-The roadmap exit criteria are satisfied:
+The roadmap exit criteria remain satisfied:
 
 - the canonical three-wake garden run waters, harvests, and abstains reproducibly
 - all 41 fixed evaluations have complete protected coverage
@@ -115,34 +132,33 @@ This establishes trustworthy metabolism only. It does not demonstrate learning, 
 
 ## Validation state
 
-PR #54 is squash-merged as commit `1f46ea5817414dbaa11b5ac65039477bcaf10a42` and closes evaluation 41 and the fixed Phase 1 matrix.
+The original completion baseline remains:
 
-GitHub Actions run 313 failed four existing exact CLI JSON assertions because Slice 35 intentionally added authority provenance fields. All other protected tests passed. The four assertions were strengthened rather than weakened.
+- PR #54 squash-merged as `1f46ea5817414dbaa11b5ac65039477bcaf10a42`
+- GitHub Actions run 317: **142 protected tests in 7.25 seconds**
+- GitHub Actions run 323: **142 protected tests in 7.95 seconds**
 
-GitHub Actions run 317 passed the implementation head with **142 protected tests in 7.25 seconds**.
+Independent audit repair validation on PR #57:
 
-GitHub Actions run 323 passed the complete synchronized documentation head on Python 3.12 with:
+- run 332 compiled successfully and produced **144 passed / 5 failed**, exposing integration mismatches without weakening existing tests
+- run 333 passed **149 tests in 9.97 seconds**
+- run 334 passed 149 and failed one safe abort-guard classification test
+- run 335 passed clean editable installation, source/test compilation, genesis CLI smoke, and **150 tests in 8.74 seconds** at head `4bb632a226dd8891fbd71aec345b1298777e3614`
 
-- clean editable installation
-- source and test compilation
-- genesis CLI smoke
-- **142 protected tests in 7.95 seconds**
+PR #57 remains a draft until documentation is synchronized and Codex performs the requested read-only re-audit. Issue #13 remains open for this repair only.
 
-Issue #13 is closed as completed. No Phase 1 implementation work remains known.
+## Exact next gate — independent re-audit before Phase 2
 
-## Exact next gate — no automatic Phase 2 implementation
+There is no authorized Slice 36 and no authorized Phase 2 implementation.
 
-There is no authorized Slice 36.
-
-After reconstructing current `main`, Issue #13, and open pull requests:
-
-1. verify PR #54 is merged and Issue #13 is closed as completed
-2. verify `docs/PHASE1_TEST_MATRIX.md` still reports all 41 evaluations complete
-3. preserve the 142-test Phase 1 baseline as a regression suite
-4. review Issue #3 and current research documents
-5. decide through an explicit reviewed issue or ADR whether Phase 2 caregiver-neutral consultation plumbing should begin
-6. define Phase 2 schemas, budgets, provenance, adoption boundaries, and comparison conditions before implementation
-7. keep the Phase 1 caregiver budget at zero and preserve the no-caregiver baseline
+1. keep PR #57 green and documentation-complete
+2. ask Codex to re-audit the latest PR #57 head against all six Issue #56 findings
+3. require finding-by-finding evidence and a final conclusion in Issue #56
+4. repair any verified remaining Phase 1 defect without changing the contract or adding Phase 2 behavior
+5. merge PR #57 only after the re-audit is satisfactory
+6. close Issue #13 and re-freeze the 150-test Phase 1 baseline
+7. only then review Issue #3 and decide through an explicit reviewed issue or ADR whether Phase 2 caregiver-neutral consultation plumbing should begin
+8. keep the Phase 1 caregiver budget at zero and preserve the no-caregiver baseline
 
 Do not begin a human caregiver, model caregiver, live API integration, learning, memory, skill adoption, or generic agent framework without that reviewed Phase 2 scope decision.
 
@@ -153,8 +169,10 @@ At the next session or clean reconstruction point:
 1. read `AGENTS.md`
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
 3. read this handoff and normative documents in order
-4. inspect current open issues and pull requests
-5. verify PR #54 merge, Issue #13 closure, and the final Phase 1 CI evidence
-6. stop at the Phase 2 decision gate unless a newer reviewed repository decision authorizes implementation
+4. inspect Issues #13 and #56 and PR #57
+5. verify the latest PR #57 head and CI evidence rather than relying on chat history
+6. stop at the independent re-audit gate until Issue #56 contains the new conclusion
+7. after merge, verify the final `main` commit and CI before closing Issue #13
+8. stop at the Phase 2 decision gate unless a newer reviewed repository decision authorizes implementation
 
 No critical decision may remain only in chat history.
