@@ -1,36 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-import sqlite3
 
 import pytest
 
-from sudachi_life.checkpoint_repair import (
-    PendingCheckpointRepairRejectedError,
-    repair_pending_checkpoint_registration,
-)
-from sudachi_life.checkpoints import (
-    reconcile_checkpoint_retention_staging,
-    validate_checkpoint_directory,
-)
+from sudachi_life.checkpoint_repair import repair_pending_checkpoint_registration
+from sudachi_life.checkpoints import reconcile_checkpoint_retention_staging
 from sudachi_life.clock import ClockReading, FakeClock
-from sudachi_life.constants import (
-    MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED,
-    MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT,
-)
-from sudachi_life.errors import CheckpointError, SchemaValidationError
+from sudachi_life.constants import MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED
+from sudachi_life.errors import CheckpointError
 from sudachi_life.inbox import InputRejectedError, enqueue_garden_tick
-from sudachi_life.lifecycle import perform_garden_wake
 from sudachi_life.paths import OrganismPaths
-from sudachi_life.runtime_storage import runtime_working_set_bytes
-from sudachi_life.storage import connect_database, initialize_database, read_status
+from sudachi_life.storage import connect_database, read_status
 
-from phase1_audit_helpers import (
-    _checkpoint_boundaries,
-    _enqueue_and_wake,
-    _publish_pending_snapshot,
-    _wake_clock,
-)
+from phase1_audit_helpers import _checkpoint_boundaries, _enqueue_and_wake
 
 
 def test_repaired_checkpoint_runs_the_same_retention_policy(initialized) -> None:
@@ -105,18 +88,26 @@ def test_enqueue_rolls_back_before_crossing_active_database_limit(
         connection.close()
 
 
-def test_post_commit_retention_cleanup_is_explicit_and_reconcilable(initialized) -> None:
+def test_post_commit_retention_cleanup_is_explicit_and_reconcilable(
+    initialized,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     runtime_root, initial, _ = initialized
     paths = OrganismPaths.build(runtime_root, initial.organism_id)
     for index in range(1, 4):
         _enqueue_and_wake(runtime_root, initial.organism_id, index)
 
-    fourth = _enqueue_and_wake(
-        runtime_root,
-        initial.organism_id,
-        4,
-        cleanup_failure=True,
-    )
+    import sudachi_life.checkpoint_retention_prune as retention_prune
+
+    original_rmtree = retention_prune.shutil.rmtree
+
+    def fail_pruning_cleanup(path, *args, **kwargs):
+        if Path(path).name.startswith(".pruning-"):
+            raise OSError("protected post-commit cleanup failure")
+        return original_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(retention_prune.shutil, "rmtree", fail_pruning_cleanup)
+    fourth = _enqueue_and_wake(runtime_root, initial.organism_id, 4)
     assert fourth.status == "maintenance_required"
     status = read_status(paths)
     assert status.maintenance_reason == MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED
@@ -128,6 +119,7 @@ def test_post_commit_retention_cleanup_is_explicit_and_reconcilable(initialized)
     assert len(staging) == 1
     assert len(_checkpoint_boundaries(paths)) == 4
 
+    monkeypatch.setattr(retention_prune.shutil, "rmtree", original_rmtree)
     result = reconcile_checkpoint_retention_staging(
         runtime_root,
         initial.organism_id,

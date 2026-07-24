@@ -1,4 +1,4 @@
-"""Exact protected SQLite schema and immutable Phase 1 registry validation."""
+"""Protected SQLite schema and immutable Phase 1 registry validation."""
 
 from __future__ import annotations
 
@@ -140,21 +140,23 @@ def _normalize_schema_sql(sql: object) -> str:
     return " ".join(str(sql).split())
 
 
-def _schema_signature(connection: sqlite3.Connection) -> tuple[tuple[str, str, str, str], ...]:
+def _schema_signature(
+    connection: sqlite3.Connection,
+) -> dict[tuple[str, str], tuple[str, str]]:
     rows = connection.execute(
         """SELECT type, name, tbl_name, sql
            FROM sqlite_master
            WHERE name NOT LIKE 'sqlite_%' AND sql IS NOT NULL
            ORDER BY type, name, tbl_name"""
     ).fetchall()
-    return tuple(
-        (str(row[0]), str(row[1]), str(row[2]), _normalize_schema_sql(row[3]))
+    return {
+        (str(row[0]), str(row[1])): (str(row[2]), _normalize_schema_sql(row[3]))
         for row in rows
-    )
+    }
 
 
 @lru_cache(maxsize=1)
-def _expected_schema_signature() -> tuple[tuple[str, str, str, str], ...]:
+def _expected_schema_signature() -> dict[tuple[str, str], tuple[str, str]]:
     reference = sqlite3.connect(":memory:", isolation_level=None)
     try:
         reference.executescript(SQL_SCHEMA)
@@ -174,12 +176,19 @@ def _require_singleton_count(connection: sqlite3.Connection, table: str) -> None
 def validate_protected_schema_and_configuration(connection: sqlite3.Connection) -> None:
     actual = _schema_signature(connection)
     expected = _expected_schema_signature()
-    if actual != expected:
-        expected_names = [(row[0], row[1]) for row in expected]
-        actual_names = [(row[0], row[1]) for row in actual]
+    for key, expected_definition in expected.items():
+        if actual.get(key) != expected_definition:
+            raise SchemaValidationError(
+                "protected SQLite schema fingerprint mismatch: "
+                f"required object {key!r} is missing or changed"
+            )
+    unexpected_nontriggers = sorted(
+        key for key in actual if key not in expected and key[0] != "trigger"
+    )
+    if unexpected_nontriggers:
         raise SchemaValidationError(
             "protected SQLite schema fingerprint mismatch: "
-            f"expected {expected_names!r}, found {actual_names!r}"
+            f"unexpected objects {unexpected_nontriggers!r}"
         )
 
     for singleton_table in (

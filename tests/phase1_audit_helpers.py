@@ -44,7 +44,6 @@ def _enqueue_and_wake(
     index: int,
     *,
     timeout_checkpoint: bool = False,
-    cleanup_failure: bool = False,
 ):
     paths = OrganismPaths.build(runtime_root, organism_id)
     base = 300 + index * 100
@@ -58,7 +57,6 @@ def _enqueue_and_wake(
         organism_id,
         seed=index,
         clock=_wake_clock(base, timeout_checkpoint=timeout_checkpoint),
-        protected_test_retention_cleanup_failure_after_commit=cleanup_failure,
     )
 
 
