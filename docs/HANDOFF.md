@@ -2,7 +2,9 @@
 
 Updated: **2026-07-25**
 
-This is the operational restart point for Phase 1 SUDACHI-0, accepted ADRs 0001–0007, and the independent completion-audit repair stream in draft PR #57. Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, this handoff, the Minimal Organism Contract, the ADRs, and current open Issues/PRs before changing implementation.
+This is the operational restart point after Phase 1 SUDACHI-0, Slices 1–35, and the independent completion-audit repairs. The next authorized work is review of the Phase 2.0 Consultation Boundary in Issue #59. There is no authorized Slice 36 or Phase 2 implementation.
+
+Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, this handoff, Minimal Organism Contract v0.2, ADRs 0001–0007, the protected test matrix, and current open Issues before changing implementation.
 
 ## Project thesis
 
@@ -24,43 +26,70 @@ Use this precedence:
 2. ADRs 0001–0007 in `docs/decisions/`
 3. protected Phase 1 tests and `docs/PHASE1_TEST_MATRIX.md`
 
-Phase 1 has one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, deterministic `seed-garden-v1`, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable checkpoints, bounded retention, rollback lineage rules, explicit authority provenance, no organism-writable external workspace, and action-scoped SQL authority.
+Phase 1 has one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, deterministic `seed-garden-v1`, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable checkpoints, bounded retention, rollback lineage, explicit authority provenance, no organism-writable external workspace, and action-scoped SQL authority.
 
 Phase 1 has no caregiver, model adapter, chat interface, network access, organism subprocess access, arbitrary generated code, learning, memory, skills, continuous execution, or generic autonomous loop.
+
+The Phase 1 body and trusted kernel are frozen by default. Phase 2 must be an explicitly reviewed and versioned extension, not a silent reinterpretation of Contract v0.2 or its tests.
 
 Repository and GitHub state outrank conversation memory. Do not introduce paid infrastructure, external services, or model/API calls without explicit owner approval.
 
 ## Current work streams
 
-### Issue #13 — Phase 1 regression repair only
+### Issue #13 — Phase 1 SUDACHI-0 metabolism
 
-Issue #13 was reopened only because the independent completion audit in Issue #56 demonstrated Phase 1 regressions. PR #57 is the bounded repair stream. Do not use the reopened issue to add Phase 2 behavior.
+**Completed and closed.** PR #57 repaired the six cross-boundary regressions found by Issue #56 and was squash-merged into `main` as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
+
+Reopen Issue #13 only for a demonstrated Phase 1 regression. Do not use it for Phase 2 scope or implementation.
 
 ### Issue #56 — independent completion audit
 
 The first read-only audit at baseline commit `54b2be47107cd9fbad3301812d23ab90f7ea9c4e` confirmed the original 142-test baseline and found six cross-boundary failures.
 
-Codex re-audited PR #57 head `2ec29f896059ca5e476c20b6f1b05309f7d194ba`:
+The first Codex re-audit classified findings 1, 2, 3, and 6 as resolved. Findings 4 and 5 remained partial:
 
-- findings 1, 2, 3, and 6 were resolved
-- finding 4 remained partial because enqueue could leave the active database exactly at 8 MiB with no room for the next wake
-- finding 5 remained partial because interruption after staging deletion could lose the completion audit event
-- final conclusion remained: Phase 1 requires specified repairs before Phase 2
+- enqueue could leave the active database exactly at 8 MiB with no room for the next wake
+- interruption after retention-staging deletion could lose the completion audit event
 
-PR #57 now contains two additional bounded repairs:
+PR #57 added the requested residual repairs:
 
-- enqueue preserves a 1 MiB implementation reserve inside the accepted 8 MiB active-database ceiling for one complete bounded wake
-- retention cleanup reconciliation uses a durable pending audit before deletion and an idempotent completion audit after deletion; retry after interruption requires no new clock read
+- a 1 MiB implementation reserve inside the accepted 8 MiB active-database ceiling, protected before and after enqueue writes
+- a durable pending retention-reconciliation audit before deletion and an idempotent linked completion audit after deletion
+- two adversarial regression tests for the residual boundaries
 
-Two new adversarial tests protect these boundaries. GitHub Actions run 340 passed **152 tests in 10.32 seconds**, source/test compilation, and genesis CLI smoke at head `b8ce12843d9692e50e770735d00f4b5379425eca`.
+The final read-only Codex re-audit is deferred because the available Codex usage allocation is exhausted. This is not a satisfactory audit conclusion.
 
-A second read-only Codex re-audit of the final documentation-synchronized PR head is required before merge.
+The exact state is:
+
+> **repairs implemented, CI verified, final independent re-audit pending**
+
+Issue #56 remains open as the durable queue for that later audit. When Codex availability returns, it must reproduce findings 4 and 5 against the merged code, confirm findings 1, 2, 3, and 6 remain closed, and review the Phase 2 Consultation Boundary for any bypass of Phase 1 authority, transaction, evaluation, budget, provenance, or checkpoint controls.
+
+### Issue #59 — Phase 2.0 Consultation Boundary
+
+**Open for review. No implementation is authorized by opening it.**
+
+Issue #59 proposes the source-neutral boundary for deterministic fixture consultation. It requires:
+
+- the Phase 1 body and trusted kernel to remain frozen by default
+- consultation dispatch and caregiver latency outside the wake transaction
+- caregiver responses as typed proposals, never commands
+- later-wake dispositions: `accepted`, `rejected`, `deferred`, or `clarification_requested`
+- independent evaluation before a proposal may affect an action or persistent capability
+- no caregiver database handle or direct canonical mutation authority
+- versioned request, response, and proposal schemas
+- exact authority, provenance, concrete budgets, expiry, and cost ledger
+- frozen Phase 1 and Phase 2 zero-caregiver comparison conditions
+- explicit initialization and migration policy
+- a deterministic fixture before any live human or model caregiver
+
+The unresolved questions in Issue #59 must be reviewed before an ADR or implementation issue is accepted.
 
 ### Issue #3 — prior work and provider review
 
 Research continues independently. Preliminary evidence and provider-neutral strategy exist, but no strong novelty claim and no live caregiver selection are authorized.
 
-Do not connect a human or model caregiver merely because Phase 1 is complete. Provider permissions, retention, pricing, limits, and transformation classes must be reverified from current first-party sources before any live integration.
+Fixture-caregiver plumbing and source-neutral schemas are not blocked by Issue #3. Live human experiments, live model integration, automated provider calls, retained provider output, and strong novelty claims remain blocked until the relevant research, privacy, consent, terms, retention, pricing, limit, and transformation questions are reviewed from current sources.
 
 ## Implemented Phase 1 summary
 
@@ -68,7 +97,7 @@ Do not connect a human or model caregiver merely because Phase 1 is complete. Pr
 
 - canonical SQLite body, append-only events, injected clocks, and fail-fast write ownership
 - deterministic garden water, harvest, abstention, classified failure, and recovery paths
-- concrete budgets, lifecycle deadline, savepoint rollback, maintenance, checkpoint retention/repair
+- concrete budgets, lifecycle deadline, savepoint rollback, maintenance, checkpoint retention and repair
 - deterministic non-canonical JSONL export
 - complete bounded rollback path and one-completed-rollback evidence retention
 
@@ -91,20 +120,18 @@ Do not connect a human or model caregiver merely because Phase 1 is complete. Pr
 - exact `organism:` and `administration:` provenance namespaces
 - all current CLI reports carry protected authority provenance
 
-See the corresponding files in `docs/phase1/`.
+### Independent completion-audit repairs
 
-## Independent completion-audit repairs — PR #57
+The merged repair adds:
 
-PR #57 repairs the six Issue #56 findings without changing Contract v0.2 or adding Phase 2 capability:
+1. protected schema, trigger, singleton, budget, seed-layout, and action-registry validation
+2. genesis, ordinary, and maintenance-bound published-orphan checkpoint repair
+3. one retention policy shared by normal and repaired registration
+4. enqueue storage enforcement with one bounded-wake reserve
+5. explicit maintenance and crash-retryable post-commit retention reconciliation
+6. common working-set accounting for SQLite sidecars, checkpoints and staging, rollback archives, and restore candidates
 
-1. protected schema, append-only triggers, singleton cardinality, budget configuration, seed layout, and action registry are validated before active/checkpoint acceptance
-2. published pending-checkpoint repair supports genesis, ordinary lifecycle, and maintenance-bound boundaries
-3. normal and repaired registration share one retention policy
-4. enqueue checks storage before and after writes and preserves one bounded-wake reserve
-5. post-commit cleanup failure records maintenance; reconciliation is auditable and crash-retryable
-6. common working-set accounting includes SQLite sidecars, checkpoints/staging, rollback archives, and restore candidates
-
-Ten adversarial tests now protect these intersections. See `docs/phase1/PHASE1_INDEPENDENT_AUDIT_REPAIRS.md`.
+Ten adversarial tests protect these intersections. See `docs/phase1/PHASE1_INDEPENDENT_AUDIT_REPAIRS.md`.
 
 ## Accepted ADR 0007 retention boundary
 
@@ -122,35 +149,55 @@ Audit repair evidence:
 
 - run 335: **150 tests in 8.74 seconds**
 - run 336: **150 tests in 10.16 seconds**
-- first Codex re-audit: findings 1/2/3/6 resolved; findings 4/5 partial
-- run 340: **152 tests in 10.32 seconds**, compilation and genesis smoke passed
+- first Codex re-audit: findings 1, 2, 3, and 6 resolved; findings 4 and 5 partial
+- run 340: **152 tests in 10.32 seconds**
+- final PR head `1fd1e252ea45885f0c966abcc52cdb59c4f4ff0a`, run 343: clean installation, source/test compilation, genesis CLI smoke, and **152 tests in 10.12 seconds**
+- PR #57 squash-merged into `main` as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`
 
 No existing protected test was deleted, weakened, skipped, or redefined.
 
-## Exact next gate — second re-audit before Phase 2
+The final independent re-audit remains pending in Issue #56 and must not be described as completed.
 
-There is no authorized Slice 36 and no authorized Phase 2 implementation.
+## Exact next gate — review Phase 2.0, do not implement it
 
-1. synchronize PR #57 documentation and obtain a green final-head CI run
-2. ask Codex to re-audit only the two residual Issue #56 findings against that exact head
-3. require exact reproduction attempts, finding-by-finding evidence, and a final conclusion in Issue #56
-4. repair any newly verified Phase 1 defect without changing the contract or adding Phase 2 behavior
-5. merge PR #57 only after a satisfactory re-audit
-6. verify merged `main` CI, close Issue #13, and re-freeze the protected Phase 1 baseline
-7. only then review Issue #3 and make an explicit reviewed Phase 2 scope decision
-8. keep the Phase 1 caregiver budget at zero and preserve the no-caregiver baseline
+There is no authorized Slice 36.
 
-Do not begin human/model caregiver integration, live APIs, learning, memory, skill adoption, or a generic agent framework without the reviewed Phase 2 scope decision.
+The exact next action is to review Issue #59 and resolve its decision questions. In particular:
+
+1. decide whether the first fixture slice stops at proposal disposition or permits one accepted registered-action candidate to enter ordinary action selection
+2. fix exact request, response, proposal, disposition, authority, provenance, budget, expiry, and cost schemas
+3. decide whether Phase 2 begins only with newly initialized schema-v2 organisms
+4. define the Phase 1-relevant canonical projection for the Phase 2 zero-caregiver baseline
+5. map every new invariant to protected tests
+6. decide whether to preserve the accepted result as ADR 0008 before opening an implementation issue
+7. keep the final independent review queued in Issue #56
+
+Do not begin implementation until the reviewed decision explicitly authorizes it.
+
+## Explicitly excluded for now
+
+Do not add:
+
+- a live API or live model caregiver
+- a live human chat UI
+- long-term memory
+- skill generation or promotion
+- model training, fine-tuning, imitation, distillation, or synthetic-data training
+- arbitrary Python, shell, SQL, tools, paths, or executable payloads
+- continuous or always-on execution
+- autonomous internet use
+- personality, emotion, affection, mood, or virtual-pet presentation
+- caregiver-controlled budgets, permissions, evaluation, checkpoints, migrations, or rollback
+- a generic agent framework
 
 ## Restart protocol
 
 1. read `AGENTS.md`
 2. read `docs/AI_COLLABORATION_OPERATIONS.md`
-3. read this handoff and normative documents
-4. inspect Issues #13 and #56 and PR #57
-5. verify the latest PR head and CI rather than relying on chat history
-6. stop at the second independent re-audit gate
-7. after merge, verify final `main` and CI before closing Issue #13
-8. stop at the Phase 2 decision gate unless a newer reviewed repository decision authorizes implementation
+3. read this handoff, Contract v0.2, ADRs 0001–0007, and the test matrix
+4. verify Issue #13 is closed and PR #57 is merged at `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`
+5. inspect open Issues #3, #56, and #59
+6. preserve the exact statement that the final independent re-audit is pending
+7. stop at Issue #59's review gate; do not create Slice 36 from conversation memory
 
 No critical decision may remain only in chat history.
