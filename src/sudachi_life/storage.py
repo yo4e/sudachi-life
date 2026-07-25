@@ -21,129 +21,8 @@ from .constants import (
 )
 from .errors import OrganismExistsError, OrganismNotFoundError, SchemaValidationError
 from .paths import OrganismPaths
-
-SQL_SCHEMA = """
-PRAGMA foreign_keys = ON;
-
-CREATE TABLE organism (
-    singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
-    organism_id TEXT NOT NULL UNIQUE,
-    contract_version TEXT NOT NULL,
-    schema_version INTEGER NOT NULL,
-    environment_version TEXT NOT NULL,
-    budget_config_version TEXT NOT NULL,
-    lineage_generation INTEGER NOT NULL CHECK (lineage_generation >= 0),
-    developmental_stage TEXT NOT NULL,
-    created_wall_time_utc_us INTEGER NOT NULL,
-    lifecycle_number INTEGER NOT NULL CHECK (lifecycle_number >= 0),
-    status TEXT NOT NULL CHECK (status IN (
-        'sleeping',
-        'checkpoint_pending',
-        'maintenance_required',
-        'rollback_in_progress',
-        'quarantined'
-    )),
-    checkpoint_pending INTEGER NOT NULL CHECK (checkpoint_pending IN (0, 1)),
-    pending_checkpoint_generation INTEGER CHECK (pending_checkpoint_generation >= 0),
-    pending_checkpoint_event_sequence INTEGER CHECK (pending_checkpoint_event_sequence >= 0),
-    latest_stable_checkpoint_id TEXT,
-    latest_stable_event_sequence INTEGER NOT NULL CHECK (latest_stable_event_sequence >= 0),
-    consecutive_failures INTEGER NOT NULL CHECK (consecutive_failures >= 0),
-    maintenance_reason TEXT,
-    last_wake_wall_time_utc_us INTEGER,
-    last_sleep_wall_time_utc_us INTEGER,
-    CHECK (
-        (checkpoint_pending = 1 AND pending_checkpoint_generation IS NOT NULL
-         AND pending_checkpoint_event_sequence IS NOT NULL)
-        OR
-        (checkpoint_pending = 0 AND pending_checkpoint_generation IS NULL
-         AND pending_checkpoint_event_sequence IS NULL)
-    )
-);
-
-CREATE TABLE budget_config (
-    singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
-    config_version TEXT NOT NULL UNIQUE,
-    config_json TEXT NOT NULL
-);
-
-CREATE TABLE environment_state (
-    singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
-    environment_version TEXT NOT NULL,
-    environment_step INTEGER NOT NULL CHECK (environment_step >= 0),
-    objective_complete INTEGER NOT NULL CHECK (objective_complete IN (0, 1))
-);
-
-CREATE TABLE garden_plot (
-    plot_id TEXT PRIMARY KEY,
-    stage TEXT NOT NULL CHECK (stage IN ('sprout', 'mature')),
-    moisture INTEGER NOT NULL CHECK (moisture IN (0, 1)),
-    fruit INTEGER NOT NULL CHECK (fruit >= 0)
-);
-
-CREATE TABLE inventory (
-    singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
-    water_units INTEGER NOT NULL CHECK (water_units >= 0),
-    harvested_fruit INTEGER NOT NULL CHECK (harvested_fruit >= 0)
-);
-
-CREATE TABLE action_definition (
-    action_id TEXT PRIMARY KEY,
-    version INTEGER NOT NULL CHECK (version > 0),
-    deterministic INTEGER NOT NULL CHECK (deterministic = 1),
-    protected INTEGER NOT NULL CHECK (protected = 1)
-);
-
-CREATE TABLE inbox_event (
-    inbox_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    external_event_id TEXT NOT NULL UNIQUE,
-    event_type TEXT NOT NULL,
-    source TEXT NOT NULL,
-    source_wall_time_utc_us INTEGER,
-    received_wall_time_utc_us INTEGER NOT NULL,
-    claimed_lifecycle_number INTEGER,
-    consumed INTEGER NOT NULL DEFAULT 0 CHECK (consumed IN (0, 1))
-);
-
-CREATE TABLE event (
-    event_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
-    organism_id TEXT NOT NULL,
-    lineage_generation INTEGER NOT NULL CHECK (lineage_generation >= 0),
-    lifecycle_number INTEGER NOT NULL CHECK (lifecycle_number >= 0),
-    wall_time_utc_us INTEGER NOT NULL,
-    event_type TEXT NOT NULL,
-    source TEXT NOT NULL,
-    payload_json TEXT NOT NULL,
-    schema_version INTEGER NOT NULL,
-    environment_version TEXT NOT NULL,
-    budget_config_version TEXT NOT NULL
-);
-
-CREATE TRIGGER event_no_update
-BEFORE UPDATE ON event
-BEGIN
-    SELECT RAISE(ABORT, 'canonical events are append-only');
-END;
-
-CREATE TRIGGER event_no_delete
-BEFORE DELETE ON event
-BEGIN
-    SELECT RAISE(ABORT, 'canonical events are append-only');
-END;
-
-CREATE TABLE checkpoint_registry (
-    checkpoint_id TEXT PRIMARY KEY,
-    lineage_generation INTEGER NOT NULL CHECK (lineage_generation >= 0),
-    event_sequence INTEGER NOT NULL CHECK (event_sequence >= 0),
-    manifest_sha256 TEXT NOT NULL,
-    database_sha256 TEXT NOT NULL,
-    database_size_bytes INTEGER NOT NULL CHECK (database_size_bytes >= 0),
-    created_wall_time_utc_us INTEGER NOT NULL,
-    registered_wall_time_utc_us INTEGER NOT NULL,
-    protected INTEGER NOT NULL DEFAULT 0 CHECK (protected IN (0, 1))
-);
-"""
-
+from .runtime_storage import ensure_active_database_within_limit
+from .schema_contract import SQL_SCHEMA, validate_protected_schema_and_configuration
 
 @dataclass(frozen=True, slots=True)
 class OrganismStatus:
@@ -350,13 +229,13 @@ def initialize_database(
             (boundary,),
         )
         validate_canonical_state(connection, expect_checkpoint_pending=True)
+        ensure_active_database_within_limit(
+            connection, context="initialization", limit=ACTIVE_DATABASE_MAX_BYTES
+        )
         connection.commit()
-        if paths.database.stat().st_size > ACTIVE_DATABASE_MAX_BYTES:
-            raise SchemaValidationError(
-                f"active database exceeds {ACTIVE_DATABASE_MAX_BYTES} bytes"
-            )
     except Exception:
-        connection.rollback()
+        if connection.in_transaction:
+            connection.rollback()
         connection.close()
         _remove_partial_organism(paths)
         raise
@@ -378,6 +257,8 @@ def validate_canonical_state(
     *,
     expect_checkpoint_pending: bool | None = None,
 ) -> None:
+    validate_protected_schema_and_configuration(connection)
+
     row = connection.execute("SELECT * FROM organism WHERE singleton_id = 1").fetchone()
     if row is None:
         raise SchemaValidationError("missing organism singleton")
@@ -426,26 +307,6 @@ def validate_canonical_state(
         raise SchemaValidationError(
             "threshold checkpoint pending state requires a maintenance reason"
         )
-
-    budget_row = connection.execute(
-        "SELECT config_version, config_json FROM budget_config WHERE singleton_id = 1"
-    ).fetchone()
-    if budget_row is None or budget_row["config_version"] != BUDGET_CONFIG_VERSION:
-        raise SchemaValidationError("missing or invalid protected budget configuration")
-    if json.loads(budget_row["config_json"]) != PHASE1_BUDGETS.as_dict():
-        raise SchemaValidationError("protected budget values do not match Contract v0.2")
-
-    environment = connection.execute(
-        "SELECT * FROM environment_state WHERE singleton_id = 1"
-    ).fetchone()
-    if environment is None or environment["environment_version"] != ENVIRONMENT_VERSION:
-        raise SchemaValidationError("missing or invalid seed environment")
-
-    plots = connection.execute(
-        "SELECT plot_id, stage, moisture, fruit FROM garden_plot ORDER BY plot_id"
-    ).fetchall()
-    if not plots:
-        raise SchemaValidationError("seed garden has no plots")
 
     foreign_key_errors = connection.execute("PRAGMA foreign_key_check").fetchall()
     if foreign_key_errors:
