@@ -16,6 +16,11 @@ from .paths import OrganismPaths
 
 _SQLITE_SIDECAR_SUFFIXES = ("-journal", "-wal", "-shm")
 
+# Administrative enqueue must leave enough file-growth headroom for one complete
+# bounded Phase 1 wake. This is an implementation reserve inside the accepted
+# 8 MiB active-database ceiling, not a new budget or a larger ceiling.
+ACTIVE_DATABASE_WAKE_RESERVE_BYTES = 1 * 1024 * 1024
+
 
 def _file_size_no_symlink(path: Path) -> int:
     try:
@@ -63,11 +68,18 @@ def tree_size_no_symlinks(root: Path) -> int:
     return total
 
 
-def active_database_allocated_bytes(connection: sqlite3.Connection) -> int:
+def _active_database_page_accounting(
+    connection: sqlite3.Connection,
+) -> tuple[int, int]:
     page_count = int(connection.execute("PRAGMA page_count").fetchone()[0])
     page_size = int(connection.execute("PRAGMA page_size").fetchone()[0])
     if page_count < 0 or page_size <= 0:
         raise SchemaValidationError("SQLite active-database page accounting is invalid")
+    return page_count, page_size
+
+
+def active_database_allocated_bytes(connection: sqlite3.Connection) -> int:
+    page_count, page_size = _active_database_page_accounting(connection)
     return page_count * page_size
 
 
@@ -110,6 +122,33 @@ def ensure_active_database_within_limit(
             f"{context}: active database would exceed protected Phase 1 limit"
         )
     return size
+
+
+def ensure_active_database_has_wake_reserve(
+    connection: sqlite3.Connection,
+    *,
+    context: str,
+    limit: int | None = None,
+    reserve_bytes: int | None = None,
+) -> int:
+    """Require bounded headroom for the next committed wake before enqueue."""
+
+    if limit is None:
+        limit = ACTIVE_DATABASE_MAX_BYTES
+    if reserve_bytes is None:
+        reserve_bytes = ACTIVE_DATABASE_WAKE_RESERVE_BYTES
+    if reserve_bytes < 0:
+        raise SchemaValidationError("active-database wake reserve may not be negative")
+
+    page_count, page_size = _active_database_page_accounting(connection)
+    allocated = page_count * page_size
+    reserve_pages = (reserve_bytes + page_size - 1) // page_size
+    reserved_allocated = reserve_pages * page_size
+    if allocated + reserved_allocated > limit:
+        raise SchemaValidationError(
+            f"{context}: active database would leave less than the protected one-wake reserve"
+        )
+    return allocated
 
 
 def ensure_checkpoint_store_within_limit(
