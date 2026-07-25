@@ -1,6 +1,6 @@
 # Phase 1 Contract Evaluation Matrix
 
-Status: **Slices 1–35 plus the independent completion-audit repairs are implemented and verified on PR #57 — all 41 fixed Phase 1 evaluations complete**
+Status: **Slices 1–35 plus the independent completion-audit repairs are merged and verified — all 41 fixed Phase 1 evaluations complete**
 
 This matrix maps Minimal Organism Contract v0.2 §15 evaluations to protected tests. Complete coverage means the fixed Phase 1 boundary is implemented; it does not claim learning, intelligence, personality, or caregiver independence.
 
@@ -56,6 +56,8 @@ The Issue #56 findings also require cross-cutting evidence not represented by on
 - `test_retention_reconciliation_retries_after_delete_before_completion_audit` proves deletion-before-completion interruption leaves durable pending evidence and retry appends exactly one linked completion without a clock read.
 - `test_runtime_working_set_counts_sidecars_and_retained_rollback_evidence` proves the 64 MiB accountant includes SQLite sidecars, checkpoints/staging, rollback archives, and restore candidates.
 
-PR #54 established the original complete matrix with 142 tests. PR #57 run 340 at head `b8ce12843d9692e50e770735d00f4b5379425eca` passed clean installation, compileall, genesis CLI smoke, and **152 protected tests in 10.32 seconds**.
+PR #54 established the original complete matrix with 142 tests. PR #57 final head `1fd1e252ea45885f0c966abcc52cdb59c4f4ff0a` passed GitHub Actions run 343 with clean installation, compilation, genesis CLI smoke, and **152 protected tests in 10.12 seconds**. PR #57 was squash-merged into `main` as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
+
+The final independent re-audit of the two residual Issue #56 findings remains pending and must not be described as completed.
 
 Every future change to the Phase 1 baseline must preserve all 41 rows and the independent-audit regression protections, or deliberately revise the contract or an accepted ADR through review.
