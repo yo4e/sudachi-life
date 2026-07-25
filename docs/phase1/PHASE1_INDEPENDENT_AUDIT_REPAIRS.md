@@ -1,10 +1,10 @@
 # Phase 1 Independent Completion-Audit Repairs
 
-Status: **Implemented on draft PR #57; first re-audit found two residual boundaries; additional repairs are green; second re-audit pending**
+Status: **Merged on `main`; repairs implemented and CI verified; final independent re-audit pending in Issue #56**
 
 ## Scope
 
-Issue #56 audited Phase 1 at baseline commit `54b2be47107cd9fbad3301812d23ab90f7ea9c4e`. The audit confirmed the original 142-test baseline and identified six cross-boundary regressions. PR #57 repairs only those Phase 1 defects.
+Issue #56 audited Phase 1 at baseline commit `54b2be47107cd9fbad3301812d23ab90f7ea9c4e`. The audit confirmed the original 142-test baseline and identified six cross-boundary regressions. PR #57 repaired only those Phase 1 defects.
 
 This work does not change Minimal Organism Contract v0.2 or ADRs 0001–0007. It adds no caregiver, model, network, subprocess, learning, memory, skill, arbitrary-code, continuous-execution, or Phase 2 behavior.
 
@@ -130,22 +130,28 @@ Protected tests:
 
 - run 335: **150 passed in 8.74 seconds**
 - run 336: **150 passed in 10.16 seconds**
-- first Codex re-audit: findings 1/2/3/6 resolved; findings 4/5 partially resolved
+- first Codex re-audit: findings 1, 2, 3, and 6 resolved; findings 4 and 5 partially resolved
 - run 340 at head `b8ce12843d9692e50e770735d00f4b5379425eca`: clean installation, source/test compilation, genesis CLI smoke, and **152 passed in 10.32 seconds**
+- run 343 at final PR head `1fd1e252ea45885f0c966abcc52cdb59c4f4ff0a`: clean installation, source/test compilation, genesis CLI smoke, and **152 passed in 10.12 seconds**
+- PR #57 squash-merged into `main` as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`
 
 No existing protected test was deleted, weakened, skipped, or redefined.
 
-## Second re-audit gate
+## Final independent audit obligation
 
-PR #57 remains draft. The next external task is a read-only Codex re-audit of the final documentation-synchronized PR head.
+The final read-only Codex re-audit was deferred on 2026-07-25 because the available Codex usage allocation was exhausted. This availability decision is not evidence that the residual findings were independently resolved.
 
-The second re-audit must:
+The exact state is:
 
-1. rerun the complete protected suite
-2. repeat the exact Finding 4 boundary at the real 8 MiB ceiling and verify accepted enqueue leaves the next wake executable
-3. interrupt Finding 5 reconciliation after deletion and verify retry produces exactly one linked completion audit without a new clock read
-4. check that the two additional repairs do not reopen findings 1, 2, 3, or 6
+> **repairs implemented, CI verified, final independent re-audit pending**
+
+Issue #56 remains open. When Codex availability returns, the audit must:
+
+1. repeat the Finding 4 boundary at the real 8 MiB ceiling and verify the last accepted enqueue leaves one complete bounded wake executable
+2. interrupt Finding 5 reconciliation after deletion and verify retry produces exactly one linked completion audit without a new clock read
+3. confirm the additional repairs did not reopen findings 1, 2, 3, or 6
+4. review the accepted or proposed Phase 2 Consultation Boundary for any bypass of Phase 1 authority, transaction, evaluation, provenance, budget, checkpoint, or rollback controls
 5. post finding-by-finding evidence and one allowed final conclusion in Issue #56
-6. make no tracked-file changes and introduce no Phase 2 behavior
+6. make no tracked-file changes during the read-only audit and introduce no Phase 2 behavior
 
-PR #57 may be merged, Issue #13 reclosed, and the Phase 1 baseline re-frozen only after a satisfactory second re-audit.
+Merging PR #57 did not close or erase this audit obligation.
