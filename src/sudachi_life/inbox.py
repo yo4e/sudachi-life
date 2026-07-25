@@ -11,7 +11,7 @@ from .authority import ADMINISTRATION, classify_authority_source
 from .clock import Clock, RealClock
 from .errors import SchemaValidationError, SudachiError, OrganismNotFoundError
 from .paths import OrganismPaths
-from .runtime_storage import ensure_active_database_within_limit
+from .runtime_storage import ensure_active_database_has_wake_reserve
 from .storage import connect_database, validate_canonical_state
 
 GARDEN_TICK_EVENT_TYPE = "synthetic:garden_tick"
@@ -107,11 +107,12 @@ def _append_enqueue_event(
 
 def _ensure_enqueue_storage(connection: sqlite3.Connection, *, context: str) -> None:
     try:
-        ensure_active_database_within_limit(connection, context=context)
+        ensure_active_database_has_wake_reserve(connection, context=context)
     except SchemaValidationError as exc:
         raise InputRejectedError(
-            "active database storage limit blocks input enqueue; use the audited rollback "
-            "path to a verified stable checkpoint or quarantine the organism"
+            "active database storage headroom blocks input enqueue; the next bounded wake "
+            "reserve must remain available; use the audited rollback path to a verified "
+            "stable checkpoint or quarantine the organism"
         ) from exc
 
 
