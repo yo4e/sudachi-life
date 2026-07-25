@@ -26,8 +26,9 @@ Read these files in order:
 12. `docs/RESEARCH_QUESTIONS.md`
 13. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
 14. preliminary notes in `docs/research/`
-15. `docs/HANDOFF.md`
-16. current open GitHub issues and pull requests
+15. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
+16. `docs/HANDOFF.md`
+17. current open GitHub issues and pull requests
 
 Repository state and current GitHub state outrank conversation history.
 
@@ -122,7 +123,7 @@ The final independent re-audit was deferred because the available Codex usage al
 
 > **repairs implemented, CI verified, final independent re-audit pending**
 
-Do not describe the final audit as completed. When Codex availability returns, re-audit the two residual findings, confirm the other four remain closed, and review the Phase 2 Consultation Boundary against Phase 1 authority, transaction, evaluation, provenance, budget, checkpoint, and rollback controls.
+Do not describe the final audit as completed. When Codex availability returns, perform one read-only Phase 1 closure audit under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`: re-audit the two residual findings, confirm the other four remain closed, check for new Phase 1 regressions, and decide whether Phase 1 is ready to freeze. Do not fold unfinished Phase 2 design into this pass.
 
 ### Issue #59 — Phase 2.0 Consultation Boundary
 
@@ -149,6 +150,14 @@ Resolve Issue #59's review questions and decide whether the accepted result beco
 Research stream. Preliminary review is active, but no strong novelty claim and no live caregiver selection are authorized.
 
 Do not connect a human or model caregiver automatically. Do not treat ChatGPT and an API as the same product. Provider permissions, retention, pricing, limits, and transformation classes must be reverified from current first-party sources before any live integration.
+
+## Independent Codex audit cadence
+
+Codex independent audits are high-cost phase-gate reviews, not routine per-slice or per-pull-request review. Follow `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
+
+The default is one planned read-only audit after a phase or design gate is complete. Use ordinary review, protected tests, CI, and issue tracking during implementation. Do not create audit-repair-reaudit ping-pong unless the prior conclusion directly blocks the next phase, evidence was insufficient, or a repair changes the same critical boundary being certified.
+
+The current planned audit is the one Phase 1 closure pass in Issue #56. A separate Phase 2.0 design audit occurs only after Issue #59 is resolved and the proposed ADR, schemas, authority and provenance rules, concrete budgets and expiry, migration decision, zero-caregiver comparison, and protected test matrix are complete. A later Phase 2 implementation audit occurs before freezing that implemented baseline.
 
 ## Phase 1 invariants
 
