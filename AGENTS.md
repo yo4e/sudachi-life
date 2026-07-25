@@ -54,7 +54,9 @@ For Phase 1, use this precedence:
 3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
 4. explicit current repository decisions
 
-Do not hide a new architecture inside implementation code. If implementation reveals a contradiction, stop and resolve the contract or ADR through review before proceeding.
+The Phase 1 body and trusted kernel are frozen by default. A Phase 2 extension must be explicitly reviewed, versioned, and protected. Do not hide a new architecture inside implementation code.
+
+If implementation reveals a contradiction, stop and resolve the contract or ADR through review before proceeding.
 
 ## AI collaboration safety and continuity
 
@@ -62,13 +64,13 @@ SUDACHI's organism, metabolism, body, lineage, growth, and caregiver vocabulary 
 
 Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and conversation rollover.
 
-Continue through multiple bounded slices only while repository, branch, pull-request, and CI state remain directly reconstructable. Phase 1 is now complete; do not create an automatic next slice merely to continue activity.
+Continue through multiple bounded slices only while repository, branch, pull-request, Issue, and CI state remain directly reconstructable. Do not create an automatic next slice merely to continue activity.
 
-## Current work streams
+## Current repository state
 
 ### Issue #13 — Phase 1 implementation
 
-Repository state containing this file includes Slices 1–35:
+**Completed and closed.** Repository state contains Slices 1–35 and the independent completion-audit repairs:
 
 1. package, schema, initialization, status, genesis checkpoint
 2. inbox, fail-fast wake acquisition, deterministic observation
@@ -106,9 +108,41 @@ Repository state containing this file includes Slices 1–35:
 34. action-scoped SQLite authority restricted to exact registered garden transition columns
 35. protected organism and administration provenance across canonical sources and public reports
 
-All 41 fixed Contract v0.2 evaluations have complete protected coverage. PR #54 closes the final row with **142 protected tests** on its verified implementation head.
+All 41 fixed Contract v0.2 evaluations have complete protected coverage. The merged Phase 1 suite contains 152 tests.
 
-After PR #54 is merged, Issue #13 is complete. Do not reopen it to add Phase 2 features.
+PR #57 repaired the six Issue #56 cross-boundary defects and was squash-merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`. Reopen Issue #13 only for a demonstrated Phase 1 regression. Do not use it for Phase 2 features.
+
+### Issue #56 — independent completion audit
+
+Issue #56 remains open.
+
+The first audit found six cross-boundary defects. The first Codex re-audit classified findings 1, 2, 3, and 6 as resolved. Findings 4 and 5 were partial, then received additional repairs and adversarial tests.
+
+The final independent re-audit was deferred because the available Codex usage allocation was exhausted. The exact state is:
+
+> **repairs implemented, CI verified, final independent re-audit pending**
+
+Do not describe the final audit as completed. When Codex availability returns, re-audit the two residual findings, confirm the other four remain closed, and review the Phase 2 Consultation Boundary against Phase 1 authority, transaction, evaluation, provenance, budget, checkpoint, and rollback controls.
+
+### Issue #59 — Phase 2.0 Consultation Boundary
+
+Issue #59 is the current design gate. Opening it does not authorize implementation and there is no authorized Slice 36.
+
+The review must decide and preserve:
+
+- Phase 1 body and trusted-kernel freeze
+- asynchronous consultation outside the wake transaction
+- typed caregiver proposals rather than commands
+- later-wake `accepted`, `rejected`, `deferred`, and `clarification_requested` dispositions
+- independent evaluation before adoption or action effect
+- no caregiver database handle or direct canonical mutation authority
+- source-neutral request, response, proposal, and disposition schemas
+- exact authority, provenance, concrete budgets, expiry, and cost ledger
+- frozen Phase 1 and Phase 2 zero-caregiver controls
+- explicit schema initialization and migration policy
+- deterministic fixture use before any live caregiver
+
+Resolve Issue #59's review questions and decide whether the accepted result becomes ADR 0008 before creating an implementation issue.
 
 ### Issue #3 — prior work and provider review
 
@@ -142,37 +176,31 @@ Rollback begin records durable intent. Candidate construction restores the selec
 
 ADR 0007 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
 
-## Fixed-evaluation closures in Slices 24–35
+## Fixed-evaluation and audit closures
 
-- Slice 24: backward wall time cannot reorder canonical events.
-- Slice 25: different declared seeds do not change fixed behavior.
-- Slice 26: identical declared inputs produce exact canonical and artifact equivalence.
-- Slice 27: cleanup grace permits terminalization only and rejects overrun atomically.
-- Slice 28: lexicographic selection ignores physical row insertion order.
-- Slice 29: consumed input replay cannot create duplicate action.
-- Slice 30: a real process exit rolls back uncommitted wake state.
-- Slice 31: nested wakes and hidden writers fail fast.
-- Slice 32: pending checkpoint state blocks later wakes until repair.
-- Slice 33: registered actions have no external workspace or effect route.
-- Slice 34: action SQL authority is restricted to exact declared garden transitions.
-- Slice 35: organism and administration are distinguishable in canonical records and public reports.
+- Slices 24–26 protect ordering, seed independence, and repeated-run equivalence.
+- Slices 27–32 close cleanup, tie-breaking, replay, process-exit, nested-write, and pending-checkpoint boundaries.
+- Slices 33–35 protect external-workspace absence, action SQL authority, and provenance.
+- Issue #56 repairs protect schema integrity, published-orphan recovery, shared retention, enqueue headroom, crash-retryable retention reconciliation, and complete working-set accounting.
 
-Read the corresponding durable notes in `docs/phase1/` for exact boundaries and CI evidence.
+Read the corresponding durable notes in `docs/phase1/` and `docs/PHASE1_TEST_MATRIX.md` for exact boundaries and CI evidence.
 
 ## Exact restart point — Phase 2 decision gate
 
-There is no authorized Slice 36.
+There is no authorized Slice 36 and no authorized Phase 2 implementation.
 
-After reconstructing current `main`, Issue #13, and open pull requests:
+After reconstructing current `main` and GitHub state:
 
-1. verify PR #54 is merged and Issue #13 is closed
-2. verify all 41 matrix rows and the complete Phase 1 regression suite
-3. read Issue #3 and current research documents
-4. decide through an explicit reviewed issue or ADR whether Phase 2 caregiver-neutral consultation plumbing should begin
-5. define source-neutral request/response schemas, consultation budgets, provenance, evaluation separation, and adoption boundaries before code
-6. preserve the Phase 1 zero-caregiver path and its full regression suite
+1. verify Issue #13 is closed and PR #57 is merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`
+2. verify the 152-test Phase 1 matrix and independent-audit protections
+3. preserve Issue #56 as an open final-audit obligation
+4. read Issue #3 and current research documents
+5. review Issue #59 rather than inventing Phase 2 scope in code
+6. fix schemas, authority, provenance, budgets, expiry, cost, disposition, evaluation, checkpoint, and migration boundaries through review
+7. preserve the Phase 1 zero-caregiver path and define the Phase 2 zero-caregiver comparison
+8. decide whether ADR 0008 is required before implementation
 
-Do not begin live human or model caregiving, API integration, learning, memory, skills, self-modification, or a generic agent framework without that reviewed scope decision.
+Do not begin a live human or model caregiver, API integration, long-term memory, skill generation, training, arbitrary Python, continuous execution, personality, emotion, or a generic agent framework.
 
 ## End-of-work protocol
 
