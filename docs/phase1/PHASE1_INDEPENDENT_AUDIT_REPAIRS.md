@@ -1,146 +1,151 @@
 # Phase 1 Independent Completion-Audit Repairs
 
-Status: **Implemented on draft PR #57; GitHub Actions run 335 passed 150 protected tests; independent re-audit pending**
+Status: **Implemented on draft PR #57; first re-audit found two residual boundaries; additional repairs are green; second re-audit pending**
 
 ## Scope
 
-Issue #56 performed a read-only audit of Phase 1 at baseline commit `54b2be47107cd9fbad3301812d23ab90f7ea9c4e`. The audit confirmed the original 142-test baseline and identified six cross-boundary regressions. PR #57 repairs only those Phase 1 defects.
+Issue #56 audited Phase 1 at baseline commit `54b2be47107cd9fbad3301812d23ab90f7ea9c4e`. The audit confirmed the original 142-test baseline and identified six cross-boundary regressions. PR #57 repairs only those Phase 1 defects.
 
-This work does not change Minimal Organism Contract v0.2 or ADRs 0001–0007. It does not add caregiver consultation, a model adapter, network access, subprocess access, learning, memory, skills, arbitrary code execution, continuous execution, or any Phase 2 behavior.
+This work does not change Minimal Organism Contract v0.2 or ADRs 0001–0007. It adds no caregiver, model, network, subprocess, learning, memory, skill, arbitrary-code, continuous-execution, or Phase 2 behavior.
 
-## Finding 1 — malformed protected schema accepted and checkpointed
+## Findings 1, 2, 3, and 6
 
-### Repair
+The first Codex re-audit of PR #57 head `2ec29f896059ca5e476c20b6f1b05309f7d194ba` classified these findings as resolved:
 
-- `src/sudachi_life/schema_contract.py` constructs the required protected schema signature from the production schema and verifies every required table and append-only trigger definition.
-- Active and checkpoint validation also verify protected singleton cardinality, exact budget configuration, seed plot layout, and action registry.
-- Missing or changed required objects fail closed.
-- Additional schema objects fail closed except side-effect-free test-only trigger guards whose body is only `SELECT RAISE(ABORT, ...)`; an unexpected mutating trigger is rejected.
+1. malformed protected schema accepted and checkpointed
+2. published pending checkpoints without a supported recovery path
+3. pending repair bypassing checkpoint retention
+6. incomplete runtime working-set accounting
 
-### Protected evidence
+The implemented repairs and protected evidence remain as described below.
+
+### Finding 1 — protected schema integrity
+
+- required protected tables and append-only triggers are fingerprinted from the production schema
+- protected singleton cardinality, budget configuration, seed layout, and action registry are exact
+- missing or changed required objects fail closed
+- unexpected mutating schema objects fail closed; established side-effect-free `SELECT RAISE(ABORT, ...)` fault-injection guards remain usable
+
+Protected tests:
 
 - `tests/test_phase1_audit_schema_and_repair.py::test_missing_append_only_trigger_is_rejected_by_active_and_checkpoint_validation`
 - `tests/test_phase1_audit_extra_trigger.py::test_unexpected_mutating_trigger_is_rejected`
-- the existing maintenance-clear injected-abort trigger remains usable, so the original fault-injection boundary is not weakened
 
-## Finding 2 — published pending checkpoints lacked a supported recovery path
+### Finding 2 — pending checkpoint recovery
 
-### Repair
+- repair validates and registers exactly one published orphan
+- genesis, ordinary lifecycle, and maintenance-bound threshold states are supported
+- genesis requires no prior registry row and provenance `genesis`
+- lifecycle repair preserves the previous stable chain and provenance `lifecycle`
+- final state is `sleeping` or `maintenance_required` as declared
+- checkpoint creation accepts an already-published byte-identical artifact
 
-Pending registration repair is split into explicit validation and commit stages:
+Protected tests:
 
-- `checkpoint_repair_validate.py` validates one exact published orphan and accepts three declared pending states: genesis, ordinary lifecycle, and maintenance-bound failure threshold.
-- genesis requires no prior registry row and provenance `genesis`.
-- ordinary and maintenance-bound lifecycle checkpoints require the previous stable registry/artifact chain and provenance `lifecycle`.
-- `checkpoint_repair_commit.py` preserves the correct final status: `sleeping` for genesis/ordinary repair and `maintenance_required` for threshold-bound repair.
-- the repair remains one fail-fast administrative SQLite transaction and appends typed audit provenance.
-- checkpoint creation recognizes an already-published byte-identical artifact instead of failing only because its final directory exists.
+- `test_genesis_published_orphan_can_be_registered`
+- `test_maintenance_bound_pending_orphan_repairs_to_stable_maintenance`
+- all existing ordinary pending-repair tests
 
-### Protected evidence
+### Finding 3 — shared retention
 
-- `tests/test_phase1_audit_schema_and_repair.py::test_genesis_published_orphan_can_be_registered`
-- `tests/test_phase1_audit_schema_and_repair.py::test_maintenance_bound_pending_orphan_repairs_to_stable_maintenance`
-- all pre-existing ordinary pending-repair tests continue to pass
+- normal registration and repaired registration call one retention policy
+- pruning loops until the protected four-checkpoint limit is restored
+- genesis is not silently removed
+- candidate identity, lineage, boundary, digest, protection, and storage are revalidated
 
-## Finding 3 — pending repair bypassed checkpoint retention
+Protected test:
 
-### Repair
+- `test_repaired_checkpoint_runs_the_same_retention_policy`
 
-- normal checkpoint registration and repaired checkpoint registration both call `enforce_checkpoint_retention(...)`.
-- the shared policy prunes oldest eligible non-genesis stable checkpoints until the protected limit is restored; it does not assume the registry is exactly one over the limit.
-- retention revalidates latest stable identity, registry/artifact agreement, protected status, manifest lineage/boundary/digest, and storage accounting for every candidate.
+### Finding 6 — complete working-set accounting
 
-### Protected evidence
-
-- `tests/test_phase1_audit_retention_and_storage.py::test_repaired_checkpoint_runs_the_same_retention_policy`
-- existing successful-retention and injected pre-commit retention-failure tests continue to pass
-
-## Finding 4 — administrative enqueue bypassed the active-database limit
-
-### Repair
-
-- `src/sudachi_life/runtime_storage.py` measures SQLite allocated pages inside the current connection.
-- `enqueue_garden_tick(...)` checks the active-database limit before its clock read and again after the inbox/event writes but before commit.
-- a crossing rejects with a typed input error and rolls back the complete enqueue transaction, including the inbox row, audit event, and SQLite sequence changes.
-- the diagnostic identifies rollback or quarantine as the explicit recovery route for an already-oversized historical database; it does not silently delete queued input.
-
-### Protected evidence
-
-- `tests/test_phase1_audit_retention_and_storage.py::test_enqueue_rolls_back_before_crossing_active_database_limit`
-- existing idempotence, authority, concurrency, ordering, and replay tests continue to pass
-
-## Finding 5 — post-commit retention cleanup failure was hidden
-
-### Repair
-
-- retention still commits the registry deletion and `checkpoint_pruned` event before deleting the staged artifact, so the new stable checkpoint is not invalidated.
-- failure to delete `.pruning-*` records `checkpoint_retention_failed`, enters explicit protected maintenance, and preserves the staged evidence.
-- `reconcile_checkpoint_retention_staging(...)` removes only a staging directory whose registry row is absent and whose exact `checkpoint_pruned` audit event exists; it then appends `checkpoint_retention_cleanup_reconciled`.
-- ambiguous, still-canonical, or unaudited staging is rejected rather than deleted.
-
-### Protected evidence
-
-- `tests/test_phase1_audit_retention_and_storage.py::test_post_commit_retention_cleanup_is_explicit_and_reconcilable`
-- existing pre-commit injected retention-failure classification remains protected
-
-## Finding 6 — ordinary checkpoint and repair accounting omitted rollback evidence
-
-### Repair
-
-`runtime_storage.py` provides one no-symlink accountant for:
+One no-symlink accountant covers:
 
 - active SQLite database
-- approved SQLite journal/WAL/shared-memory sidecars
-- complete checkpoint store, including temporary and pruning staging directories
+- journal/WAL/shared-memory sidecars
+- checkpoint store and staging
 - rollback archives
 - restore candidates
 
-Checkpoint preflight, publication, retention, repaired registration, wake preflight, and declared post-write boundaries use the shared accounting functions. Unsafe symlinks or non-regular entries fail closed.
+Checkpoint creation, repair, retention, wake preflight, and declared post-write boundaries use the common accountant.
 
-### Protected evidence
+Protected test:
 
-- `tests/test_phase1_audit_working_set.py::test_runtime_working_set_counts_sidecars_and_retained_rollback_evidence`
-- rollback evidence-retention and later wake/checkpoint tests remain green
+- `test_runtime_working_set_counts_sidecars_and_retained_rollback_evidence`
 
-## Implementation structure
+## Finding 4 — enqueue storage and next-wake headroom
 
-The original public APIs remain available through `sudachi_life.checkpoints` and `sudachi_life.checkpoint_repair`. Internal responsibilities are separated to keep validation, registration, retention, reconciliation, and storage accounting independently testable:
+### First repair
 
-- `checkpoint_core.py`
-- `checkpoint_creation.py`
-- `checkpoint_retention.py`
-- `checkpoint_retention_prune.py`
-- `checkpoint_retention_reconcile.py`
-- `checkpoint_retention_warning.py`
-- `checkpoint_repair_types.py`
-- `checkpoint_repair_validate.py`
-- `checkpoint_repair_commit.py`
-- `runtime_storage.py`
-- `schema_contract.py`
+The initial PR repair checked SQLite allocated pages before the enqueue clock read and after inbox/event writes, rolling back before the active database crossed 8 MiB.
 
-The fixed garden policy, action/evaluation semantics, authority namespaces, rollback policy, caregiver-zero budget, and Phase 1 contract remain unchanged.
+### First re-audit residual
+
+Codex reproduced a boundary where enqueue stopped at exactly 8 MiB. The organism remained `sleeping`, but the next wake required another SQLite page and rolled back. The finding was therefore only partially resolved.
+
+### Additional repair
+
+- `runtime_storage.py` defines a 1 MiB implementation reserve inside the accepted 8 MiB active-database ceiling
+- enqueue requires that reserve both before its clock read and after its writes
+- a rejected enqueue rolls back inbox, audit event, and sequence changes
+- duplicate replay remains zero-clock and idempotent because existing identifiers are resolved before the storage preflight
+- the reserve is not a new budget and does not increase the 8 MiB ceiling; it preserves capacity for one bounded Phase 1 wake
+
+Protected tests:
+
+- `test_enqueue_rolls_back_before_crossing_active_database_limit`
+- `test_enqueue_keeps_one_bounded_wake_of_active_database_headroom`
+
+## Finding 5 — crash-retryable retention reconciliation
+
+### First repair
+
+The initial PR repair recorded post-commit pruning cleanup failure as explicit maintenance and provided administrative reconciliation for `.pruning-*` staging.
+
+### First re-audit residual
+
+Codex interrupted reconciliation after the staging directory had been deleted but before the completion audit event committed. The filesystem cleanup was complete, but no canonical completion evidence remained. The finding was therefore only partially resolved.
+
+### Additional repair
+
+Reconciliation is now two-step and idempotent:
+
+1. validate the committed prune evidence and commit `checkpoint_retention_cleanup_reconciliation_pending`
+2. delete only the scheduled staging directories and fsync the checkpoint store
+3. append `checkpoint_retention_cleanup_reconciled`, referencing the pending event sequence
+
+If interruption occurs after deletion and before completion:
+
+- the pending event remains durable
+- retry recognizes the already-missing scheduled directories
+- retry appends the completion event without another clock read
+- ambiguous, unexpected, still-canonical, or unaudited staging fails closed
+
+Protected tests:
+
+- `test_post_commit_retention_cleanup_is_explicit_and_reconcilable`
+- `test_retention_reconciliation_retries_after_delete_before_completion_audit`
 
 ## Validation history
 
-- run 332: source/tests compiled; **144 passed / 5 failed**; failures exposed integration mismatches in fault-injection compatibility and new test setup
-- run 333: **149 passed in 9.97 seconds**
-- run 334: **149 passed / 1 failed**; remaining failure was the safe abort-guard parser test
-- run 335 at head `4bb632a226dd8891fbd71aec345b1298777e3614`: clean editable installation, source/test compilation, genesis CLI smoke, and **150 passed in 8.74 seconds**
+- run 335: **150 passed in 8.74 seconds**
+- run 336: **150 passed in 10.16 seconds**
+- first Codex re-audit: findings 1/2/3/6 resolved; findings 4/5 partially resolved
+- run 340 at head `b8ce12843d9692e50e770735d00f4b5379425eca`: clean installation, source/test compilation, genesis CLI smoke, and **152 passed in 10.32 seconds**
 
-No existing protected test was deleted, weakened, skipped, or redefined to obtain the green result.
+No existing protected test was deleted, weakened, skipped, or redefined.
 
-## Re-audit gate
+## Second re-audit gate
 
-PR #57 remains draft. The next task is an independent read-only Codex re-audit of the latest PR head against each of the six original Issue #56 findings.
+PR #57 remains draft. The next external task is a read-only Codex re-audit of the final documentation-synchronized PR head.
 
-The re-audit must:
+The second re-audit must:
 
-1. inspect the latest PR #57 head rather than the old baseline commit
-2. rerun the complete protected suite
-3. reproduce or otherwise verify each original finding against the repair
-4. classify every finding as resolved, partially resolved, unresolved, or superseded by a new verified defect
-5. report any new regression with exact evidence and minimal reproduction
-6. post a finding-by-finding report and one allowed final conclusion in Issue #56
-7. make no tracked-file changes and introduce no Phase 2 behavior
+1. rerun the complete protected suite
+2. repeat the exact Finding 4 boundary at the real 8 MiB ceiling and verify accepted enqueue leaves the next wake executable
+3. interrupt Finding 5 reconciliation after deletion and verify retry produces exactly one linked completion audit without a new clock read
+4. check that the two additional repairs do not reopen findings 1, 2, 3, or 6
+5. post finding-by-finding evidence and one allowed final conclusion in Issue #56
+6. make no tracked-file changes and introduce no Phase 2 behavior
 
-PR #57 may be merged, Issue #13 reclosed, and the 150-test Phase 1 baseline re-frozen only after a satisfactory re-audit.
+PR #57 may be merged, Issue #13 reclosed, and the Phase 1 baseline re-frozen only after a satisfactory second re-audit.
