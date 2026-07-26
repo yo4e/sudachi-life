@@ -1,4 +1,4 @@
-"""Protected SQLite schema and immutable Phase 1 registry validation."""
+"""Protected SQLite schema and immutable configuration validation."""
 
 from __future__ import annotations
 
@@ -6,10 +6,22 @@ from functools import lru_cache
 import json
 import sqlite3
 
-from .constants import BUDGET_CONFIG_VERSION, ENVIRONMENT_VERSION, PHASE1_BUDGETS
+from .constants import (
+    BUDGET_CONFIG_VERSION,
+    ENVIRONMENT_VERSION,
+    PHASE1_BUDGETS,
+    SCHEMA_VERSION,
+)
 from .errors import SchemaValidationError
+from .phase2_schema import (
+    ACCEPTED_CONSULTATION_CONFIGURATION_VERSIONS,
+    CONSULTATION_PROTOCOL_VERSION,
+    PHASE2_SCHEMA_VERSION,
+    PHASE2_SQL_EXTENSION,
+    consultation_configuration_json,
+)
 
-SQL_SCHEMA = """
+PHASE1_SQL_SCHEMA = """
 PRAGMA foreign_keys = ON;
 CREATE TABLE organism (
     singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1), organism_id TEXT NOT NULL UNIQUE,
@@ -41,24 +53,43 @@ CREATE TRIGGER event_no_delete BEFORE DELETE ON event BEGIN SELECT RAISE(ABORT, 
 CREATE TABLE checkpoint_registry (checkpoint_id TEXT PRIMARY KEY, lineage_generation INTEGER NOT NULL CHECK (lineage_generation >= 0), event_sequence INTEGER NOT NULL CHECK (event_sequence >= 0), manifest_sha256 TEXT NOT NULL, database_sha256 TEXT NOT NULL, database_size_bytes INTEGER NOT NULL CHECK (database_size_bytes >= 0), created_wall_time_utc_us INTEGER NOT NULL, registered_wall_time_utc_us INTEGER NOT NULL, protected INTEGER NOT NULL DEFAULT 0 CHECK (protected IN (0, 1)));
 """
 
+SQL_SCHEMA = PHASE1_SQL_SCHEMA
+PHASE2_SQL_SCHEMA = PHASE1_SQL_SCHEMA + PHASE2_SQL_EXTENSION
+SUPPORTED_SCHEMA_VERSIONS = (SCHEMA_VERSION, PHASE2_SCHEMA_VERSION)
+
+
+def schema_sql_for_version(schema_version: int) -> str:
+    if schema_version == SCHEMA_VERSION:
+        return PHASE1_SQL_SCHEMA
+    if schema_version == PHASE2_SCHEMA_VERSION:
+        return PHASE2_SQL_SCHEMA
+    raise SchemaValidationError(f"unsupported database schema version: {schema_version}")
+
 
 def _normalize_schema_sql(sql: object) -> str:
     return " ".join(str(sql).split())
 
 
-def _schema_signature(connection: sqlite3.Connection) -> dict[tuple[str, str], tuple[str, str]]:
+def _schema_signature(
+    connection: sqlite3.Connection,
+) -> dict[tuple[str, str], tuple[str, str]]:
     rows = connection.execute(
         "SELECT type, name, tbl_name, sql FROM sqlite_master "
         "WHERE name NOT LIKE 'sqlite_%' AND sql IS NOT NULL ORDER BY type, name, tbl_name"
     ).fetchall()
-    return {(str(row[0]), str(row[1])): (str(row[2]), _normalize_schema_sql(row[3])) for row in rows}
+    return {
+        (str(row[0]), str(row[1])): (str(row[2]), _normalize_schema_sql(row[3]))
+        for row in rows
+    }
 
 
-@lru_cache(maxsize=1)
-def _expected_schema_signature() -> dict[tuple[str, str], tuple[str, str]]:
+@lru_cache(maxsize=2)
+def _expected_schema_signature(
+    schema_version: int = SCHEMA_VERSION,
+) -> dict[tuple[str, str], tuple[str, str]]:
     reference = sqlite3.connect(":memory:", isolation_level=None)
     try:
-        reference.executescript(SQL_SCHEMA)
+        reference.executescript(schema_sql_for_version(schema_version))
         return _schema_signature(reference)
     finally:
         reference.close()
@@ -72,7 +103,10 @@ def _is_side_effect_free_abort_guard(definition: tuple[str, str]) -> bool:
     body = upper.split(" BEGIN ", 1)[1].strip()
     if not body.startswith("SELECT RAISE(ABORT"):
         return False
-    forbidden = (" INSERT ", " UPDATE ", " DELETE ", " REPLACE ", " CREATE ", " DROP ", " ALTER ", " ATTACH ", " DETACH ", " PRAGMA ")
+    forbidden = (
+        " INSERT ", " UPDATE ", " DELETE ", " REPLACE ", " CREATE ",
+        " DROP ", " ALTER ", " ATTACH ", " DETACH ", " PRAGMA ",
+    )
     padded_body = f" {body} "
     return not any(token in padded_body for token in forbidden)
 
@@ -80,37 +114,147 @@ def _is_side_effect_free_abort_guard(definition: tuple[str, str]) -> bool:
 def _require_singleton_count(connection: sqlite3.Connection, table: str) -> None:
     count = int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
     if count != 1:
-        raise SchemaValidationError(f"protected singleton table {table} has {count} rows instead of 1")
+        raise SchemaValidationError(
+            f"protected singleton table {table} has {count} rows instead of 1"
+        )
 
 
-def validate_protected_schema_and_configuration(connection: sqlite3.Connection) -> None:
-    actual = _schema_signature(connection)
-    expected = _expected_schema_signature()
-    for key, expected_definition in expected.items():
-        if actual.get(key) != expected_definition:
-            raise SchemaValidationError("protected SQLite schema fingerprint mismatch: " f"required object {key!r} is missing or changed")
-    for key, definition in actual.items():
-        if key in expected:
-            continue
-        if key[0] != "trigger" or not _is_side_effect_free_abort_guard(definition):
-            raise SchemaValidationError("protected SQLite schema fingerprint mismatch: " f"unexpected mutable object {key!r}")
+def _validate_phase1_configuration(
+    connection: sqlite3.Connection,
+    *,
+    require_canonical_json: bool,
+) -> None:
     for table in ("organism", "budget_config", "environment_state", "inventory"):
         _require_singleton_count(connection, table)
-    budget_row = connection.execute("SELECT config_version, config_json FROM budget_config WHERE singleton_id = 1").fetchone()
+    budget_row = connection.execute(
+        "SELECT config_version, config_json FROM budget_config WHERE singleton_id = 1"
+    ).fetchone()
     if budget_row is None or budget_row["config_version"] != BUDGET_CONFIG_VERSION:
         raise SchemaValidationError("missing or invalid protected budget configuration")
     try:
         budget_values = json.loads(budget_row["config_json"])
     except (TypeError, json.JSONDecodeError) as exc:
-        raise SchemaValidationError("protected budget configuration is not valid JSON") from exc
+        raise SchemaValidationError(
+            "protected budget configuration is not valid JSON"
+        ) from exc
     if budget_values != PHASE1_BUDGETS.as_dict():
-        raise SchemaValidationError("protected budget values do not match Contract v0.2")
-    environment = connection.execute("SELECT * FROM environment_state WHERE singleton_id = 1").fetchone()
+        raise SchemaValidationError(
+            "protected budget values do not match Contract v0.2"
+        )
+    expected_budget_json = json.dumps(
+        PHASE1_BUDGETS.as_dict(), sort_keys=True, separators=(",", ":")
+    )
+    if require_canonical_json and budget_row["config_json"] != expected_budget_json:
+        raise SchemaValidationError(
+            "protected budget configuration is not canonical JSON"
+        )
+    environment = connection.execute(
+        "SELECT * FROM environment_state WHERE singleton_id = 1"
+    ).fetchone()
     if environment is None or environment["environment_version"] != ENVIRONMENT_VERSION:
         raise SchemaValidationError("missing or invalid seed environment")
-    plot_layout = tuple(tuple(row) for row in connection.execute("SELECT plot_id, stage FROM garden_plot ORDER BY plot_id").fetchall())
+    plot_layout = tuple(
+        tuple(row)
+        for row in connection.execute(
+            "SELECT plot_id, stage FROM garden_plot ORDER BY plot_id"
+        ).fetchall()
+    )
     if plot_layout != (("bed-a", "sprout"), ("bed-b", "mature")):
-        raise SchemaValidationError(f"protected seed-garden layout mismatch: {plot_layout!r}")
-    actions = tuple(tuple(row) for row in connection.execute("SELECT action_id, version, deterministic, protected FROM action_definition ORDER BY action_id").fetchall())
+        raise SchemaValidationError(
+            f"protected seed-garden layout mismatch: {plot_layout!r}"
+        )
+    actions = tuple(
+        tuple(row)
+        for row in connection.execute(
+            "SELECT action_id, version, deterministic, protected "
+            "FROM action_definition ORDER BY action_id"
+        ).fetchall()
+    )
     if actions != (("harvest_plot", 1, 1, 1), ("water_plot", 1, 1, 1)):
-        raise SchemaValidationError(f"protected action registry mismatch: {actions!r}")
+        raise SchemaValidationError(
+            f"protected action registry mismatch: {actions!r}"
+        )
+
+
+def _validate_consultation_configuration(connection: sqlite3.Connection) -> None:
+    _require_singleton_count(connection, "consultation_configuration")
+    row = connection.execute(
+        "SELECT protocol_version, configuration_version, configuration_json "
+        "FROM consultation_configuration WHERE singleton_id = 1"
+    ).fetchone()
+    if row is None or int(row["protocol_version"]) != CONSULTATION_PROTOCOL_VERSION:
+        raise SchemaValidationError("missing or invalid consultation protocol version")
+    version = str(row["configuration_version"])
+    if version not in ACCEPTED_CONSULTATION_CONFIGURATION_VERSIONS:
+        raise SchemaValidationError(
+            f"unsupported consultation configuration: {version!r}"
+        )
+    expected_json = consultation_configuration_json(version)
+    if row["configuration_json"] != expected_json:
+        raise SchemaValidationError(
+            "protected consultation configuration is noncanonical or changed"
+        )
+    try:
+        decoded = json.loads(row["configuration_json"])
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise SchemaValidationError(
+            "protected consultation configuration is not valid JSON"
+        ) from exc
+    if decoded.get("configuration_version") != version:
+        raise SchemaValidationError(
+            "consultation configuration version does not match its canonical object"
+        )
+    if decoded.get("protocol_version") != CONSULTATION_PROTOCOL_VERSION:
+        raise SchemaValidationError(
+            "consultation protocol version does not match its canonical object"
+        )
+
+
+def validate_protected_schema_and_configuration(
+    connection: sqlite3.Connection,
+    *,
+    expected_schema_version: int | None = None,
+) -> int:
+    """Validate exact protected objects/configuration and return schema version."""
+
+    user_version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+    schema_version = (
+        user_version if expected_schema_version is None else expected_schema_version
+    )
+    if schema_version not in SUPPORTED_SCHEMA_VERSIONS:
+        raise SchemaValidationError(
+            f"unsupported database schema version: {schema_version}"
+        )
+    if user_version != schema_version:
+        raise SchemaValidationError(
+            f"SQLite user_version mismatch: expected {schema_version}, found {user_version}"
+        )
+
+    actual = _schema_signature(connection)
+    expected = _expected_schema_signature(schema_version)
+    for key, expected_definition in expected.items():
+        if actual.get(key) != expected_definition:
+            raise SchemaValidationError(
+                "protected SQLite schema fingerprint mismatch: "
+                f"required object {key!r} is missing or changed"
+            )
+    for key, definition in actual.items():
+        if key in expected:
+            continue
+        if (
+            schema_version != SCHEMA_VERSION
+            or key[0] != "trigger"
+            or not _is_side_effect_free_abort_guard(definition)
+        ):
+            raise SchemaValidationError(
+                "protected SQLite schema fingerprint mismatch: "
+                f"unexpected mutable object {key!r}"
+            )
+
+    _validate_phase1_configuration(
+        connection,
+        require_canonical_json=(schema_version == PHASE2_SCHEMA_VERSION),
+    )
+    if schema_version == PHASE2_SCHEMA_VERSION:
+        _validate_consultation_configuration(connection)
+    return schema_version
