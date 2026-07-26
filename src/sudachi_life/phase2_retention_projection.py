@@ -33,6 +33,9 @@ _PRUNED_EVENT: Final = "checkpoint_pruned"
 _FAILED_EVENT: Final = "checkpoint_retention_failed"
 _PENDING_EVENT: Final = "checkpoint_retention_cleanup_reconciliation_pending"
 _RECONCILED_EVENT: Final = "checkpoint_retention_cleanup_reconciled"
+_RETENTION_EVENTS: Final[frozenset[str]] = frozenset(
+    {_PRUNED_EVENT, _FAILED_EVENT, _PENDING_EVENT, _RECONCILED_EVENT}
+)
 
 _PRUNED_KEYS: Final[frozenset[str]] = frozenset(
     {
@@ -69,12 +72,7 @@ _FAILED_KEYS: Final[frozenset[str]] = frozenset(
     }
 )
 _PENDING_KEYS: Final[frozenset[str]] = frozenset(
-    {
-        "checkpoint_ids",
-        "reason",
-        "staging_directories",
-        "status_before",
-    }
+    {"checkpoint_ids", "reason", "staging_directories", "status_before"}
 )
 _RECONCILED_KEYS: Final[frozenset[str]] = frozenset(
     {
@@ -213,7 +211,7 @@ def _staging_map(
     return result
 
 
-def _retention_event_map(
+def _event_map(
     evidence: ZeroCaregiverRetentionEvidence | None,
 ) -> dict[int, EventPayloadEvidence]:
     if evidence is None:
@@ -242,6 +240,23 @@ def _require_artifact(
     return artifact
 
 
+def _read_staged_manifest(staged_dir: Path) -> dict[str, Any]:
+    manifest_path = staged_dir / "manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ZeroCaregiverProjectionError(
+            "retention staging manifest is not valid JSON"
+        ) from exc
+    if not isinstance(manifest, dict):
+        raise ZeroCaregiverProjectionError("retention staging manifest is not an object")
+    try:
+        validate_checkpoint_directory(staged_dir, expected_manifest=manifest)
+    except (CheckpointError, SchemaValidationError) as exc:
+        raise ZeroCaregiverProjectionError(str(exc)) from exc
+    return manifest
+
+
 def _inventory_current_staging(
     paths: OrganismPaths,
     *,
@@ -260,11 +275,7 @@ def _inventory_current_staging(
             continue
         if staged_dir.is_symlink() or not staged_dir.is_dir():
             raise ZeroCaregiverProjectionError("retention staging entry is unsafe")
-        try:
-            manifest = validate_checkpoint_directory(staged_dir)
-        except (CheckpointError, SchemaValidationError) as exc:
-            raise ZeroCaregiverProjectionError(str(exc)) from exc
-
+        manifest = _read_staged_manifest(staged_dir)
         boundary = (
             _strict_int(
                 manifest.get("lineage_generation"),
@@ -284,8 +295,7 @@ def _inventory_current_staging(
             boundary,
             context="retention staging boundary",
         )
-        expected_name = f".pruning-{artifact.checkpoint_id}"
-        if staged_dir.name != expected_name:
+        if staged_dir.name != f".pruning-{artifact.checkpoint_id}":
             raise ZeroCaregiverProjectionError(
                 "retention staging directory does not match witnessed artifact"
             )
@@ -322,7 +332,7 @@ def _inventory_current_staging(
     return current, tuple(ordered)
 
 
-def _merge_staging_evidence(
+def _merge_staging(
     prior: dict[tuple[int, int], RetentionStagingEvidence],
     current: dict[tuple[int, int], RetentionStagingEvidence],
 ) -> dict[tuple[int, int], RetentionStagingEvidence]:
@@ -337,7 +347,7 @@ def _merge_staging_evidence(
     return merged
 
 
-def _validate_linked_checkpoint(
+def _linked_artifact(
     payload: dict[str, Any],
     *,
     id_key: str,
@@ -353,7 +363,7 @@ def _validate_linked_checkpoint(
     return artifact
 
 
-def _validate_pruned_event(
+def _validate_pruned(
     row: dict[str, Any],
     payload: dict[str, Any],
     *,
@@ -369,18 +379,15 @@ def _validate_pruned_event(
     if _strict_int(payload.get("retention_limit"), context="retention_limit") != CHECKPOINT_RETENTION_LIMIT:
         raise ZeroCaregiverProjectionError("checkpoint_pruned retention limit changed")
 
-    lineage_generation = _strict_int(
-        row.get("lineage_generation"),
-        context="checkpoint_pruned event lineage",
-    )
+    lineage = _strict_int(row.get("lineage_generation"), context="prune lineage")
     latest_boundary = (
-        lineage_generation,
+        lineage,
         _strict_int(
             payload.get("latest_stable_event_sequence"),
-            context="checkpoint_pruned latest event sequence",
+            context="prune latest event sequence",
         ),
     )
-    latest = _validate_linked_checkpoint(
+    latest = _linked_artifact(
         payload,
         id_key="latest_stable_checkpoint_id",
         boundary=latest_boundary,
@@ -390,14 +397,14 @@ def _validate_pruned_event(
     pruned_boundary = (
         _strict_int(
             payload.get("pruned_lineage_generation"),
-            context="checkpoint_pruned pruned lineage",
+            context="pruned lineage",
         ),
         _strict_int(
             payload.get("pruned_event_sequence"),
-            context="checkpoint_pruned pruned event sequence",
+            context="pruned event sequence",
         ),
     )
-    pruned = _validate_linked_checkpoint(
+    pruned = _linked_artifact(
         payload,
         id_key="pruned_checkpoint_id",
         boundary=pruned_boundary,
@@ -405,43 +412,37 @@ def _validate_pruned_event(
         context="pruned checkpoint boundary",
     )
     if pruned_boundary in registry_boundaries:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_pruned boundary still exists in the canonical registry"
-        )
+        raise ZeroCaregiverProjectionError("pruned boundary still exists in registry")
     if latest_boundary not in registry_boundaries:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_pruned latest boundary is absent from the canonical registry"
-        )
+        raise ZeroCaregiverProjectionError("latest prune boundary is absent from registry")
     if _strict_int(
         payload.get("pruned_artifact_size_bytes"),
-        context="checkpoint_pruned artifact size",
+        context="pruned artifact size",
     ) != pruned.artifact_size_bytes:
         raise ZeroCaregiverProjectionError(
             "checkpoint_pruned artifact size does not match pre-deletion evidence"
         )
     if _strict_int(
         payload.get("pruned_database_size_bytes"),
-        context="checkpoint_pruned database size",
+        context="pruned database size",
     ) != pruned.database_size_bytes:
         raise ZeroCaregiverProjectionError(
             "checkpoint_pruned database size does not match pre-deletion evidence"
         )
     if _strict_int(
         payload.get("retained_checkpoint_count"),
-        context="checkpoint_pruned retained count",
+        context="retained checkpoint count",
     ) != len(registry_boundaries):
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_pruned retained count does not match the registry"
-        )
+        raise ZeroCaregiverProjectionError("retained checkpoint count differs from registry")
 
-    expected_store_bytes = measured_store_bytes
+    expected_store = measured_store_bytes
     staged = current_staging.get(pruned_boundary)
     if staged is not None:
-        expected_store_bytes -= staged.artifact_size_bytes
-    if expected_store_bytes < 0 or _strict_int(
+        expected_store -= staged.artifact_size_bytes
+    if expected_store < 0 or _strict_int(
         payload.get("retained_checkpoint_store_bytes"),
-        context="checkpoint_pruned retained store bytes",
-    ) != expected_store_bytes:
+        context="retained checkpoint store bytes",
+    ) != expected_store:
         raise ZeroCaregiverProjectionError(
             "checkpoint_pruned retained store bytes do not match measured evidence"
         )
@@ -458,7 +459,7 @@ def _validate_pruned_event(
     return projected
 
 
-def _validate_failed_event(
+def _validate_failed(
     row: dict[str, Any],
     payload: dict[str, Any],
     *,
@@ -468,42 +469,33 @@ def _validate_failed_event(
     registry_event_sequences: list[int],
     measured_store_bytes: int,
 ) -> dict[str, Any]:
-    candidate_restored = _strict_bool(
+    restored = _strict_bool(
         payload.get("candidate_restored"),
-        context="checkpoint_retention_failed candidate_restored",
+        context="retention candidate_restored",
     )
     expected_keys = set(_FAILED_KEYS)
-    if not candidate_restored:
+    if not restored:
         expected_keys.add("staging_directory")
     if set(payload) != expected_keys:
         raise ZeroCaregiverProjectionError(
             "checkpoint_retention_failed payload keys are not exact"
         )
     if payload.get("maintenance_reason") != MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_retention_failed maintenance reason changed"
-        )
+        raise ZeroCaregiverProjectionError("retention maintenance reason changed")
     if payload.get("status_after") != "maintenance_required":
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_retention_failed status is not maintenance_required"
-        )
-    if _strict_int(payload.get("retention_limit"), context="retention_limit") != CHECKPOINT_RETENTION_LIMIT:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_retention_failed retention limit changed"
-        )
+        raise ZeroCaregiverProjectionError("retention failure status changed")
+    if _strict_int(payload.get("retention_limit"), context="retention limit") != CHECKPOINT_RETENTION_LIMIT:
+        raise ZeroCaregiverProjectionError("retention failure limit changed")
 
-    lineage_generation = _strict_int(
-        row.get("lineage_generation"),
-        context="checkpoint_retention_failed event lineage",
-    )
+    lineage = _strict_int(row.get("lineage_generation"), context="failure lineage")
     candidate_boundary = (
-        lineage_generation,
+        lineage,
         _strict_int(
             payload.get("candidate_event_sequence"),
-            context="checkpoint_retention_failed candidate event sequence",
+            context="candidate event sequence",
         ),
     )
-    candidate = _validate_linked_checkpoint(
+    candidate = _linked_artifact(
         payload,
         id_key="candidate_checkpoint_id",
         boundary=candidate_boundary,
@@ -511,13 +503,13 @@ def _validate_failed_event(
         context="checkpoint_retention_failed candidate checkpoint",
     )
     latest_boundary = (
-        lineage_generation,
+        lineage,
         _strict_int(
             payload.get("latest_stable_event_sequence"),
-            context="checkpoint_retention_failed latest event sequence",
+            context="failure latest event sequence",
         ),
     )
-    latest = _validate_linked_checkpoint(
+    latest = _linked_artifact(
         payload,
         id_key="latest_stable_checkpoint_id",
         boundary=latest_boundary,
@@ -525,65 +517,50 @@ def _validate_failed_event(
         context="checkpoint_retention_failed latest checkpoint",
     )
     if latest_boundary not in registry_boundaries:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_retention_failed latest boundary is absent from registry"
-        )
+        raise ZeroCaregiverProjectionError("retention latest boundary is absent from registry")
     if _strict_int(
         payload.get("checkpoint_store_bytes"),
-        context="checkpoint_retention_failed checkpoint store bytes",
+        context="retention checkpoint store bytes",
     ) != measured_store_bytes:
         raise ZeroCaregiverProjectionError(
             "checkpoint_retention_failed checkpoint_store_bytes does not match measured store"
         )
+    expected_count = len(registry_boundaries)
     if _strict_int(
         payload.get("registered_checkpoint_count"),
-        context="checkpoint_retention_failed registered count",
-    ) != len(registry_boundaries):
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_retention_failed registered count does not match registry"
-        )
+        context="registered checkpoint count",
+    ) != expected_count:
+        raise ZeroCaregiverProjectionError("registered checkpoint count differs")
     if _strict_int(
         payload.get("stable_checkpoint_count"),
-        context="checkpoint_retention_failed stable count",
-    ) != len(registry_boundaries):
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_retention_failed stable count does not match registry"
-        )
+        context="stable checkpoint count",
+    ) != expected_count:
+        raise ZeroCaregiverProjectionError("stable checkpoint count differs")
     if _strict_int_list(
         payload.get("registered_checkpoint_boundaries"),
-        context="checkpoint_retention_failed registered boundaries",
+        context="registered checkpoint boundaries",
     ) != registry_event_sequences:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint_retention_failed registered boundaries do not match registry"
-        )
+        raise ZeroCaregiverProjectionError("registered checkpoint boundaries differ")
 
     projected = dict(payload)
     projected["candidate_checkpoint_id"] = candidate.token
     projected["latest_stable_checkpoint_id"] = latest.token
     projected["checkpoint_store_bytes"] = BYTE_DERIVED_SENTINEL
-    if candidate_restored:
+    if restored:
         if candidate_boundary not in registry_boundaries:
-            raise ZeroCaregiverProjectionError(
-                "restored retention candidate is absent from registry"
-            )
+            raise ZeroCaregiverProjectionError("restored candidate is absent from registry")
         if candidate_boundary in current_staging:
-            raise ZeroCaregiverProjectionError(
-                "restored retention candidate still has staging evidence"
-            )
+            raise ZeroCaregiverProjectionError("restored candidate still has staging")
         if (
             payload.get("injection_point")
             != "after_artifact_stage_before_registry_mutation"
             or payload.get("reason")
             != "protected_test_injected_checkpoint_retention_failure"
         ):
-            raise ZeroCaregiverProjectionError(
-                "restored retention failure classification changed"
-            )
+            raise ZeroCaregiverProjectionError("restored retention classification changed")
     else:
         if candidate_boundary in registry_boundaries:
-            raise ZeroCaregiverProjectionError(
-                "committed prune candidate still exists in registry"
-            )
+            raise ZeroCaregiverProjectionError("committed prune candidate remains registered")
         staged = current_staging.get(candidate_boundary)
         if staged is None:
             raise ZeroCaregiverProjectionError(
@@ -598,66 +575,50 @@ def _validate_failed_event(
             != "after_registry_commit_before_staging_cleanup"
             or payload.get("reason") != "post_commit_staging_cleanup_failed"
         ):
-            raise ZeroCaregiverProjectionError(
-                "post-commit retention failure classification changed"
-            )
+            raise ZeroCaregiverProjectionError("post-commit classification changed")
         projected["staging_directory"] = staged.staging_token
     return projected
 
 
-def _validate_pending_event(
+def _validate_pending(
     payload: dict[str, Any],
     *,
     staging: dict[tuple[int, int], RetentionStagingEvidence],
 ) -> dict[str, Any]:
     if set(payload) != _PENDING_KEYS:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup pending payload keys are not exact"
-        )
+        raise ZeroCaregiverProjectionError("retention pending payload keys are not exact")
     if payload.get("reason") != "committed_prune_cleanup_reconciliation":
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup pending reason changed"
-        )
+        raise ZeroCaregiverProjectionError("retention pending reason changed")
     checkpoint_ids = _strict_string_list(
         payload.get("checkpoint_ids"),
-        context="checkpoint retention cleanup pending checkpoint_ids",
+        context="retention pending checkpoint_ids",
     )
-    staging_directories = _strict_string_list(
+    directories = _strict_string_list(
         payload.get("staging_directories"),
-        context="checkpoint retention cleanup pending staging_directories",
+        context="retention pending staging_directories",
     )
-    if not checkpoint_ids or len(checkpoint_ids) != len(staging_directories):
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup pending lists are not aligned"
-        )
-    if staging_directories != sorted(set(staging_directories)):
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup pending staging order is not canonical"
-        )
+    if not checkpoint_ids or len(checkpoint_ids) != len(directories):
+        raise ZeroCaregiverProjectionError("retention pending lists are not aligned")
+    if directories != sorted(set(directories)):
+        raise ZeroCaregiverProjectionError("retention pending directory order changed")
 
-    staging_by_name = {item.staging_directory: item for item in staging.values()}
+    by_name = {item.staging_directory: item for item in staging.values()}
     projected_ids: list[str] = []
     projected_directories: list[str] = []
-    seen_boundaries: set[tuple[int, int]] = set()
-    for checkpoint_id, directory in zip(
-        checkpoint_ids,
-        staging_directories,
-        strict=True,
-    ):
-        witness = staging_by_name.get(directory)
+    seen: set[tuple[int, int]] = set()
+    for checkpoint_id, directory in zip(checkpoint_ids, directories, strict=True):
+        witness = by_name.get(directory)
         if witness is None:
             raise ZeroCaregiverProjectionError(
-                "checkpoint retention cleanup pending directory has no prior witness"
+                "retention pending directory has no prior witness"
             )
         if checkpoint_id != witness.checkpoint_id:
             raise ZeroCaregiverProjectionError(
-                "checkpoint retention cleanup pending checkpoint does not match staging witness"
+                "retention pending checkpoint does not match staging witness"
             )
-        if witness.boundary in seen_boundaries:
-            raise ZeroCaregiverProjectionError(
-                "checkpoint retention cleanup pending boundary is duplicated"
-            )
-        seen_boundaries.add(witness.boundary)
+        if witness.boundary in seen:
+            raise ZeroCaregiverProjectionError("retention pending boundary is duplicated")
+        seen.add(witness.boundary)
         projected_ids.append(witness.checkpoint_token)
         projected_directories.append(witness.staging_token)
 
@@ -667,65 +628,54 @@ def _validate_pending_event(
     return projected
 
 
-def _validate_reconciled_event(
+def _validate_reconciled(
     row: dict[str, Any],
     payload: dict[str, Any],
     *,
-    event_evidence: dict[int, EventPayloadEvidence],
+    events: dict[int, EventPayloadEvidence],
 ) -> dict[str, Any]:
     if set(payload) != _RECONCILED_KEYS:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup reconciled payload keys are not exact"
-        )
+        raise ZeroCaregiverProjectionError("retention reconciled payload keys are not exact")
     if payload.get("reason") != "committed_prune_cleanup_reconciled":
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup reconciled reason changed"
-        )
+        raise ZeroCaregiverProjectionError("retention reconciled reason changed")
     pending_sequence = _strict_int(
         payload.get("reconciliation_pending_event_sequence"),
-        context="checkpoint retention cleanup reconciled pending sequence",
+        context="retention pending event sequence",
     )
     if pending_sequence >= _strict_int(
         row.get("event_sequence"),
-        context="checkpoint retention cleanup reconciled event sequence",
+        context="retention reconciled event sequence",
     ):
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup completion does not follow pending audit"
-        )
-    pending = event_evidence.get(pending_sequence)
+        raise ZeroCaregiverProjectionError("retention completion precedes pending audit")
+    pending = events.get(pending_sequence)
     if pending is None or pending.event_type != _PENDING_EVENT:
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup completion has no pending-event evidence"
-        )
-    pending_raw = _decode_object(
+        raise ZeroCaregiverProjectionError("retention completion has no pending evidence")
+    raw_pending = _decode_object(
         pending.raw_payload_json,
-        context="checkpoint retention cleanup pending raw evidence",
+        context="retention pending raw evidence",
     )
-    pending_projected = _decode_object(
+    projected_pending = _decode_object(
         pending.projected_payload_json,
-        context="checkpoint retention cleanup pending projected evidence",
+        context="retention pending projected evidence",
     )
     removed = _strict_string_list(
         payload.get("removed_staging_directories"),
-        context="checkpoint retention cleanup reconciled removed directories",
+        context="retention removed staging directories",
     )
     if removed != _strict_string_list(
-        pending_raw.get("staging_directories"),
-        context="checkpoint retention cleanup pending raw directories",
+        raw_pending.get("staging_directories"),
+        context="retention pending raw directories",
     ):
-        raise ZeroCaregiverProjectionError(
-            "checkpoint retention cleanup completion differs from pending audit"
-        )
-
+        raise ZeroCaregiverProjectionError("retention completion differs from pending audit")
     projected = dict(payload)
     projected["removed_staging_directories"] = _strict_string_list(
-        pending_projected.get("staging_directories"),
-        context="checkpoint retention cleanup pending projected directories",
+        projected_pending.get("staging_directories"),
+        context="retention pending projected directories",
     )
     return projected
 
 
-def _capture_retention_event_evidence(
+def _capture_events(
     connection: sqlite3.Connection,
     *,
     artifacts: dict[tuple[int, int], CheckpointArtifactEvidence],
@@ -739,33 +689,22 @@ def _capture_retention_event_evidence(
     result = dict(prior)
     for row_value in connection.execute("SELECT * FROM event ORDER BY event_sequence"):
         row = dict(row_value)
-        event_sequence = _strict_int(
-            row.get("event_sequence"),
-            context="retention event sequence",
-        )
         event_type = str(row.get("event_type"))
-        if event_type not in {
-            _PRUNED_EVENT,
-            _FAILED_EVENT,
-            _PENDING_EVENT,
-            _RECONCILED_EVENT,
-        }:
+        if event_type not in _RETENTION_EVENTS:
             continue
-        payload = _decode_object(
-            row.get("payload_json"),
-            context=f"{event_type} payload",
-        )
-        raw_payload_json = _canonical_json(payload)
+        event_sequence = _strict_int(row.get("event_sequence"), context="event sequence")
+        payload = _decode_object(row.get("payload_json"), context=f"{event_type} payload")
+        raw_json = _canonical_json(payload)
         previous = result.get(event_sequence)
         if previous is not None:
-            if previous.event_type != event_type or previous.raw_payload_json != raw_payload_json:
+            if previous.event_type != event_type or previous.raw_payload_json != raw_json:
                 raise ZeroCaregiverProjectionError(
-                    f"captured retention event evidence changed at sequence {event_sequence}"
+                    f"captured retention event changed at sequence {event_sequence}"
                 )
             continue
 
         if event_type == _PRUNED_EVENT:
-            projected = _validate_pruned_event(
+            projected = _validate_pruned(
                 row,
                 payload,
                 artifacts=artifacts,
@@ -774,7 +713,7 @@ def _capture_retention_event_evidence(
                 measured_store_bytes=measured_store_bytes,
             )
         elif event_type == _FAILED_EVENT:
-            projected = _validate_failed_event(
+            projected = _validate_failed(
                 row,
                 payload,
                 artifacts=artifacts,
@@ -784,20 +723,29 @@ def _capture_retention_event_evidence(
                 measured_store_bytes=measured_store_bytes,
             )
         elif event_type == _PENDING_EVENT:
-            projected = _validate_pending_event(payload, staging=all_staging)
+            projected = _validate_pending(payload, staging=all_staging)
         else:
-            projected = _validate_reconciled_event(
-                row,
-                payload,
-                event_evidence=result,
-            )
+            projected = _validate_reconciled(row, payload, events=result)
         result[event_sequence] = EventPayloadEvidence(
             event_sequence=event_sequence,
             event_type=event_type,
-            raw_payload_json=raw_payload_json,
+            raw_payload_json=raw_json,
             projected_payload_json=_canonical_json(projected),
         )
     return result
+
+
+def _has_pruned_event(paths: OrganismPaths) -> bool:
+    if not paths.database.is_file():
+        return False
+    connection = connect_database(paths.database, read_only=True)
+    try:
+        return connection.execute(
+            "SELECT 1 FROM event WHERE event_type=? LIMIT 1",
+            (_PRUNED_EVENT,),
+        ).fetchone() is not None
+    finally:
+        connection.close()
 
 
 def capture_zero_caregiver_retention_evidence(
@@ -807,19 +755,24 @@ def capture_zero_caregiver_retention_evidence(
 ) -> ZeroCaregiverRetentionEvidence:
     """Capture cumulative pre-deletion, staging, and retention-event evidence."""
 
-    core = capture_zero_caregiver_evidence(
-        paths,
-        previous=previous.core if previous is not None else None,
-    )
+    try:
+        core = capture_zero_caregiver_evidence(
+            paths,
+            previous=previous.core if previous is not None else None,
+        )
+    except ZeroCaregiverProjectionError as exc:
+        if previous is None and _has_pruned_event(paths) and "has no artifact" in str(exc):
+            raise ZeroCaregiverProjectionError(
+                "pruned checkpoint boundary has no artifact evidence"
+            ) from exc
+        raise
+
     artifacts = _artifact_map(core)
     current_staging, current_order = _inventory_current_staging(
         paths,
         artifacts=artifacts,
     )
-    all_staging = _merge_staging_evidence(
-        _staging_map(previous),
-        current_staging,
-    )
+    all_staging = _merge_staging(_staging_map(previous), current_staging)
 
     connection = connect_database(paths.database, read_only=True)
     try:
@@ -835,18 +788,15 @@ def capture_zero_caregiver_retention_evidence(
             raise ZeroCaregiverProjectionError(
                 "retention core registry boundaries changed during capture"
             )
-        registry_event_sequences = [
-            int(row["event_sequence"]) for row in registry_rows
-        ]
-        events = _capture_retention_event_evidence(
+        events = _capture_events(
             connection,
             artifacts=artifacts,
             all_staging=all_staging,
             current_staging=current_staging,
             registry_boundaries=registry_boundaries,
-            registry_event_sequences=registry_event_sequences,
+            registry_event_sequences=[int(row["event_sequence"]) for row in registry_rows],
             measured_store_bytes=checkpoint_store_bytes(paths),
-            prior=_retention_event_map(previous),
+            prior=_event_map(previous),
         )
     finally:
         connection.close()
@@ -859,33 +809,32 @@ def capture_zero_caregiver_retention_evidence(
     )
 
 
-def _apply_retention_event_projection(
+def _apply_event_projection(
     rows: list[dict[str, Any]],
     *,
     evidence: dict[int, EventPayloadEvidence],
 ) -> None:
     for row in rows:
-        event_sequence = int(row["event_sequence"])
-        proof = evidence.get(event_sequence)
+        sequence = int(row["event_sequence"])
+        proof = evidence.get(sequence)
         if proof is None:
             continue
         if row["event_type"] != proof.event_type:
             raise ZeroCaregiverProjectionError(
-                f"retention projection event type changed at sequence {event_sequence}"
+                f"retention event type changed at sequence {sequence}"
             )
         payload = row.get("payload_json")
         if not isinstance(payload, dict) or _canonical_json(payload) != proof.raw_payload_json:
             raise ZeroCaregiverProjectionError(
-                f"retention projection raw payload changed at sequence {event_sequence}"
+                f"retention raw payload changed at sequence {sequence}"
             )
-        projected = _decode_object(
+        row["payload_json"] = _decode_object(
             proof.projected_payload_json,
-            context=f"retention projected event {event_sequence}",
+            context=f"retention projected event {sequence}",
         )
-        row["payload_json"] = projected
 
 
-def _expected_schema_version(paths: OrganismPaths, expected: int) -> None:
+def _require_schema(paths: OrganismPaths, expected: int) -> None:
     connection = connect_database(paths.database, read_only=True)
     try:
         row = connection.execute(
@@ -893,15 +842,15 @@ def _expected_schema_version(paths: OrganismPaths, expected: int) -> None:
         ).fetchone()
     finally:
         connection.close()
-    if row is None or int(row["schema_version"]) != expected:
+    actual = None if row is None else int(row["schema_version"])
+    if actual != expected:
         side = "schema-v1" if expected == 1 else "schema-v2-zero"
-        actual = None if row is None else int(row["schema_version"])
         raise ZeroCaregiverProjectionError(
             f"{side} control has schema version {actual}"
         )
 
 
-def _project_retention_state(
+def _project(
     paths: OrganismPaths,
     *,
     evidence: ZeroCaregiverRetentionEvidence | None,
@@ -909,27 +858,21 @@ def _project_retention_state(
 ) -> dict[str, Any]:
     captured = capture_zero_caregiver_retention_evidence(paths, previous=evidence)
     if expected_schema_version is not None:
-        _expected_schema_version(paths, expected_schema_version)
+        _require_schema(paths, expected_schema_version)
     projected = project_zero_caregiver_state(paths, evidence=captured.core)
-    event_evidence = {
-        item.event_sequence: item for item in captured.event_payloads
-    }
-    _apply_retention_event_projection(
-        projected["tables"]["event"],
-        evidence=event_evidence,
-    )
+    event_evidence = {item.event_sequence: item for item in captured.event_payloads}
+    _apply_event_projection(projected["tables"]["event"], evidence=event_evidence)
     for checkpoint in projected["checkpoint_artifacts"]:
-        _apply_retention_event_projection(
+        _apply_event_projection(
             checkpoint["database_state"]["tables"]["event"],
             evidence=event_evidence,
         )
-
-    staging = {item.boundary: item for item in captured.staging_artifacts}
+    staged = {item.boundary: item for item in captured.staging_artifacts}
     projected["projection_version"] = "phase1-projection-v2/retention"
     projected["retention_staging_artifacts"] = [
         {
-            "checkpoint": staging[boundary].checkpoint_token,
-            "staging_directory": staging[boundary].staging_token,
+            "checkpoint": staged[boundary].checkpoint_token,
+            "staging_directory": staged[boundary].staging_token,
         }
         for boundary in captured.current_staging_boundaries
     ]
@@ -943,7 +886,7 @@ def project_zero_caregiver_retention_state(
 ) -> dict[str, Any]:
     """Validate one run and return its exact retention-extended projection."""
 
-    return _project_retention_state(paths, evidence=evidence)
+    return _project(paths, evidence=evidence)
 
 
 def assert_zero_caregiver_retention_equivalent(
@@ -955,20 +898,18 @@ def assert_zero_caregiver_retention_equivalent(
 ) -> None:
     """Require paired equality after retention-specific independent validation."""
 
-    left = _project_retention_state(
+    left = _project(
         schema_v1_paths,
         evidence=schema_v1_evidence,
         expected_schema_version=1,
     )
-    right = _project_retention_state(
+    right = _project(
         schema_v2_zero_paths,
         evidence=schema_v2_zero_evidence,
         expected_schema_version=PHASE2_SCHEMA_VERSION,
     )
     if left != right:
-        raise ZeroCaregiverProjectionError(
-            "retention-projected canonical state differs"
-        )
+        raise ZeroCaregiverProjectionError("retention-projected canonical state differs")
 
 
 __all__ = [
