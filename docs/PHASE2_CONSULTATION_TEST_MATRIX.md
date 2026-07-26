@@ -1,8 +1,8 @@
 # Phase 2 Consultation Boundary Test Matrix
 
-Status: **Accepted design evidence map with ADR 0008; no Phase 2 implementation exists yet**
+Status: **Accepted design evidence map with ADRs 0008 and 0009; no Phase 2 implementation exists yet**
 
-This matrix maps accepted ADR 0008 and `docs/phase2/CONSULTATION_PROTOCOL_V1.md` to protected evidence required before the deterministic-fixture implementation can be accepted.
+This matrix maps accepted ADRs 0008 and 0009 and `docs/phase2/CONSULTATION_PROTOCOL_V1.md` to protected evidence required before the deterministic-fixture implementation can be accepted.
 
 The unchanged 152-test Phase 1 suite is always the first regression layer.
 
@@ -20,28 +20,41 @@ The unchanged 152-test Phase 1 suite is always the first regression layer.
 
 | ID | Protected requirement | Required evidence |
 | --- | --- | --- |
-| P2-B01 | Schema-v2/protocol-v1 initializes with exactly one accepted Phase 2 budget configuration | Parameterized genesis |
-| P2-B02 | Zero-caregiver and fixture configurations are distinct and protected | Unknown and mixed configuration rejection |
-| P2-B03 | Original actions, evaluators, seed rows, clocks, and authority mappings are exact | Protected fingerprint |
-| P2-B04 | Consultation tables, indexes, keys, triggers, and immutable constraints are exact | Corrupt each object and reject active/checkpoint validation |
+| P2-B01 | Schema-v2/protocol-v1 preserves the original `budget_config` singleton and every original budget-version location exactly as `phase1-v1` | Exact row/event/status assertions |
+| P2-B02 | Exactly one protected `consultation_configuration` singleton contains protocol `1` and one accepted canonical object: `phase2-zero-caregiver-v1` or `phase2-fixture-v1` | Parameterized genesis and canonical JSON equality |
+| P2-B03 | Original actions, evaluators, seed rows, clocks, Phase 1 budget values, and authority mappings are exact | Protected fingerprint |
+| P2-B04 | Consultation tables, indexes, keys, triggers, singleton schema, accepted configuration objects, and immutable constraints are exact | Corrupt each object and reject active/checkpoint validation |
 | P2-B05 | Operational consultation tables and their sequences are empty at genesis | Exact rows and `sqlite_sequence` assertions |
 | P2-B06 | Genesis is checkpoint-stable before wakeable | Schema-v2 genesis checkpoint test |
 | P2-B07 | Schema-v1 is never auto-migrated or downgraded | Exact non-mutating rejection |
 | P2-B08 | No migration/downgrade command exists in the first implementation | API and CLI surface assertion |
+| P2-B09 | Unknown, missing, duplicate, mixed, noncanonical, or internally contradictory consultation configuration fails before canonical mutation | Schema/config adversarial corpus |
+| P2-B10 | `consultation_configuration.configuration_version` appears in every configuration-dependent request/dispatch identity and declared consultation row/event, never in original Phase 1 budget fields | Golden preimages and row/event inspection |
+| P2-B11 | The protected singleton is immutable and has exact cardinality one in active and checkpoint databases | Update/delete/duplicate/corruption rejection |
+| P2-B12 | Schema-v2 protected-object fingerprint includes empty operational consultation objects without adding columns to original Phase 1 tables | Schema diff and introspection |
 
-## C. Exact zero-caregiver control
+## C. Exact zero-caregiver semantic artifact control
 
 | ID | Protected requirement | Required evidence |
 | --- | --- | --- |
-| P2-C01 | Identical declared inputs and clocks drive paired schema-v1 and schema-v2-zero runs | Paired deterministic harness |
-| P2-C02 | Only original columns named exactly `schema_version` and `budget_config_version` receive the declared comparison exception | Projection-location whitelist test |
-| P2-C03 | Only top-level event-payload keys with those exact names are normalized | Nested/similar-key adversarial corpus |
-| P2-C04 | Every other original row, column, event type, sequence, authority, source, parent, key, and payload value matches exactly | Canonical projection equality |
-| P2-C05 | No additional or missing original event-payload key is hidden by projection | Add/remove-key rejection |
+| P2-C01 | Identical declared inputs, clocks, administrative reasons, selected semantic boundaries, fault choices, and operation order drive paired schema-v1/schema-v2-zero scenarios | Paired deterministic harness |
+| P2-C02 | Only exact original schema-version locations declared by ADR 0009 receive the schema sentinel; no original budget-version location is normalized | Closed projection-location map |
+| P2-C03 | Checkpoint, repair, retention, rollback, and export identity fields are projected only at exact table/column or event-type/top-level-JSON paths declared by ADR 0009 | Exact-path table-driven corpus |
+| P2-C04 | Every unlisted original row, column, event type, sequence, authority, source, parent, key, value, manifest field, and semantic boundary matches exactly | Canonical projection equality |
+| P2-C05 | No additional/missing key, wrong nesting, wrong list position, wrong event type, or moved allowed value is hidden | Add/remove/move-key adversarial corpus |
 | P2-C06 | All operational consultation tables are empty and have no sequence entry | Exact DB assertions |
-| P2-C07 | No consultation event, source, cost, adapter invocation, terminal, disposition, or effect occurs | Guarded adapter plus history/report assertions |
-| P2-C08 | Status, lifecycle, failure streak, behavior, checkpoint eligibility, rollback eligibility, and authority match | Paired scenarios |
-| P2-C09 | Raw SQLite bytes/checkpoint digests are explicitly not claimed equal because empty schema-v2 objects exist | Negative control |
+| P2-C07 | No consultation event, source, cost, fixture/adapter import or invocation, terminal, disposition, or effect occurs | Guarded imports plus history/report assertions |
+| P2-C08 | For operations independently admitted by both runs, status, lifecycle, failure streak, behavior, maintenance, event order, checkpoint boundaries, retention choice, rollback eligibility, lineage semantics, and authority match | Paired genesis/wake/maintenance/repair/retention/rollback scenarios |
+| P2-C09 | Raw SQLite/artifact/manifest/export bytes and byte-derived identities are not claimed equal; each is independently validated | Negative control plus per-side recomputation |
+| P2-C10 | Normal and maintenance `checkpoint_stabilized`/`maintenance_entered` checkpoint paths map to the exact `CP(g,e)` boundary | Genesis, ordinary, and threshold checkpoint cases |
+| P2-C11 | `checkpoint_registration_repaired` maps exact current/previous checkpoint identities and independently validates SHA/size/store-byte fields | Orphan repair pair and corruption corpus |
+| P2-C12 | Retention prune/failure/reconciliation maps exact checkpoint lists and `.pruning-<id>` directory names to typed semantic tokens | Prune, cleanup failure, interrupted reconciliation, and retry pairs |
+| P2-C13 | Rollback archive, source candidate, transformed candidate, and completion identities map to exact `RA`, `RC`, `TC`, and `CP` tokens | Full one-rollback paired path |
+| P2-C14 | Every projected-away SHA, size, aggregate-byte count, and directory name is first recomputed and linked bijectively to its artifact and semantic boundary | Corrupt-one-field and duplicate/missing-boundary tests |
+| P2-C15 | Projection implementation contains no wildcard, recursive walk, suffix/prefix match, regex-by-key, or global key-name normalization | Source inspection plus malicious similarly named fields |
+| P2-C16 | Event export compares projected event semantics and source checkpoint boundary while independently validating each export's raw bytes, size, digest, count, and order | Paired export and corruption tests |
+| P2-C17 | Administrative result wrappers and filesystem paths are excluded only as noncanonical presentation; canonical events/state remain exact | API/report versus DB assertions |
+| P2-C18 | A value allowed at one exact location is rejected at every unrelated original location | Generated location-permutation corpus |
 
 ## D. Garden request wake and failure honesty
 
@@ -238,6 +251,14 @@ The unchanged 152-test Phase 1 suite is always the first regression layer.
 | P2-O12 | Rollback may abandon later consultation history and blocks abandoned packages/proposals | Archive/restored assertions |
 | P2-O13 | One-completed-rollback rule and evidence retention remain unchanged | ADR 0007 tests on schema-v2 |
 | P2-O14 | Pending repair and retention reconciliation preserve consultation rows/provenance | Cross-boundary tests |
+| P2-O15 | Schema-v2-zero active database overhead over paired schema-v1 is at most 256 KiB | Measured genesis and post-operation pairs |
+| P2-O16 | Each schema-v2-zero checkpoint/archive/source-candidate/transformed-candidate database overhead is at most 256 KiB | Real paired artifacts |
+| P2-O17 | Aggregate additional schema-v2-zero manifest/directory metadata is at most 1 MiB | Full retained checkpoint plus rollback working set |
+| P2-O18 | Schema-v2-zero independently obeys absolute 8 MiB active, 8 MiB artifact, 40 MiB checkpoint, 64 MiB working-set, and 1 MiB reserve limits | Real near-ceiling files, not mocked accounting |
+| P2-O19 | Projected aggregate byte values still control admission, retention, repair, and rollback using independently measured schema-v2 values | One-below/at/one-over cases |
+| P2-O20 | Wrong projected SHA/size, missing artifact, duplicate semantic boundary, or broken manifest/registry/directory link fails before paired comparison | Integrity adversarial corpus |
+| P2-O21 | Near a physical ceiling, no cross-version byte-threshold equality is assumed; each side fails or proceeds without partial canonical mutation under the same absolute rules | Paired interior plus separate near-ceiling cases |
+| P2-O22 | Schema-v2 checkpoint/repair/retention/rollback artifacts preserve exact consultation rows/provenance and immutable configuration | Cross-boundary restore and corruption tests |
 
 ## P. Explicit absence
 
@@ -253,17 +274,18 @@ The unchanged 152-test Phase 1 suite is always the first regression layer.
 
 ## Acceptance and audit rule
 
-The independent Phase 2.0 design audit at PR #60 head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647` concluded:
+The independent Phase 2.0 design audit was followed by one focused read-only re-audit of ADR 0009 at PR #64 head `e4f3527518cbc4e4ff8ab239a90f48bfa47fdbb8`. The focused audit concluded:
 
-> Phase 2.0 Consultation Boundary is ready after specified documentation or test-matrix corrections.
+> ADR 0009 is ready after specified documentation or matrix corrections.
 
-This accepted matrix incorporates the required corrections for:
+Accepted ADR 0009 and this matrix incorporate the required corrections for:
 
-- exact zero-caregiver projection rules
-- exact proposal schemas and inherited expiry
-- exact digest preimages and lineage 64 KiB formula
-- real request-wake storage-boundary evidence
+- an exhaustive exact-location semantic artifact projection across checkpoint events, repair, retention, rollback, and export
+- complete protected separation of `phase1-v1` budget configuration from `consultation_configuration`
+- independent integrity checks for every projected-away ID/digest/size/path
+- exact anti-wildcard/adversarial projection evidence
+- bounded schema-v2 structural overhead and real absolute physical-limit evidence
 
 The implementation Issue must map every slice to matrix IDs. No test may weaken or condition the 152-test Phase 1 baseline.
 
-A separate independent read-only Phase 2 implementation audit is required only after all accepted matrix requirements have protected evidence and one exact CI-green implementation candidate is ready to freeze.
+No further automatic design re-audit is required unless these corrections materially change the same semantic artifact boundary again. A separate independent read-only Phase 2 implementation audit is required only after all accepted matrix requirements have protected evidence and one exact CI-green implementation candidate is ready to freeze.

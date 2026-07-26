@@ -25,7 +25,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 15. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 16. `docs/HANDOFF.md`
 17. current Issues and PRs
-18. for Phase 2: accepted ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`, and the Issue #59 design-audit report
+18. for Phase 2: accepted ADRs 0008 and 0009, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`, and the Issue #59 and #63 audit reports
 
 ## Core question
 
@@ -55,7 +55,7 @@ Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinte
 
 ## Accepted Phase 2 Consultation Boundary
 
-ADR 0008, Consultation Protocol v1, and the Phase 2 Consultation Boundary Test Matrix are accepted as one design package.
+ADRs 0008 and 0009, Consultation Protocol v1, and the Phase 2 Consultation Boundary Test Matrix are the accepted Phase 2 design package. Issue #61 owns implementation and Slice 36 may resume from updated `main`.
 
 The independent design audit reviewed PR #60 head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647` and concluded:
 
@@ -63,13 +63,24 @@ The independent design audit reviewed PR #60 head `8cfd65d6e6b153a9dd028333ddf89
 
 The accepted package incorporates all required corrections:
 
-- exact `phase1-projection-v1` zero-caregiver comparison
+- exact `phase1-projection-v2` zero-caregiver semantic artifact comparison under accepted ADR 0009
 - exact proposal field sets, type-specific values, evaluator sets, and proposal expiry equal to request expiry
 - exact domain-separated digest preimages and acyclic identity graph
 - exact per-lineage 64 KiB formula with no double counting
 - optional request-extension savepoint and real 8 MiB/reserve boundary evidence
 
-No automatic second design audit is required. The later audit is the Phase 2 implementation-completion audit.
+A focused read-only re-audit of PR #64 head `e4f3527518cbc4e4ff8ab239a90f48bfa47fdbb8` confirmed the ADR 0008 contradiction and concluded that ADR 0009 was ready after specified documentation/matrix corrections. Those corrections passed CI and ADR 0009 is accepted. No further design re-audit is planned unless the same boundary changes materially again.
+
+### Accepted zero-caregiver correction
+
+- the original Phase 1 `budget_config` and all original budget-version locations remain exactly `phase1-v1`
+- Phase 2 policy lives in one protected immutable `consultation_configuration` singleton
+- checkpoint, repair, retention, rollback, and export byte-derived identities are compared through the exact semantic tokens and exact locations in ADR 0009
+- projected-away SHA/size/path values are independently recomputed and physically bounded on each side
+- no wildcard, recursive, suffix, prefix, or global key-name normalization is allowed
+- schema-v2 structural overhead is capped and absolute 8/40/64 MiB plus 1 MiB reserve tests remain mandatory
+
+Slice 36 is authorized to resume test-first under Issue #61.
 
 ### Five boundaries
 
@@ -120,19 +131,19 @@ It may not add live caregiver/API/human chat, memory, skills, source/test genera
 Codex audits are high-cost gates, not per-slice or per-PR review.
 
 1. Phase 2 design audit: completed in Issue #59.
-2. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
+2. Focused zero-caregiver correction re-audit: completed in Issue #63; specified corrections accepted as ADR 0009.
+3. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
 
 Avoid audit-repair-reaudit ping-pong unless evidence is insufficient, a gate remains blocked, or a repair materially changes the same certified boundary.
 
 ## Exact restart point
 
-1. verify Phase 1 closure and accepted ADR 0008
-2. verify PR #60 merge and Issue #59 closure; if still pending, complete them after green CI
-3. inspect the separate Phase 2 implementation Issue
-4. map each slice to accepted matrix IDs
-5. implement bounded test-first slices without live caregiver integration
-6. keep all 152 Phase 1 tests unchanged and passing
-7. request one implementation audit only when the complete Phase 2 candidate is ready to freeze
+1. verify Phase 1 closure, accepted ADRs 0008–0009, closed Issue #63, and merged PR #64
+2. inspect Issue #61 and the accepted Phase 2 matrix
+3. create a new Slice 36 implementation branch from updated `main`
+4. implement test-first against P2-A01–A05, P2-B01–B12, P2-C01–C18, and relevant P2-O15–O22
+5. keep all 152 Phase 1 tests unchanged and passing
+6. request one implementation audit only when the complete Phase 2 candidate is ready to freeze
 
 ## End-of-work protocol
 

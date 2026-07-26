@@ -1,8 +1,8 @@
 # Phase 2 Consultation Protocol v1
 
-Status: **Accepted with ADR 0008**
+Status: **Accepted with ADRs 0008 and 0009**
 
-This document defines the accepted source-neutral deterministic-fixture protocol for ADR 0008. It is not a live human or model interface. The caregiver side produces bounded untrusted data; it never receives organism authority.
+This document defines the accepted source-neutral deterministic-fixture protocol for ADRs 0008 and 0009. It is not a live human or model interface. The caregiver side produces bounded untrusted data; it never receives organism authority.
 
 ## 1. Versions
 
@@ -21,7 +21,8 @@ This document defines the accepted source-neutral deterministic-fixture protocol
 - fixture config: `phase2-fixture-v1`
 - fixture adapter: `deterministic-fixture-v1`
 - fixture work class: `fixture-constant-v1`
-- zero-caregiver projection: `phase1-projection-v1`
+- zero-caregiver projection: `phase1-projection-v2`
+- frozen Phase 1 budget configuration: `phase1-v1`
 
 Unknown versions fail closed before canonical mutation.
 
@@ -81,7 +82,7 @@ request_id = "consultation-request:" + H("request-id", request_identity)
 - reason code/requested proposal types
 - observation/objective digests
 - allowed action/permission IDs
-- policy/budget config versions
+- policy version, frozen Phase 1 budget config version, and consultation configuration version
 - expiry lifecycle
 
 It excludes request ID, later event sequence, wall time, and event-authority metadata.
@@ -156,11 +157,17 @@ Protected golden tests prove exact preimage bytes, IDs, envelopes, package bytes
 
 ## 4. Budgets
 
-### 4.1 Zero-caregiver
+### 4.1 Protected consultation configuration and zero-caregiver
 
-`phase2-zero-caregiver-v1` sets all consultation request, dispatch, fixture, response, proposal, disposition, clarification, payload, human, model, money, and record limits to zero.
+The original Phase 1 `budget_config` singleton, `organism.budget_config_version`, and original event `budget_config_version` remain exactly `phase1-v1`.
 
-No consultation table row/sequence, event/source, cost, adapter import, terminal/disposition, or caregiver effect exists.
+Phase 2 policy exists only in the protected singleton `consultation_configuration(singleton_id, protocol_version, configuration_version, configuration_json)` defined by ADR 0009. Exactly one canonical row exists and its canonical JSON equals one repository-defined protected object. Unknown, missing, duplicate, mixed, noncanonical, or mutated configuration fails before canonical mutation.
+
+`phase2-zero-caregiver-v1` sets all consultation request, dispatch, fixture, response, proposal, disposition, clarification, logical-payload, human, model, money, declared-latency, and consultation-record allowances to zero.
+
+No operational consultation table row/sequence, consultation event/source, cost, adapter or fixture import/invocation, terminal/disposition, or caregiver effect exists.
+
+`consultation_configuration.configuration_version` is included in every consultation request/dispatch identity and every consultation row/event that declares configuration. It never aliases the Phase 1 budget version.
 
 ### 4.2 Fixture
 
@@ -220,7 +227,7 @@ Required request fields:
 - sorted unique requested proposal types
 - observation/objective references
 - sorted allowed actions/permissions
-- policy and fixture budget versions
+- policy version, frozen Phase 1 budget version, and consultation configuration version
 - exact pre-creation budget snapshot
 - expiry exactly lifecycle + 2
 - authority exactly `organism` / `organism:consultation.request`
@@ -401,22 +408,24 @@ New protected immutable objects: requests, dispatches, cost charges/completions,
 
 No original Phase 1 table gains a column. IDs/versions/digests/links/cardinalities/uniqueness/update-delete protections are exact.
 
-## 15. Exact zero-caregiver projection
+## 15. Exact zero-caregiver semantic artifact projection
 
-Paired schema-v1/schema-v2-zero organisms use identical inputs/clocks.
+ADR 0009 is normative for `phase1-projection-v2`. Paired schema-v1/schema-v2-zero scenarios use identical declared inputs, clocks, administrative reasons, fault choices, selected semantic boundaries, and operation order.
 
-`phase1-projection-v1`:
+Each run is first validated independently. The cross-run projection then:
 
-1. compare every original table/column in deterministic order
-2. permit declared value difference only for original columns named exactly `schema_version`
-3. permit declared value difference only for original columns named exactly `budget_config_version`
-4. normalize only top-level original event-payload keys with those exact names
-5. compare nested keys, other spellings, added/missing keys, event types, sequences, authority, source, parents, and every other value exactly
-6. require consultation tables empty
-7. require no consultation `sqlite_sequence` entry/event/source/cost/adapter/terminal/disposition/effect
-8. compare status/lifecycle/failure/behavior/checkpoint/rollback/authority exactly
+1. keeps the original Phase 1 budget singleton and every original budget-version location exactly `phase1-v1`
+2. normalizes only the exact original schema-version locations declared by ADR 0009
+3. maps checkpoint IDs, rollback archive/candidate IDs, retention staging names, canonical event payload references, and export source identities only at the exact table/column or event-type/JSON paths declared by ADR 0009
+4. omits exact byte-derived SHA, size, and aggregate-byte locations only after recomputation, one-to-one linkage validation, and absolute physical-budget validation on each side
+5. compares every unlisted original table field, event, sequence, authority source, parent, payload key/value, manifest field, and semantic boundary exactly
+6. requires the exact protected `consultation_configuration` singleton and zero operational consultation rows/sequences/events/imports/effects
 
-Raw SQLite/checkpoint digests are not claimed equal because schema-v2 adds empty objects. No wildcard/recursive/semantic normalization.
+The projection covers normal and maintenance checkpoint stabilization, registration repair, retention prune/failure/reconciliation, rollback archive/source candidate/transformed candidate/completion, and semantic event export. Administrative presentation paths and raw bytes are noncanonical and are validated separately.
+
+No wildcard, recursive walk, suffix/prefix match, global key-name normalization, or added/missing-key masking is allowed.
+
+Schema-v2 structural overhead is tested separately: at most 256 KiB for the active database and each checkpoint/archive/candidate database relative to its paired schema-v1 artifact, at most 1 MiB aggregate additional manifest/directory metadata, and exact compliance with the inherited 8/40/64 MiB ceilings and 1 MiB reserve. Cross-version byte-threshold equality at a physical ceiling is not claimed.
 
 ## 16. Fixture cases
 
@@ -430,6 +439,8 @@ No live model/human text, free-form rationale, memory/skill payload, source/test
 
 ## 18. Audit status
 
-The independent design audit at head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647` concluded ready after specified documentation/matrix corrections. Those corrections are incorporated and corrected head `416e806baea042edb5fd8aeeb0d6cffff5cec150` passed run 384 with 152 tests.
+The independent Phase 2.0 design audit was followed by one focused read-only re-audit of ADR 0009 at PR #64 head `e4f3527518cbc4e4ff8ab239a90f48bfa47fdbb8`. The focused audit confirmed the contradiction and concluded:
 
-No automatic second design audit is required under the audit policy. A separate implementation audit occurs after the accepted protocol is implemented, all matrix evidence exists, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.
+> ADR 0009 is ready after specified documentation or matrix corrections.
+
+ADR 0009 and the synchronized evidence map are accepted and incorporate those corrections. No further automatic design re-audit is required unless the semantic artifact boundary changes materially again. A separate implementation audit occurs after the accepted protocol is implemented, all matrix evidence exists, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.

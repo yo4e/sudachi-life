@@ -50,7 +50,8 @@ A Phase 2 organism is initialized with:
 - database schema version `2`
 - base contract version `0.2`
 - consultation protocol version `1`
-- protected budget configuration `phase2-zero-caregiver-v1` or `phase2-fixture-v1`
+- unchanged protected Phase 1 budget configuration `phase1-v1`
+- one protected `consultation_configuration` singleton with protocol version `1` and configuration `phase2-zero-caregiver-v1` or `phase2-fixture-v1`
 - unchanged Phase 1 garden behavior and trusted-kernel protections
 - new empty protected consultation objects
 
@@ -268,22 +269,17 @@ Wall time never controls canonical eligibility.
 - abandoned-lineage packages/proposals fail before mutation
 - ADR 0007 one-rollback rule/evidence retention remain unchanged
 
-### 11. Zero-caregiver control uses exact projection
+### 11. Zero-caregiver control uses the ADR 0009 semantic artifact projection
 
-Paired schema-v1 and schema-v2-zero organisms use identical declared inputs/clocks.
+ADR 0009 supersedes the original `phase1-projection-v1` text and defines `phase1-projection-v2`.
 
-`phase1-projection-v1`:
+The original Phase 1 budget singleton and every original `budget_config_version` location remain exactly `phase1-v1`. Phase 2 policy lives only in the protected `consultation_configuration` singleton.
 
-1. compares every original Phase 1 table/column in deterministic order
-2. permits only declared value differences for original columns named exactly `schema_version`
-3. permits only declared value differences for original columns named exactly `budget_config_version`
-4. normalizes only top-level original event-payload keys with those exact names
-5. compares every nested key, other spelling, added/missing key, event type, sequence, authority, source, parent, and other value exactly
-6. requires consultation tables empty and without sequence entries
-7. requires no consultation event/source/cost/adapter invocation/terminal/disposition/effect
-8. compares behavior, status, lifecycle, failure streak, checkpoint/rollback eligibility, and authority exactly
+Paired schema-v1/schema-v2-zero scenarios compare exact canonical behavior, event order, authority, lifecycle, failure, maintenance, checkpoint boundaries, retention choices, and rollback semantics after independently validating each side and replacing only the exact schema-version and byte-provenance locations listed by ADR 0009.
 
-Raw SQLite/checkpoint digest equality is not claimed because schema-v2 adds empty protected objects. Wildcard, recursive, or semantic normalization is forbidden.
+The projection explicitly covers normal and maintenance checkpoints, orphan registration repair, retention prune/failure/reconciliation, rollback archive/source candidate/transformed candidate/completion, and semantic event export. Projected-away IDs, digests, sizes, aggregate byte counts, and directory names remain independently recomputed and physically bounded on each side.
+
+No wildcard, recursive walk, suffix match, prefix match, or global key-name normalization is permitted. Near physical ceilings, schema-v2 obeys the same absolute limits through dedicated real-file tests rather than claiming byte-threshold equality with schema-v1.
 
 ### 12. Protected evidence is normative
 
@@ -309,9 +305,9 @@ No test may weaken, skip, condition, or redefine the 152-test Phase 1 baseline.
 
 ### 13. Audit cadence
 
-The completed design audit requested bounded documentation/matrix corrections. Corrected PR head `416e806baea042edb5fd8aeeb0d6cffff5cec150` passed GitHub Actions run 384 with 152 tests.
+The completed Phase 2.0 design audit was followed by one focused read-only re-audit of the implementation-blocking zero-caregiver contradiction. The focused audit reviewed PR #64 head `e4f3527518cbc4e4ff8ab239a90f48bfa47fdbb8` and concluded that ADR 0009 is ready after specified documentation or matrix corrections.
 
-Under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, no automatic second design audit is required because the conclusion explicitly permits readiness after specified corrections. Re-audit is reserved for insufficient evidence, a blocked gate, or a material replacement of the same certified boundary.
+ADR 0009 and the synchronized protocol/matrix provide those corrections. No further automatic design re-audit is required unless the correction materially changes the same semantic artifact boundary again.
 
 A separate independent read-only Phase 2 implementation audit is required after this accepted design is fully implemented, all matrix requirements have protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.
 

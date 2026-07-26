@@ -2,11 +2,11 @@
 
 Updated: **2026-07-26**
 
-Phase 1 is frozen. The Phase 2.0 Consultation Boundary design is accepted after one independent design audit and the specified documentation/test-matrix corrections.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation and Slice 36 is authorized to resume test-first from updated `main`.
 
-The immediate repository gate is to merge PR #60, close Issue #59, and open a separate test-first Phase 2 implementation Issue. If those actions are already complete, resume from the implementation Issue. No live caregiver integration is authorized.
+A focused read-only re-audit confirmed the contradiction and concluded that ADR 0009 was ready after specified documentation or matrix corrections. Those corrections passed CI and were accepted. PR #64 and Issue #63 close the design correction gate. No live caregiver integration is authorized.
 
-Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, Minimal Organism Contract v0.2, accepted ADRs 0001–0008, the Phase 1 matrix, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, this handoff, the accepted Consultation Protocol v1, the accepted Phase 2 matrix, and current Issues/PRs.
+Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, Minimal Organism Contract v0.2, accepted ADRs 0001–0009, the Phase 1 matrix, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, this handoff, the accepted Consultation Protocol v1, the accepted Phase 2 matrix, and current Issues/PRs.
 
 ## Thesis
 
@@ -30,7 +30,7 @@ Do not alter Phase 1 garden actions, selector, executor, evaluators, injected cl
 
 ## Accepted Phase 2 design
 
-ADR 0008, Consultation Protocol v1, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md` form one accepted design package.
+ADRs 0008 and 0009, Consultation Protocol v1, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md` form one accepted design package.
 
 The design audit reviewed PR #60 head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647` and concluded:
 
@@ -38,13 +38,26 @@ The design audit reviewed PR #60 head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647`
 
 Required corrections were incorporated:
 
-- exact zero-caregiver projection
+- exact zero-caregiver semantic artifact projection under accepted ADR 0009
 - exact proposal schemas, evaluator sets, and inherited expiry
 - exact digest preimages and package graph
 - exact 64 KiB lineage accounting without double counting
 - optional request savepoint and real request-wake storage-boundary evidence
 
-Corrected design CI remained green with the unchanged 152-test suite. Under the audit policy, no automatic second design audit is required.
+Corrected design CI remained green with the unchanged 152-test suite. A later focused re-audit of ADR 0009 found additional exact-location propagation requirements across checkpoint events, repair, retention, rollback, and export; those corrections are accepted.
+
+## Accepted zero-caregiver correction
+
+ADR 0009 requires:
+
+- original `budget_config` and every original budget-version location remain exactly `phase1-v1`
+- one protected immutable `consultation_configuration` singleton stores Phase 2 policy
+- exact semantic `CP`/`RA`/`RC`/`TC`/retention-staging mappings at enumerated canonical locations
+- per-side recomputation and linkage checks for every projected-away digest, size, aggregate byte count, and directory name
+- no wildcard/recursive/suffix/prefix/global-key normalization
+- bounded schema-v2 structural overhead and separate real absolute-limit tests
+
+Slice 36 may resume under Issue #61.
 
 ## Five operational boundaries
 
@@ -119,7 +132,7 @@ The exact issue may split these further, but no slice may weaken or condition th
 
 ## Audit cadence
 
-The Phase 2 design audit is complete. The next Codex audit occurs once only after the full accepted Phase 2 implementation, every matrix item has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.
+The Phase 2 design audit and focused ADR 0009 correction re-audit are complete. The next Codex audit occurs once only after the full accepted Phase 2 implementation, every matrix item has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.
 
 Do not use Codex for each slice, PR, ordinary bug, or documentation edit. Avoid audit-repair-reaudit ping-pong unless evidence is insufficient, a gate remains blocked, or a repair materially replaces the same certified boundary.
 
@@ -140,11 +153,11 @@ No:
 
 ## Exact restart
 
-1. verify accepted ADR 0008 and green PR #60 CI
-2. merge PR #60 and close Issue #59 if still open
-3. create or inspect the separate Phase 2 implementation Issue
-4. map every slice to accepted matrix IDs
-5. implement test-first without live caregiver integration
+1. verify Issue #63 is closed completed and PR #64 is merged
+2. inspect Issue #61, accepted ADRs 0008–0009, protocol, and matrix
+3. create a new Slice 36 implementation branch from updated `main`
+4. write failing protected tests for the exact configuration singleton and semantic artifact oracle
+5. implement only the declared Slice 36 matrix scope
 6. keep all 152 Phase 1 tests unchanged and passing
 7. run the implementation audit only when the complete Phase 2 candidate is ready to freeze
 
