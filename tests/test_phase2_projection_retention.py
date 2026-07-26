@@ -76,16 +76,33 @@ def _enqueue_and_wake(
         f"tick-{index}",
         clock=FakeClock([ClockReading(base - 100, base * 1_000)]),
     )
-    return perform_garden_wake(
-        runtime_root,
-        "paired",
-        seed=index,
-        clock=_wake_clock(base),
-        protected_test_retention_failure_after_stage=retention_failure_after_stage,
-        protected_test_retention_cleanup_failure_after_commit=(
-            retention_cleanup_failure_after_commit
-        ),
-    )
+
+    def perform():
+        return perform_garden_wake(
+            runtime_root,
+            "paired",
+            seed=index,
+            clock=_wake_clock(base),
+            protected_test_retention_failure_after_stage=retention_failure_after_stage,
+        )
+
+    if not retention_cleanup_failure_after_commit:
+        return perform()
+
+    import sudachi_life.checkpoint_retention_prune as retention_prune
+
+    original_rmtree = retention_prune.shutil.rmtree
+
+    def fail_staging_cleanup(path, *args, **kwargs):
+        if Path(path).name.startswith(".pruning-"):
+            raise OSError("protected post-commit cleanup failure")
+        return original_rmtree(path, *args, **kwargs)
+
+    retention_prune.shutil.rmtree = fail_staging_cleanup
+    try:
+        return perform()
+    finally:
+        retention_prune.shutil.rmtree = original_rmtree
 
 
 def _prepare_retention_pair(tmp_path: Path):
@@ -321,7 +338,7 @@ def test_interrupted_reconciliation_reuses_witness_and_retry_completes(
         "checkpoint_retention_cleanup_reconciled",
     ) == {
         "reason": "committed_prune_cleanup_reconciled",
-        "reconciliation_pending_event_sequence": 47,
+        "reconciliation_pending_event_sequence": 48,
         "removed_staging_directories": ["STAGE(CP(0,13))"],
         "status_after": "maintenance_required",
     }
