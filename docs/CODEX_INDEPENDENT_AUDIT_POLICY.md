@@ -4,11 +4,14 @@
 
 Codex independent audits are high-cost phase-gate reviews. They are not routine per-slice or per-pull-request code review.
 
-Use ordinary repository review, protected tests, CI, and issue tracking for normal implementation work. Reserve Codex for a bounded independent pass when a phase, architecture boundary, or frozen baseline is ready to be judged as a whole.
+Use ordinary repository review, protected tests, CI, and issue tracking for normal design and implementation work. Reserve Codex for bounded independent passes when a completed design boundary or implemented phase is ready to be judged as a whole.
 
 ## Default cadence
 
-Plan approximately one independent Codex audit for each completed phase or completed design gate.
+Plan at most two independent Codex audits for Phase 2:
+
+1. one read-only design audit after the complete Consultation Boundary design package is internally coherent
+2. one read-only implementation audit after the complete Phase 2 implementation and protected evidence are ready to freeze
 
 Do not request a Codex audit for every:
 
@@ -17,18 +20,21 @@ Do not request a Codex audit for every:
 - ordinary bug fix
 - documentation update
 - intermediate repair commit
+- design edit between the two planned gates
 
-The normal sequence is:
+The normal Phase 2 sequence is:
 
-1. complete the phase or design gate
-2. assemble the normative documents, implementation, protected tests, and CI evidence
-3. request one read-only independent audit with a fixed scope and output format
-4. record findings in GitHub
-5. repair accepted findings through the normal development process
-6. protect repairs with tests and CI
-7. wait until the next planned phase gate for the next independent audit
+1. complete the design package through ordinary review
+2. assemble proposed ADR 0008, protocol v1, authority and provenance rules, budgets, expiry, initialization policy, zero-caregiver comparison, and the protected test matrix
+3. request one read-only independent design audit against one exact PR head
+4. record findings in Issue #59 and repair accepted findings through ordinary design work
+5. accept and merge the design
+6. implement Phase 2 through bounded test-first slices
+7. assemble the accepted ADR, implementation, protected tests, completed matrix, and CI evidence
+8. request one read-only independent implementation audit against one exact candidate head
+9. repair accepted findings and freeze Phase 2 only after a satisfactory completion conclusion
 
-Avoid audit-repair-reaudit ping-pong. An immediate repeat audit is justified only when the previous conclusion directly blocks the next phase, the evidence was insufficient, or a repair changes the same authority, persistence, checkpoint, rollback, or other critical boundary that the gate is meant to certify.
+Avoid audit-repair-reaudit ping-pong. An immediate repeat audit is justified only when the previous conclusion directly blocks the gate, the evidence was insufficient, or a repair changes the same authority, persistence, checkpoint, rollback, or other critical boundary being certified.
 
 ## Required audit behavior
 
@@ -37,8 +43,8 @@ Each independent audit must:
 - be read-only unless a separate implementation task is explicitly authorized
 - identify the exact audited commit
 - reconstruct the project from repository state rather than conversation memory
-- read the applicable contract, accepted ADRs, protected-test matrix, implementation notes, handoff, and current Issues and pull requests
-- run the existing protected suite and available non-mutating checks
+- read the applicable contract, accepted or proposed ADRs as appropriate, protected-test matrix, implementation notes, handoff, and current Issues and pull requests
+- run the existing protected suite and available non-mutating checks when code exists
 - distinguish verified evidence from assumptions
 - inspect important cross-boundary interactions, not only expected paths
 - report important areas inspected where no issue was found
@@ -49,49 +55,49 @@ Every finding should include:
 
 - severity
 - affected invariant or requirement
-- exact file and symbol
+- exact file and symbol or document section
 - evidence and reasoning
 - minimal reproduction when possible
-- whether an existing test should have caught it
+- whether the protected test matrix would catch it
 - recommended disposition
 
 ## Phase 1 closure audit
 
-Issue #56 is the one planned final Phase 1 closure audit after the Issue #56 repairs were merged in PR #57.
+Issue #56 was the one final Phase 1 completion audit. It is complete and closed.
 
-Audit current `main` and determine:
+The final audit checked `main` at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`, reported all original Findings 1–6 resolved, found no new blocker/high/medium Phase 1 defect, and confirmed the protected 152-test baseline.
 
-- whether original Findings 1 through 6 are resolved
-- with particular attention to the final repairs for Findings 4 and 5
-- whether Findings 1, 2, 3, and 6 remain closed without regression
-- whether the repair work weakened tests or changed the Phase 1 contract
-- whether the unchanged 152-test protected suite and added adversarial coverage protect the repaired boundaries
-- whether any new blocker, high, or medium Phase 1 regression exists
-- whether Phase 1 is a stable frozen foundation on which a separate Phase 2 consultation layer may later be designed
+Final conclusion:
 
-Do not review an unfinished Phase 2 design in this pass. Do not implement Phase 2. The Phase 2.0 Consultation Boundary receives its own single independent design audit only after Issue #59 is resolved and the proposed ADR, schemas, budgets, provenance rules, migration decision, and test matrix are complete.
+> Phase 1 is ready to freeze and Phase 2 design may begin.
 
-For each original finding, report exactly one status:
+## Phase 2 design audit
 
-- `resolved`
-- `partially resolved`
-- `unresolved`
-- `regressed`
+Run one independent read-only design audit only after Issue #59 and draft PR #60 contain an internally coherent package including:
 
-Finish the Phase 1 closure audit with exactly one conclusion:
+- proposed ADR 0008
+- versioned request, dispatch, response, proposal, ingress, disposition, terminal, and cost semantics
+- exact authority and provenance rules
+- concrete budgets and lifecycle expiry
+- initialization and no-migration decision
+- rollback-lineage and consultation-budget-epoch behavior
+- zero-caregiver comparison
+- protected Phase 2 test matrix
+- synchronized continuity documents
 
-- `Phase 1 is ready to freeze and Phase 2 design may begin.`
-- `Phase 1 is ready after specified test additions.`
-- `Phase 1 requires specified repairs before Phase 2.`
-- `The available evidence is insufficient to conclude.`
+The design audit determines whether the Consultation Boundary is implementable, internally consistent, compatible with the frozen Phase 1 baseline, and ready to accept. It must not implement Phase 2, change ADR status, merge PR #60, or create Slice 36.
 
-Post the report to Issue #56. Do not modify tracked files during the audit.
+## Phase 2 implementation audit
 
-## Later planned audits
+Run one separate independent read-only implementation audit only after:
 
-After Phase 1 closure:
+- ADR 0008 is accepted and merged
+- authorized Phase 2 implementation slices are complete
+- the complete Phase 1 suite remains unchanged and passing
+- all accepted Phase 2 matrix requirements have protected evidence
+- CI is green at one exact candidate head
+- the implemented Phase 2 baseline is ready to be judged for freezing
 
-- perform one Phase 2.0 design audit only after the Consultation Boundary decision is complete, normally including ADR 0008, versioned schemas, authority and provenance rules, concrete budgets and expiry, initialization or migration policy, zero-caregiver comparison, and the protected test matrix
-- perform one Phase 2 implementation audit before freezing the implemented Phase 2 baseline
+That audit reviews the accepted design and its implementation together. It must decide whether the complete Phase 2 baseline is ready to freeze or requires specified repairs.
 
-Additional audits require a specific gate-level reason. Codex availability alone is not a reason to audit incomplete work repeatedly.
+Additional Codex audits require a specific gate-level reason. Codex availability alone is not a reason to audit incomplete work repeatedly.

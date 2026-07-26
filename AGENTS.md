@@ -4,35 +4,30 @@ This file is the continuity contract for AI collaborators working on SUDACHI.
 
 ## Cold-start rule
 
-Assume you remember nothing about SUDACHI.
+Assume you remember nothing about SUDACHI. Reconstruct the project from repository and current GitHub state before proposing or changing anything. Repository and GitHub state outrank conversation history.
 
-Do not rely on conversation memory, prior model context, an issue title, or one code fragment. Reconstruct the project from repository state before proposing or changing anything.
-
-## Before doing any work
-
-Read these files in order:
+## Read order
 
 1. `README.md`
 2. `docs/CHATGPT_PROJECT_HANDOFF.md`
 3. `docs/AI_COLLABORATION_OPERATIONS.md`
 4. `docs/ORIGIN.md`
 5. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-6. accepted files in `docs/decisions/`, in numeric order
+6. accepted `docs/decisions/` files in numeric order
 7. `docs/ARCHITECTURE.md`
 8. `docs/ROADMAP.md`
 9. `docs/IMPLEMENTATION_DISCIPLINE.md`
 10. `docs/PHASE1_TEST_MATRIX.md`
-11. implemented notes in `docs/phase1/`, in slice order
+11. implemented `docs/phase1/` notes
 12. `docs/RESEARCH_QUESTIONS.md`
 13. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-14. preliminary notes in `docs/research/`
+14. preliminary `docs/research/` notes
 15. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 16. `docs/HANDOFF.md`
-17. current open GitHub issues and pull requests
+17. current Issues and PRs
+18. for Phase 2: accepted ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`, and the Issue #59 design-audit report
 
-Repository state and current GitHub state outrank conversation history.
-
-## Core project question
+## Core question
 
 SUDACHI asks whether a bounded artificial organism can convert finite external cognitive scaffolding into verified local competence and retain capability while requiring less justified caregiver assistance.
 
@@ -40,186 +35,112 @@ SUDACHI asks whether a bounded artificial organism can convert finite external c
 parent reasoning -> verified experience -> reusable skill -> cheap local behavior
 ```
 
-The repository is the organism's auditable body, developmental history, skill base, and lineage record. A model may later be a caregiver or organ; it is not the whole organism.
+The repository is the organism's auditable body, developmental history, skill base, and lineage record. A model may later be caregiver or organ; it is not the organism.
 
 > As it becomes smarter, it should become smaller and quieter.
 
-Do not flatten SUDACHI into a generic autonomous agent, chatbot, virtual pet, or self-modifying loop.
+Do not flatten SUDACHI into a generic agent, chatbot, virtual pet, or self-modifying loop.
 
-## Normative authority
+## Frozen Phase 1
 
-For Phase 1, use this precedence:
+Normative precedence:
 
 1. Minimal Organism Contract v0.2
 2. accepted ADRs 0001–0007
-3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
-4. explicit current repository decisions
+3. protected Phase 1 tests and `docs/PHASE1_TEST_MATRIX.md`
 
-The Phase 1 body and trusted kernel are frozen by default. A Phase 2 extension must be explicitly reviewed, versioned, and protected. Do not hide a new architecture inside implementation code.
+Phase 1 passed final independent audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`: Findings 1–6 resolved, no new blocker/high/medium defect, and 152 tests passed. Issues #13 and #56 are closed. PR #57 merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
 
-If implementation reveals a contradiction, stop and resolve the contract or ADR through review before proceeding.
+Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinterpret Phase 1 tests, alter garden actions/selector/executor/evaluators/clocks/checkpoints/rollback/authority, or add hidden network, subprocess, workspace, arbitrary-code, or continuous-execution routes.
 
-## AI collaboration safety and continuity
+## Accepted Phase 2 Consultation Boundary
 
-SUDACHI's organism, metabolism, body, lineage, growth, and caregiver vocabulary describes deterministic local software. Phase 1 uses Python, SQLite, immutable artifacts, and a synthetic garden only. It has no wet-lab biology, pathogens, genetic engineering, medical intervention, weapons work, offensive cybersecurity, third-party system access, network activity, or organism subprocess execution.
+ADR 0008, Consultation Protocol v1, and the Phase 2 Consultation Boundary Test Matrix are accepted as one design package.
 
-Do not evade product safeguards. State the concrete benign software context when sensitive vocabulary could be misread. Follow `docs/AI_COLLABORATION_OPERATIONS.md` for safety context, cost awareness, and conversation rollover.
+The independent design audit reviewed PR #60 head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647` and concluded:
 
-Continue through multiple bounded slices only while repository, branch, pull-request, Issue, and CI state remain directly reconstructable. Do not create an automatic next slice merely to continue activity.
+> Phase 2.0 Consultation Boundary is ready after specified documentation or test-matrix corrections.
 
-## Current repository state
+The accepted package incorporates all required corrections:
 
-### Issue #13 — Phase 1 implementation
+- exact `phase1-projection-v1` zero-caregiver comparison
+- exact proposal field sets, type-specific values, evaluator sets, and proposal expiry equal to request expiry
+- exact domain-separated digest preimages and acyclic identity graph
+- exact per-lineage 64 KiB formula with no double counting
+- optional request-extension savepoint and real 8 MiB/reserve boundary evidence
 
-**Completed and closed.** Repository state contains Slices 1–35 and the independent completion-audit repairs:
+No automatic second design audit is required. The later audit is the Phase 2 implementation-completion audit.
 
-1. package, schema, initialization, status, genesis checkpoint
-2. inbox, fail-fast wake acquisition, deterministic observation
-3. first canonical water wake
-4. canonical harvest wake
-5. objective-complete abstention
-6. classified no-applicable-action abstention
-7. resource-aware harvest recovery
-8. classified action failure with savepoint rollback
-9. classified lifecycle budget exhaustion
-10. maintenance-threshold entry
-11. read-only maintenance inspection
-12. explicit administrative maintenance clear
-13. successful bounded checkpoint retention
-14. classified checkpoint-retention failure
-15. pending checkpoint registration repair
-16. deterministic non-canonical JSONL event export
-17. retained rollback-source validation and verified pre-rollback archive
-18. durable rollback intent with atomic `rollback_started`
-19. verified source-restored candidate construction
-20. isolated candidate lineage transformation with `rollback_lineage_prepared`
-21. atomic active-database replacement with immediate validation and recoverable interruption
-22. atomic `rollback_completed`, restored wakeability, and first new-lineage stable checkpoint
-23. single-completed-rollback admission enforcement at preparation
-24. complete first-wake event ordering under backward wall time
-25. complete first-wake behavior independence from different declared seeds
-26. exact repeated-run canonical and artifact equivalence for identical declared inputs
-27. protected cleanup-grace terminalization boundary and overrun rollback
-28. complete lexicographic action tie breaking under reversed physical row insertion order
-29. complete consumed-input replay rejection without duplicate action
-30. real process-exit rollback of an uncommitted wake with released write ownership
-31. nested wake and hidden writer fail-fast rejection with restored normal wakeability
-32. explicit second-wake rejection behind a committed pending checkpoint and resumed progress after repair
-33. guarded proof that registered organism actions have no external workspace or effect route
-34. action-scoped SQLite authority restricted to exact registered garden transition columns
-35. protected organism and administration provenance across canonical sources and public reports
+### Five boundaries
 
-All 41 fixed Contract v0.2 evaluations have complete protected coverage. The merged Phase 1 suite contains 152 tests.
+1. **Garden request wake** preserves exact Phase 1 outcome/failure truth. Request metadata is an optional savepoint extension; extension-only storage refusal cannot fail the valid core wake.
+2. **Administrative dispatch admission** uses a fresh fail-fast transaction, requires a stable current-lineage request, charges before external work, and releases SQLite ownership before fixture execution.
+3. **External deterministic fixture** receives only the final request envelope and declared case, with no DB/path/workspace/executor/evaluator/checkpoint/rollback/network/subprocess/credential/tool/randomness capability.
+4. **Administrative ingress or terminalization** independently verifies exact schemas, preimages, IDs, proposal constraints, expiry, sizes, lineage, and physical budgets. It never grants caregiver authority or automatically retries fixture work.
+5. **Explicit disposition wake** is caller-selected, claims no garden input, considers at most one proposal, preserves the garden failure streak, checkpoints, and has no selector/action/memory/skill effect in the first implementation.
 
-PR #57 repaired the six Issue #56 cross-boundary defects and was squash-merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`. Reopen Issue #13 only for a demonstrated Phase 1 regression. Do not use it for Phase 2 features.
+Proposal types: `action_candidate`, `abstain`, `defer`.
 
-### Issue #56 — independent completion audit
+Final dispositions: `accepted`, `rejected`, `deferred`, `clarification_requested`.
 
-Issue #56 remains open.
+Clarification rounds: zero.
 
-The first audit found six cross-boundary defects. The first Codex re-audit classified findings 1, 2, 3, and 6 as resolved. Findings 4 and 5 were partial, then received additional repairs and adversarial tests.
+Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identity are provenance only.
 
-The final independent re-audit was deferred because the available Codex usage allocation was exhausted. The exact state is:
+## Accepted budgets and expiry
 
-> **repairs implemented, CI verified, final independent re-audit pending**
+- newly initialized schema-v2 organisms only; no migration/downgrade
+- base contract remains `0.2`
+- request envelope at most 16 KiB
+- complete external package at most 16 KiB
+- provenance at most 8 KiB within package limit
+- four requests and four charged fixture invocations per current lineage
+- one current-lineage outstanding request
+- 64 KiB logical payload per current lineage, exactly request-envelope bytes plus successfully ingressed complete-package bytes
+- zero human/model/money/declared latency for deterministic fixture
+- 8 MiB active database
+- 40 MiB checkpoint store
+- 64 MiB working set
+- 1 MiB next-wake active-database reserve
 
-Do not describe the final audit as completed. When Codex availability returns, perform one read-only Phase 1 closure audit under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`: re-audit the two residual findings, confirm the other four remain closed, check for new Phase 1 regressions, and decide whether Phase 1 is ready to freeze. Do not fold unfinished Phase 2 design into this pass.
+A request created at lifecycle `N` is eligible through `N+2`. Every proposal inherits that expiry exactly. Disposition at considering lifecycle `N+3` or later rejects as expired.
 
-### Issue #59 — Phase 2.0 Consultation Boundary
+Rollback starts a fresh current-lineage epoch. Old-lineage rows remain immutable historical evidence and inactive. ADR 0007 bounds one physical organism to at most two epochs/eight charged fixture invocations.
 
-Issue #59 is the current design gate. Opening it does not authorize implementation and there is no authorized Slice 36.
+## Implementation discipline
 
-The review must decide and preserve:
+Implementation requires a separate test-first Issue. Every slice must map to accepted matrix IDs. The unchanged 152-test Phase 1 suite is always the first regression layer.
 
-- Phase 1 body and trusted-kernel freeze
-- asynchronous consultation outside the wake transaction
-- typed caregiver proposals rather than commands
-- later-wake `accepted`, `rejected`, `deferred`, and `clarification_requested` dispositions
-- independent evaluation before adoption or action effect
-- no caregiver database handle or direct canonical mutation authority
-- source-neutral request, response, proposal, and disposition schemas
-- exact authority, provenance, concrete budgets, expiry, and cost ledger
-- frozen Phase 1 and Phase 2 zero-caregiver controls
-- explicit schema initialization and migration policy
-- deterministic fixture use before any live caregiver
+The first implementation may add only schema-v2 initialization/validation, exact typed envelopes/digests, request extension, dispatch/precharge, deterministic fixture boundary, ingress/terminalization, explicit disposition, reporting, and protected tests.
 
-Resolve Issue #59's review questions and decide whether the accepted result becomes ADR 0008 before creating an implementation issue.
+It may not add live caregiver/API/human chat, memory, skills, source/test generation, model training, arbitrary Python/shell/SQL/tools/paths/URLs/credentials, organism network/subprocess, continuous execution, personality/emotion state, caregiver authority, or a generic agent framework.
 
-### Issue #3 — prior work and provider review
+## Codex audit cadence
 
-Research stream. Preliminary review is active, but no strong novelty claim and no live caregiver selection are authorized.
+Codex audits are high-cost gates, not per-slice or per-PR review.
 
-Do not connect a human or model caregiver automatically. Do not treat ChatGPT and an API as the same product. Provider permissions, retention, pricing, limits, and transformation classes must be reverified from current first-party sources before any live integration.
+1. Phase 2 design audit: completed in Issue #59.
+2. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
 
-## Independent Codex audit cadence
+Avoid audit-repair-reaudit ping-pong unless evidence is insufficient, a gate remains blocked, or a repair materially changes the same certified boundary.
 
-Codex independent audits are high-cost phase-gate reviews, not routine per-slice or per-pull-request review. Follow `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
+## Exact restart point
 
-The default is one planned read-only audit after a phase or design gate is complete. Use ordinary review, protected tests, CI, and issue tracking during implementation. Do not create audit-repair-reaudit ping-pong unless the prior conclusion directly blocks the next phase, evidence was insufficient, or a repair changes the same critical boundary being certified.
-
-The current planned audit is the one Phase 1 closure pass in Issue #56. A separate Phase 2.0 design audit occurs only after Issue #59 is resolved and the proposed ADR, schemas, authority and provenance rules, concrete budgets and expiry, migration decision, zero-caregiver comparison, and protected test matrix are complete. A later Phase 2 implementation audit occurs before freezing that implemented baseline.
-
-## Phase 1 invariants
-
-Phase 1 is deterministic, local, network-free, organism-subprocess-free, caregiver-free, bounded, auditable, SQLite-canonical, checkpointed after every committed wake, and explicit about organism versus administrative authority.
-
-The organism runtime must not:
-
-- dual-write canonical SQLite and JSONL
-- write authoritative mutable files outside SQLite
-- consult a caregiver
-- execute arbitrary generated code
-- run continuously
-- add unrestricted retries or backtracking
-- weaken protected tests or budgets
-- modify protected actions, evaluators, schema, contract, or environment
-- claim administrative authority
-
-Administration is distinct from organism autonomy. Canonical and report sources use protected `organism:` and `administration:` namespaces. Administrative operations and protected test harnesses retain narrow typed boundaries.
-
-## Complete protected rollback path
-
-Rollback archive preparation validates one retained source, snapshots the complete active future through SQLite Online Backup, and publishes immutable evidence without canonical mutation.
-
-Rollback begin records durable intent. Candidate construction restores the selected checkpoint. Candidate transformation creates a distinct lineage and records `rollback_lineage_prepared`. Active replacement transfers authority atomically and remains blocked. Completion records `rollback_completed`, restores wakeability, and preserves the abandoned future.
-
-ADR 0007 permits at most one completed rollback per organism and retains the complete archive and candidate evidence set without pruning.
-
-## Fixed-evaluation and audit closures
-
-- Slices 24–26 protect ordering, seed independence, and repeated-run equivalence.
-- Slices 27–32 close cleanup, tie-breaking, replay, process-exit, nested-write, and pending-checkpoint boundaries.
-- Slices 33–35 protect external-workspace absence, action SQL authority, and provenance.
-- Issue #56 repairs protect schema integrity, published-orphan recovery, shared retention, enqueue headroom, crash-retryable retention reconciliation, and complete working-set accounting.
-
-Read the corresponding durable notes in `docs/phase1/` and `docs/PHASE1_TEST_MATRIX.md` for exact boundaries and CI evidence.
-
-## Exact restart point — Phase 2 decision gate
-
-There is no authorized Slice 36 and no authorized Phase 2 implementation.
-
-After reconstructing current `main` and GitHub state:
-
-1. verify Issue #13 is closed and PR #57 is merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`
-2. verify the 152-test Phase 1 matrix and independent-audit protections
-3. preserve Issue #56 as an open final-audit obligation
-4. read Issue #3 and current research documents
-5. review Issue #59 rather than inventing Phase 2 scope in code
-6. fix schemas, authority, provenance, budgets, expiry, cost, disposition, evaluation, checkpoint, and migration boundaries through review
-7. preserve the Phase 1 zero-caregiver path and define the Phase 2 zero-caregiver comparison
-8. decide whether ADR 0008 is required before implementation
-
-Do not begin a live human or model caregiver, API integration, long-term memory, skill generation, training, arbitrary Python, continuous execution, personality, emotion, or a generic agent framework.
+1. verify Phase 1 closure and accepted ADR 0008
+2. verify PR #60 merge and Issue #59 closure; if still pending, complete them after green CI
+3. inspect the separate Phase 2 implementation Issue
+4. map each slice to accepted matrix IDs
+5. implement bounded test-first slices without live caregiver integration
+6. keep all 152 Phase 1 tests unchanged and passing
+7. request one implementation audit only when the complete Phase 2 candidate is ready to freeze
 
 ## End-of-work protocol
 
-Before ending substantial work:
-
-- update `docs/HANDOFF.md` with the true state and one exact next gate
-- update protected-test mapping and durable notes
-- update relevant Issue and PR status
+- update `docs/HANDOFF.md`
+- update matrices and durable notes
+- update relevant Issues and PRs
 - report tests, CI, failures, and skipped checks honestly
-- ensure no critical decision exists only in chat or model memory
-- preserve the repository language policy
+- keep no critical decision only in chat
+- preserve repository language policy
 
-Repository prose, code, issues, ADRs, and tests are written in English. The intentional Japanese lines in `README.md` remain the only standing exception.
+Repository prose, code, Issues, ADRs, and tests are English. Intentional Japanese README lines remain the standing exception.
