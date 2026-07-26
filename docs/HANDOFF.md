@@ -1,8 +1,8 @@
 # SUDACHI Handoff
 
-Updated: **2026-07-26**
+Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a, Slice 36b1, and Slice 36b2a1 are merged. Slice 36b2a2 retention projection is implemented test-first on draft PR #69. The exact next implementation boundary is rollback artifact projection.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a, Slice 36b1, Slice 36b2a1, and Slice 36b2a2 are merged. Slice 36b2a3 rollback projection is implemented test-first on PR #70. The exact next implementation boundary after PR #70 merges is semantic event-export projection.
 
 No live caregiver integration is authorized.
 
@@ -32,7 +32,9 @@ Do not alter Phase 1 garden actions, selector, executor, evaluators, injected cl
 
 ADRs 0008 and 0009, Consultation Protocol v1, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md` form one accepted design package.
 
-Original Phase 1 budget locations stay exactly `phase1-v1`; Phase 2 policy lives in immutable `consultation_configuration`; and checkpoint, repair, retention, rollback, and export byte-derived differences use the exact closed semantic projection in ADR 0009.
+Original Phase 1 budget locations stay exactly `phase1-v1`; Phase 2 policy lives in immutable `consultation_configuration`; checkpoint, repair, retention, rollback, and export byte-derived differences use the exact closed semantic projection in ADR 0009.
+
+Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are provenance only.
 
 ## Implemented Slice 36 foundation
 
@@ -50,9 +52,7 @@ Durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`.
 
 PR #66 merged as `700dca34a70eca24ee024f07067f0f6fcb1f3f11`.
 
-Final reviewed head `46ba5b857794e63bf2e74552c2f5e84d1e042c93` passed run 433 with `175 passed in 21.95s`; install, compile, and schema-v1 genesis CLI smoke succeeded.
-
-It delivers the active-database and genesis-checkpoint core of `phase1-projection-v2`, including exact side roles, fixed-order original Phase 1 rows, strict zero-caregiver absence, checkpoint directory/manifest/database/registry integrity, raw checkpoint linkage before `CP(g,e)` projection, checkpoint database semantic comparison, and exact treatment of nested, unlisted, and wrong-location values.
+It delivers the active-database and genesis-checkpoint core of `phase1-projection-v2`, including exact side roles, fixed-order original Phase 1 rows, strict zero-caregiver absence, independent checkpoint integrity, raw checkpoint linkage before `CP(g,e)` projection, checkpoint-database semantic comparison, and exact nested/unlisted/wrong-location behavior.
 
 Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
 
@@ -60,78 +60,75 @@ Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
 
 PR #67 merged as `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`.
 
-Final candidate head `322b9138487d7c8ddbef3bed3908dadff91220a3` passed run 439 with `178 passed in 14.38s`; install, compile, and schema-v1 genesis CLI smoke succeeded.
-
-The projection uses cumulative frozen per-run evidence for checkpoint artifacts, raw/projected event payloads, and ordered retained checkpoint boundaries. `checkpoint_registration_repaired` validates current and previous checkpoint identities plus database SHA, manifest SHA, database size, and checkpoint-store bytes before exact `CP` and byte-sentinel projection.
+The cumulative evidence ledger validates exact `checkpoint_registration_repaired` current/prior `CP` linkage plus database SHA, manifest SHA, database size, and checkpoint-store bytes before projection.
 
 Durable note: `docs/phase2/SLICE36B2A1_PENDING_REPAIR_EVIDENCE.md`.
 
-### Slice 36b2a2 — draft PR #69
+### Slice 36b2a2 — merged
 
-Branch: `slice36b2-retention-projection`.
+PR #69 merged as `64ea9eb094a687c056a571d362c1914aaf7911f2`.
 
-Base: `main` at `ca32482b4f59ef704041734552dfcd81c5eb4535`, which includes merged PRs #66, #67, and #68.
+Tests-only head `38bab7c49d41c16a8ef8b73da52fd4e4bd7e9f14` produced the intended red run 443 before the retention projection module existed. Final pre-merge head `99d2b6db078572748e0e275b64955949bf9e9aec` passed run 450 with `185 passed in 15.55s`; installation, compilation, and schema-v1 genesis CLI smoke succeeded.
 
-Tests-only head `38bab7c49d41c16a8ef8b73da52fd4e4bd7e9f14` produced the intended red GitHub Actions run 443 because `sudachi_life.phase2_retention_projection` did not yet exist.
-
-Implementation and corruption-test candidate `e2c87ebf9d20a09a83eba3179473fb6a24e4c356` passed run 447 with `185 passed in 16.65s`; dependency installation, compilation, and schema-v1 genesis CLI smoke succeeded.
-
-The 185-test suite contains the unchanged 152 Phase 1 tests.
-
-The retention extension adds cumulative noncanonical evidence for:
-
-- prunable checkpoint artifacts captured before deletion
-- committed-prune staging artifacts validated against the prior checkpoint witness
-- exact raw and projected retention-event payloads
-- current staged semantic boundaries
-
-It covers:
-
-- normal `checkpoint_pruned`
-- pre-commit retention failure with candidate restoration
-- post-commit staging cleanup failure and exact `STAGE(CP(g,e))`
-- reconciliation-pending audit
-- interruption after staging deletion and before completion audit
-- retry and `checkpoint_retention_cleanup_reconciled`
-
-Deleted artifact identity, digest, database size, and artifact size are obtained only from prior immutable evidence. They are never reconstructed from checkpoint-ID spelling.
-
-For surviving staging, the directory manifest and database are independently validated, then their manifest digest, database digest, database size, artifact size, canonical manifest, and raw checkpoint identity must equal the pre-deletion witness before projection.
-
-The pending reconciliation event maps its aligned raw checkpoint and staging lists through those witnesses while preserving list order. Completion follows the exact pending event sequence and reuses that validated projection after the physical staging directory has disappeared.
-
-Protected negative evidence rejects:
-
-- normal prune without a pre-deletion artifact witness
-- a wrong raw staging directory before `STAGE` projection
-- a one-byte discrepancy in `pruned_artifact_size_bytes` before sentinel replacement
-
-The implementation does not change Phase 1 retention runtime, canonical schema, checkpoint policy, or the merged checkpoint/repair oracle.
+The retention layer validates normal prune, restored pre-commit failure, committed cleanup failure, `STAGE(CP(g,e))`, pending reconciliation, interruption after deletion, retry, and completion. Deleted identity and bytes come only from prior immutable artifact evidence.
 
 Durable note: `docs/phase2/SLICE36B2A2_RETENTION_PROJECTION.md`.
 
-## Exact next boundary: rollback projection
+### Slice 36b2a3 — implemented on PR #70
 
-After PR #69 is reviewed and merged, create the next test-first Slice 36b2 branch from updated `main`.
+Branch: `slice36b2-rollback-projection`.
 
-Extend the same cumulative immutable evidence graph through the exact ADR 0009 rollback paths:
+Base: merged PR #69 at `64ea9eb094a687c056a571d362c1914aaf7911f2`.
 
-- pre-rollback archive identity and bytes as `RA(g,e)`
-- source restore candidate as `RC(g,e)`
-- transformed candidate as `TC(g,e)`
-- selected checkpoint identity as `CP(g,e)`
-- rollback completion and lineage linkage
-- archive, source candidate, and transformed candidate integrity before projection
+Tests-only head `38a8933f53d09ac5c4d39748a498cf90c5fa631e` produced the intended red run 452 before the rollback projection module existed.
 
-Do not weaken the merged checkpoint, repair, or retention layers. Raw archive/candidate identity, digest, size, manifest, and semantic database state must be independently validated before any typed replacement.
+Implementation plus the lineage-sequence collision test reached code/test candidate `b66a93c2b99b6f48ea06d3b13e47f028297d4c9e`. Run 458 passed with `191 passed in 15.59s`; dependency installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
 
-After rollback, remaining Slice 36b2 work is semantic event export and independent physical checkpoint/archive/candidate closure, including aggregate manifest/directory overhead and absolute 8/40/64 MiB plus 1 MiB reserve evidence.
+The paired rollback scenario performs one real water wake, then selects genesis and completes the full protected rollback chain:
+
+- selected checkpoint `CP(0,2)`
+- abandoned-future archive `RA(0,14,2)`
+- source restore candidate `RC(0,15,2)`
+- transformed candidate `TC(1,3)`
+- `rollback_completed` at new-lineage event sequence `4`
+
+Archive, source candidate, transformed candidate, manifests, database bytes, sizes, protected SQLite state, and exact cross-artifact links are independently validated before typed identity or byte-sentinel replacement.
+
+After authority replacement, active registry state rewinds to the selected checkpoint while later checkpoint `CP(0,13)` remains physically retained as abandoned-future evidence. An extra visible checkpoint is accepted only when a validated pre-rollback archive registry proves the same raw identity, boundary, manifest digest, database digest, and size.
+
+The new-lineage organism may retain an old-lineage latest-stable checkpoint reference. Rollback projection resolves that reference by exact raw checkpoint ID plus event sequence against the validated artifact map; it does not invent a same-lineage token.
+
+Rollback events are keyed by `(lineage_generation, event_sequence, event_type)`. A protected scenario proves old-lineage `rollback_started` and new-lineage `rollback_completed` may both use sequence `15` without evidence overwrite.
+
+Durable note: `docs/phase2/SLICE36B2A3_ROLLBACK_PROJECTION.md`.
+
+## Exact next boundary: semantic event export
+
+After PR #70 is reviewed and merged, create a new test-first branch from updated `main`.
+
+Implement ADR 0009 export treatment and matrix P2-C16/P2-C17:
+
+- validate canonical JSONL bytes independently on each side
+- validate exact event range, count, order, and source-checkpoint linkage
+- project exported event records through the already accepted exact event map
+- replace export manifest `source_checkpoint_id` with the matching `CP` token
+- exclude presentation path, raw export bytes, raw export SHA, and raw export size from cross-run equality only after independent validation
+- keep every canonical event/state difference visible
+
+Do not weaken checkpoint, repair, retention, or rollback evidence. Do not use wildcard, recursive key walk, suffix/prefix match, regex-by-key, or global key-name normalization.
+
+After event export, remaining Slice 36b2 work is physical closure:
+
+- independent checkpoint/archive/candidate overhead
+- aggregate manifest/directory metadata overhead
+- absolute 8 MiB active database and artifact limits
+- absolute 40 MiB checkpoint-store limit
+- absolute 64 MiB working-set limit
+- exact 1 MiB next-wake reserve scenarios
 
 Slice 37 remains blocked until all Slice 36 evidence is merged and no blocker/high/medium boundary defect remains.
 
 ## Accepted boundaries and budgets
-
-Canonical writers remain exactly `organism` and `administration`; caregiver identity is provenance only.
 
 - schema-v2 new organisms only; no migration/downgrade
 - request envelope ≤16 KiB
@@ -152,18 +149,15 @@ Request lifecycle `N` is eligible through `N+2`; proposal expiry is identical. R
 
 The next Codex use is the single Phase 2 implementation-completion audit, after every accepted matrix requirement has protected evidence and one exact CI-green candidate is ready to freeze. Do not use Codex per slice or for ordinary editing.
 
-No Codex audit was used for Slice 36b2a2.
-
 ## Explicit exclusions
 
 No live model/API/human caregiver, memory or skill generation, source/test generation, training, arbitrary code/SQL/shell/tools/paths/URLs/credentials, organism network/subprocess, continuous execution, personality/emotion state, caregiver-controlled authority, or generic agent framework.
 
 ## Exact restart
 
-1. inspect Issue #61, PR #69, this handoff, and the four implemented Slice 36 notes
-2. verify PR #69 head and final CI; review and merge it before starting dependent work
+1. inspect Issue #61, PR #70, this handoff, and all implemented Slice 36 notes
+2. verify PR #70 final head and CI; review and merge it before dependent work
 3. confirm the unchanged 152 Phase 1 tests remain included and passing
-4. create a rollback projection branch from updated `main`
-5. capture archive/source/transformed candidate evidence before deletion or replacement
-6. extend exact `RA`, `RC`, `TC`, and `CP` event/artifact paths test-first
-7. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit
+4. create an event-export projection branch from updated `main`
+5. validate raw JSONL, manifest, range/count/order, digest/size, and source-checkpoint linkage before semantic comparison
+6. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit
