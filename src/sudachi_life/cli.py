@@ -25,6 +25,7 @@ from .maintenance import inspect_maintenance
 from .maintenance_recovery import clear_maintenance
 from .organism import get_status, initialize_organism
 from .paths import OrganismPaths
+from .phase2_schema import ACCEPTED_CONSULTATION_CONFIGURATION_VERSIONS
 from .rollback import prepare_rollback_archive
 from .rollback_candidate import build_restore_candidate
 from .rollback_complete import complete_rollback
@@ -45,6 +46,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     init_parser = subparsers.add_parser("init", help="initialize one SUDACHI-0 organism")
     init_parser.add_argument("organism_id")
+    init_parser.add_argument(
+        "--schema-version",
+        type=int,
+        choices=(1, 2),
+        default=1,
+        dest="schema_version",
+    )
+    init_parser.add_argument(
+        "--consultation-config",
+        choices=ACCEPTED_CONSULTATION_CONFIGURATION_VERSIONS,
+        dest="consultation_configuration_version",
+    )
     init_parser.add_argument("--json", action="store_true", dest="as_json")
 
     enqueue_parser = subparsers.add_parser("enqueue", help="enqueue one synthetic input")
@@ -229,7 +242,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
-            status, checkpoint = initialize_organism(args.runtime_dir, args.organism_id)
+            status, checkpoint = initialize_organism(
+                args.runtime_dir,
+                args.organism_id,
+                schema_version=args.schema_version,
+                consultation_configuration_version=(
+                    args.consultation_configuration_version
+                ),
+            )
             payload = status.as_dict()
             payload["genesis_checkpoint_id"] = checkpoint.checkpoint_id
         elif args.command == "enqueue":
