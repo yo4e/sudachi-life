@@ -4,9 +4,9 @@ Updated: **2026-07-26**
 
 This is the operational restart point after Phase 1 SUDACHI-0, Slices 1–35, completion-audit repairs, and the successful final independent audit. Phase 1 is frozen.
 
-Current work is Phase 2 Consultation Boundary design in Issue #59 and PR #60. The design is reviewed through the ordinary repository process. Codex is reserved for one completion audit after the full Phase 2 implementation and protected test matrix are finished.
+Current work is the Phase 2 Consultation Boundary design in Issue #59 and draft PR #60. The design package must complete ordinary review and one independent read-only Codex design audit before ADR 0008 is accepted or implementation begins. A separate implementation audit occurs only after the complete Phase 2 implementation is ready to freeze.
 
-Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, this handoff, Minimal Organism Contract v0.2, accepted ADRs 0001–0007, the Phase 1 matrix, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, and current Issues/PRs. For Phase 2 also read ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`.
+Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, this handoff, Minimal Organism Contract v0.2, accepted ADRs 0001–0007, the Phase 1 matrix, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, and current Issues and PRs. For Phase 2 also read proposed ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`, and `docs/phase2/CODEX_PHASE2_DESIGN_AUDIT.md`.
 
 ## Project thesis
 
@@ -36,13 +36,9 @@ The Phase 1 body and trusted kernel are frozen.
 
 ## Completed Phase 1 work
 
-### Issue #13
+Issue #13 is completed and closed. PR #57 repaired all six defects found by Issue #56 and merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
 
-Completed and closed. PR #57 repaired all six defects found by Issue #56 and merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
-
-### Issue #56
-
-Completed and closed. The final read-only audit checked `main` at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338` and reported:
+Issue #56 is completed and closed. The final read-only audit checked `main` at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338` and reported:
 
 - Findings 1–6 resolved
 - no new blocker, high, or medium defect
@@ -55,22 +51,21 @@ Final conclusion:
 
 > Phase 1 is ready to freeze and Phase 2 design may begin.
 
-Future Codex work follows the phase-completion policy rather than per-slice or design-gate review.
-
 ## Phase 2 Consultation Boundary
 
-### Issue #59 and PR #60
+Issue #59 is the design decision record. Draft PR #60 contains:
 
-Issue #59 is the design decision record. PR #60 contains the documentation package:
-
-- ADR 0008
+- proposed ADR 0008
 - `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
 - `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-- synchronized continuity instructions
+- `docs/phase2/CODEX_PHASE2_DESIGN_AUDIT.md`
+- synchronized audit and continuity instructions
 
-The design begins with newly initialized schema-v2 organisms only. It does not authorize Phase 1 migration, downgrade, or cross-version rollback.
+No Phase 2 code exists and no Slice 36 is authorized.
 
-The base contract remains `0.2`. Phase 2 uses protected consultation budget configurations:
+The design begins with newly initialized schema-v2 organisms only. It does not authorize Phase 1 migration, downgrade, or cross-version rollback. The base contract remains `0.2`.
+
+Protected consultation budget configurations are:
 
 - `phase2-zero-caregiver-v1`
 - `phase2-fixture-v1`
@@ -78,14 +73,14 @@ The base contract remains `0.2`. Phase 2 uses protected consultation budget conf
 ### Five operational boundaries
 
 1. **Garden request wake**
-   - occurs only after the unchanged Phase 1 policy selects `no_applicable_action` for an incomplete objective
-   - preserves the same tick, abstention, action, mutation, and failure accounting
+   - occurs only after unchanged Phase 1 policy selects `no_applicable_action` for an incomplete objective
+   - preserves tick, abstention, action, mutation, and failure accounting
    - increments the Phase 1 failure streak exactly once
    - creates no request when that wake enters maintenance
    - commits and checkpoints before dispatch admission
 2. **Administrative dispatch admission**
    - uses a fresh fail-fast transaction
-   - requires a stable, eligible, current-lineage request
+   - requires a stable eligible current-lineage request
    - records immutable dispatch evidence and conservatively charges work before fixture execution
    - commits and releases the SQLite write lock before external work
 3. **External deterministic fixture**
@@ -108,29 +103,13 @@ The base contract remains `0.2`. Phase 2 uses protected consultation budget conf
 
 ### Proposal and authority boundaries
 
-Protocol v1 proposal types:
+Protocol v1 proposal types are `action_candidate`, `abstain`, and `defer`.
 
-- `action_candidate`
-- `abstain`
-- `defer`
+Final dispositions are `accepted`, `rejected`, `deferred`, and `clarification_requested`. Clarification rounds are zero. An accepted proposal does not enter the existing action selector or execute an action.
 
-Final dispositions:
+Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identity are immutable provenance only.
 
-- `accepted`
-- `rejected`
-- `deferred`
-- `clarification_requested`
-
-Clarification rounds are zero. An accepted proposal does not enter the existing action selector or execute an action.
-
-Canonical writer categories remain exactly:
-
-- `organism`
-- `administration`
-
-Caregiver and adapter identity are immutable provenance only.
-
-### Acyclic identifier graph
+### Acyclic identifiers and lineage budget
 
 Derivation order is:
 
@@ -143,9 +122,7 @@ Derivation order is:
 
 Proposal ID excludes response ID. Pre-insert identifiers exclude later-assigned event sequences only where explicitly declared.
 
-### Lineage budget epoch
-
-Consultation budget epoch is the current `lineage_generation`:
+Consultation budget epoch is current `lineage_generation`:
 
 - at most four requests and four charged fixture invocations per lineage
 - one current-lineage outstanding request
@@ -156,48 +133,30 @@ Consultation budget epoch is the current `lineage_generation`:
 
 A global four-call counter across rollback lineages is not claimed because enforcing it would alter frozen rollback transformation or introduce another authority.
 
-### Finite limits
+### Finite limits and zero-caregiver control
 
 - request: at most 16 KiB
 - response plus proposal: at most 16 KiB
 - external provenance: at most 8 KiB
 - fixture human minutes, model units, money, and declared latency: zero
-- exact record and semantic-step caps are fixed by ADR 0008 and protocol v1
 - inherited active database: 8 MiB
 - inherited checkpoint store: 40 MiB
 - inherited runtime working set: 64 MiB
 - every Phase 2 administrative write preserves the existing 1 MiB next-wake reserve before and after mutation
-
-Request expiry is lifecycle-based: a request created in lifecycle `N` is eligible through `N+2`.
-
-### Zero-caregiver control
+- request created in lifecycle `N` is eligible through `N+2`
 
 `phase2-zero-caregiver-v1` creates no consultation row, event, source, adapter invocation, cost, disposition, or caregiver-derived effect.
 
-The protected Phase 1-relevant projection:
-
-1. normalizes only existing schema and budget configuration values
-2. compares every original Phase 1 row, column, event payload, and original-table sequence exactly
-3. requires operational consultation tables and sequences to remain empty
-4. requires no consultation event, source, cost, or effect
-5. preserves behavior, status, lifecycle, checkpoint, rollback, and authority semantics
+The protected Phase 1-relevant projection normalizes only existing schema and budget configuration values, compares every original Phase 1 row, column, event payload, and original-table sequence exactly, requires operational consultation tables and sequences empty, and preserves behavior, status, lifecycle, checkpoint, rollback, and authority semantics.
 
 ## Audit cadence and implementation gate
 
-There is no separate Codex audit for Phase 2 design acceptance.
+Phase 2 has two planned independent read-only Codex audits:
 
-The correct sequence is:
+1. **Design audit** after the complete Issue #59 and PR #60 package is internally coherent. It reviews the proposed boundary only and may not implement code, change ADR status, merge the PR, or create Slice 36.
+2. **Implementation audit** after accepted ADR 0008 has been implemented, all accepted matrix requirements have protected evidence, the unchanged Phase 1 suite passes, CI is green, and the Phase 2 baseline is ready to freeze.
 
-1. finish ordinary review of Issue #59 and PR #60
-2. accept ADR 0008 and merge the design package
-3. open a separate test-first Phase 2 implementation Issue
-4. implement bounded slices mapped to `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-5. keep all 152 Phase 1 tests unchanged and passing
-6. complete the Phase 2 matrix and CI evidence
-7. run one independent read-only Codex audit of the complete implemented Phase 2 candidate
-8. repair accepted findings and freeze Phase 2 only after a satisfactory conclusion
-
-Do not run Codex for each slice, PR, intermediate fix, or design draft.
+Do not run Codex for each slice, PR, intermediate fix, or individual design edit. Avoid audit-repair-reaudit ping-pong unless a gate conclusion blocks progress, evidence is insufficient, or a repair changes the same critical boundary being certified.
 
 ## Issue #3 research
 
@@ -209,7 +168,7 @@ Live human or model experiments, provider automation, retained provider output, 
 
 Phase 1 evidence includes PR #54, runs 317 and 323, repair runs 335, 336, 340, and 343, PR #57 merge, and the final independent 152-pass audit.
 
-PR #60 is documentation-only. No Phase 2 executable behavior is claimed until the separate implementation stream begins.
+PR #60 is documentation-only. Its current CI evidence must be recorded in Issue #59 before the design audit target is fixed.
 
 ## Explicit exclusions
 
@@ -230,18 +189,24 @@ Do not add:
 
 ## Exact next gate
 
-Complete ordinary design review and merge ADR 0008 through PR #60. Then open the separate test-first Phase 2 implementation Issue. Do not request Codex review until the complete Phase 2 implementation is a candidate for freezing.
+1. finish ordinary internal review of Issue #59 and draft PR #60
+2. verify the design documents, matrix, and continuity instructions are internally coherent
+3. fix one exact PR head and green CI evidence in Issue #59
+4. run one independent read-only Codex Phase 2.0 design audit using `docs/phase2/CODEX_PHASE2_DESIGN_AUDIT.md`
+5. resolve accepted findings through ordinary design work
+6. change ADR 0008 from Proposed to Accepted only after a satisfactory design conclusion
+7. merge PR #60
+8. open a separate test-first Phase 2 implementation Issue
+
+Do not write Phase 2 implementation code or create Slice 36 before that gate completes.
 
 ## Restart
 
 1. read `AGENTS.md` and collaboration operations
 2. read this handoff, Contract v0.2, ADRs 0001–0007, and the Phase 1 matrix
 3. verify Issues #13 and #56 are closed and PR #57 is merged
-4. inspect Issues #3 and #59 and PR #60
-5. read ADR 0008, protocol v1, and the Phase 2 matrix
-6. complete normal design acceptance and merge
-7. create the test-first implementation Issue
-8. map every implementation slice to matrix IDs
-9. run one Codex completion audit only after implementation is complete
+4. inspect Issues #3 and #59 and draft PR #60
+5. read proposed ADR 0008, protocol v1, matrix, and design-audit brief
+6. stop at the design-audit gate
 
 No critical decision may remain only in chat.
