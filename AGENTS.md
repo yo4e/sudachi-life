@@ -29,6 +29,7 @@ Read these files in order:
 15. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 16. `docs/HANDOFF.md`
 17. current open GitHub issues and pull requests
+18. when reviewing Phase 2.0, proposed ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
 
 Repository state and current GitHub state outrank conversation history.
 
@@ -48,14 +49,16 @@ Do not flatten SUDACHI into a generic autonomous agent, chatbot, virtual pet, or
 
 ## Normative authority
 
-For Phase 1, use this precedence:
+For the frozen Phase 1 baseline, use this precedence:
 
 1. Minimal Organism Contract v0.2
 2. accepted ADRs 0001–0007
 3. protected tests and `docs/PHASE1_TEST_MATRIX.md`
 4. explicit current repository decisions
 
-The Phase 1 body and trusted kernel are frozen by default. A Phase 2 extension must be explicitly reviewed, versioned, and protected. Do not hide a new architecture inside implementation code.
+Phase 1 passed its final independent read-only audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`: all six prior findings were resolved, no new blocker/high/medium defect was found, and 152 tests passed. Issue #56 is closed as completed.
+
+The Phase 1 body and trusted kernel are frozen. A Phase 2 extension must be explicitly reviewed, versioned, and protected. Proposed ADR 0008 and its protocol/test matrix are not normative until accepted and merged.
 
 If implementation reveals a contradiction, stop and resolve the contract or ADR through review before proceeding.
 
@@ -115,35 +118,46 @@ PR #57 repaired the six Issue #56 cross-boundary defects and was squash-merged a
 
 ### Issue #56 — independent completion audit
 
-Issue #56 remains open.
+**Completed and closed.**
 
-The first audit found six cross-boundary defects. The first Codex re-audit classified findings 1, 2, 3, and 6 as resolved. Findings 4 and 5 were partial, then received additional repairs and adversarial tests.
+The initial audit found six cross-boundary defects. PR #57 repaired them and added adversarial coverage. The final independent read-only audit checked current `main` at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338` and reported:
 
-The final independent re-audit was deferred because the available Codex usage allocation was exhausted. The exact state is:
+- Findings 1–6: all `resolved`
+- new blocker/high/medium Phase 1 defects: none
+- local Python 3.12 protected suite: `152 passed`
+- real 8 MiB storage boundary and retention-reconciliation interruption/retry independently reproduced
+- no tracked-file or index modification during audit
 
-> **repairs implemented, CI verified, final independent re-audit pending**
+Final conclusion:
 
-Do not describe the final audit as completed. When Codex availability returns, perform one read-only Phase 1 closure audit under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`: re-audit the two residual findings, confirm the other four remain closed, check for new Phase 1 regressions, and decide whether Phase 1 is ready to freeze. Do not fold unfinished Phase 2 design into this pass.
+> Phase 1 is ready to freeze and Phase 2 design may begin.
 
-### Issue #59 — Phase 2.0 Consultation Boundary
+Do not reopen Issue #56 for ordinary Phase 2 review. Use the phase-gate audit policy for later completed design and implementation baselines.
 
-Issue #59 is the current design gate. Opening it does not authorize implementation and there is no authorized Slice 36.
+### Issue #59 and draft PR #60 — Phase 2.0 Consultation Boundary
 
-The review must decide and preserve:
+Issue #59 is the current design gate. Draft PR #60 proposes:
 
-- Phase 1 body and trusted-kernel freeze
-- asynchronous consultation outside the wake transaction
-- typed caregiver proposals rather than commands
-- later-wake `accepted`, `rejected`, `deferred`, and `clarification_requested` dispositions
-- independent evaluation before adoption or action effect
-- no caregiver database handle or direct canonical mutation authority
-- source-neutral request, response, proposal, and disposition schemas
-- exact authority, provenance, concrete budgets, expiry, and cost ledger
-- frozen Phase 1 and Phase 2 zero-caregiver controls
-- explicit schema initialization and migration policy
-- deterministic fixture use before any live caregiver
+- ADR 0008: caregiver consultation remains outside organism authority
+- `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
+- `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+- newly initialized schema-v2 organisms only; no initial migration
+- request wake, external fixture, administrative response ingress, and later disposition wake as distinct boundaries
+- first fixture slice stopping at disposition, with no influence on the existing action selector
+- initial proposal types `action_candidate`, `abstain`, and `defer`
+- exact lifetime, per-wake, payload, provenance, cost, expiry, and physical-storage controls
+- canonical writer categories remaining exactly `organism` and `administration`
+- a protected Phase 2 zero-caregiver projection alongside the unchanged Phase 1 suite
 
-Resolve Issue #59's review questions and decide whether the accepted result becomes ADR 0008 before creating an implementation issue.
+PR #60 is documentation-only and intentionally draft. It does not authorize Slice 36 or Phase 2 implementation.
+
+Before implementation:
+
+1. review and resolve Issue #59's questions against the proposed documents
+2. run one independent read-only Codex Phase 2.0 design audit
+3. record the result in Issue #59
+4. accept and merge ADR 0008 only after satisfactory review
+5. open a separate test-first implementation issue
 
 ### Issue #3 — prior work and provider review
 
@@ -155,15 +169,15 @@ Do not connect a human or model caregiver automatically. Do not treat ChatGPT an
 
 Codex independent audits are high-cost phase-gate reviews, not routine per-slice or per-pull-request review. Follow `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
 
-The default is one planned read-only audit after a phase or design gate is complete. Use ordinary review, protected tests, CI, and issue tracking during implementation. Do not create audit-repair-reaudit ping-pong unless the prior conclusion directly blocks the next phase, evidence was insufficient, or a repair changes the same critical boundary being certified.
+The Phase 1 closure audit is complete. The next planned audit is one read-only Phase 2.0 design audit after Issue #59, proposed ADR 0008, protocol schemas, authority/provenance rules, concrete budgets/expiry, initialization decision, zero-caregiver comparison, and test matrix are complete.
 
-The current planned audit is the one Phase 1 closure pass in Issue #56. A separate Phase 2.0 design audit occurs only after Issue #59 is resolved and the proposed ADR, schemas, authority and provenance rules, concrete budgets and expiry, migration decision, zero-caregiver comparison, and protected test matrix are complete. A later Phase 2 implementation audit occurs before freezing that implemented baseline.
+Do not create audit-repair-reaudit ping-pong. A later single implementation audit occurs before freezing the implemented Phase 2 baseline.
 
-## Phase 1 invariants
+## Frozen Phase 1 invariants
 
 Phase 1 is deterministic, local, network-free, organism-subprocess-free, caregiver-free, bounded, auditable, SQLite-canonical, checkpointed after every committed wake, and explicit about organism versus administrative authority.
 
-The organism runtime must not:
+The Phase 1 organism runtime must not:
 
 - dual-write canonical SQLite and JSONL
 - write authoritative mutable files outside SQLite
@@ -191,23 +205,24 @@ ADR 0007 permits at most one completed rollback per organism and retains the com
 - Slices 27–32 close cleanup, tie-breaking, replay, process-exit, nested-write, and pending-checkpoint boundaries.
 - Slices 33–35 protect external-workspace absence, action SQL authority, and provenance.
 - Issue #56 repairs protect schema integrity, published-orphan recovery, shared retention, enqueue headroom, crash-retryable retention reconciliation, and complete working-set accounting.
+- The final audit independently closed all six findings and found no new blocker/high/medium Phase 1 defect.
 
 Read the corresponding durable notes in `docs/phase1/` and `docs/PHASE1_TEST_MATRIX.md` for exact boundaries and CI evidence.
 
-## Exact restart point — Phase 2 decision gate
+## Exact restart point — Phase 2.0 design gate
 
 There is no authorized Slice 36 and no authorized Phase 2 implementation.
 
-After reconstructing current `main` and GitHub state:
+After reconstructing current repository and GitHub state:
 
-1. verify Issue #13 is closed and PR #57 is merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`
-2. verify the 152-test Phase 1 matrix and independent-audit protections
-3. preserve Issue #56 as an open final-audit obligation
-4. read Issue #3 and current research documents
-5. review Issue #59 rather than inventing Phase 2 scope in code
-6. fix schemas, authority, provenance, budgets, expiry, cost, disposition, evaluation, checkpoint, and migration boundaries through review
-7. preserve the Phase 1 zero-caregiver path and define the Phase 2 zero-caregiver comparison
-8. decide whether ADR 0008 is required before implementation
+1. verify Issues #13 and #56 are closed and PR #57 is merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`
+2. verify the final audit conclusion and unchanged 152-test Phase 1 baseline
+3. read Issue #3 and current research documents
+4. review Issue #59 and draft PR #60
+5. inspect proposed ADR 0008, protocol v1, and the Phase 2 test matrix rather than inventing scope in code
+6. preserve the first-slice disposition-only boundary and zero-caregiver controls unless review explicitly changes them
+7. conduct one independent Phase 2.0 design audit after the documents are complete
+8. do not create an implementation issue until the design is accepted and merged
 
 Do not begin a live human or model caregiver, API integration, long-term memory, skill generation, training, arbitrary Python, continuous execution, personality, emotion, or a generic agent framework.
 
