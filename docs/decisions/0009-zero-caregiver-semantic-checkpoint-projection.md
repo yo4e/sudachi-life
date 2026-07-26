@@ -125,7 +125,7 @@ Only the following event-type and top-level JSON-path combinations are projected
 | `checkpoint_pruned` | `pruned_artifact_size_bytes`, `pruned_database_size_bytes`, `retained_checkpoint_store_bytes` | `<validated-byte-derived>` |
 | `checkpoint_retention_failed` | `candidate_checkpoint_id` | `CP(event.lineage_generation, payload.candidate_event_sequence)` |
 | `checkpoint_retention_failed` | `latest_stable_checkpoint_id` | `CP(event.lineage_generation, payload.latest_stable_event_sequence)` |
-| `checkpoint_retention_failed` | `staging_directory` | `STAGE(CP(event.lineage_generation, payload.candidate_event_sequence))` |
+| `checkpoint_retention_failed` | `staging_directory` when present | `STAGE(CP(event.lineage_generation, payload.candidate_event_sequence))` |
 | `checkpoint_retention_failed` | `checkpoint_store_bytes` | `<validated-byte-derived>` |
 | `checkpoint_retention_cleanup_reconciliation_pending` | `checkpoint_ids[*]` | elementwise semantic boundaries proved from each staged manifest, preserving list order |
 | `checkpoint_retention_cleanup_reconciliation_pending` | `staging_directories[*]` | elementwise `STAGE` tokens for the same ordered boundaries |
@@ -144,7 +144,7 @@ Only the following event-type and top-level JSON-path combinations are projected
 | `rollback_completed` | `transformed_candidate_id` | `TC(payload.new_lineage_generation, payload.restoration_event_sequence)` |
 | `rollback_completed` | `archive_database_sha256`, `archive_manifest_sha256`, `selected_checkpoint_database_sha256`, `selected_checkpoint_manifest_sha256`, `source_restore_candidate_database_sha256`, `source_restore_candidate_manifest_sha256`, `transformed_candidate_database_sha256`, `transformed_candidate_manifest_sha256` | `<validated-byte-derived>` |
 
-The `rollback_lineage_prepared` protected payload schema must contain exactly those six digest paths. The implementation must reject any extra path and must not use a suffix matcher.
+The `rollback_lineage_prepared` protected payload schema contains exactly the six digest paths listed in its final row. The implementation must reject any extra path and must not use a suffix matcher.
 
 ### 7. Rollback artifact projection
 
