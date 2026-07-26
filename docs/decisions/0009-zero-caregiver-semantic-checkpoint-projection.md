@@ -1,6 +1,6 @@
 # ADR 0009: Define the zero-caregiver semantic artifact projection
 
-- Status: Proposed after focused independent re-audit corrections
+- Status: Accepted
 - Date: 2026-07-26
 - Decision owners: project owner and repository maintainers
 - Review issue: #63
@@ -144,7 +144,7 @@ Only the following event-type and top-level JSON-path combinations are projected
 | `rollback_completed` | `transformed_candidate_id` | `TC(payload.new_lineage_generation, payload.restoration_event_sequence)` |
 | `rollback_completed` | `archive_database_sha256`, `archive_manifest_sha256`, `selected_checkpoint_database_sha256`, `selected_checkpoint_manifest_sha256`, `source_restore_candidate_database_sha256`, `source_restore_candidate_manifest_sha256`, `transformed_candidate_database_sha256`, `transformed_candidate_manifest_sha256` | `<validated-byte-derived>` |
 
-The `rollback_lineage_prepared` protected payload schema contains exactly the six digest paths listed in its final row. The implementation must reject any extra path and must not use a suffix matcher.
+The `rollback_lineage_prepared` protected payload schema must contain exactly those six digest paths. The implementation must reject any extra path and must not use a suffix matcher.
 
 ### 7. Rollback artifact projection
 
@@ -244,4 +244,4 @@ Negative:
 
 This ADR changes only consultation-configuration placement and the zero-caregiver semantic artifact oracle. It does not change caregiver authority, transaction boundaries, request/dispatch/ingress/disposition behavior, logical consultation budgets, expiry, lineage epochs, absolute storage ceilings, or explicit exclusions.
 
-Slice 36 remains blocked until this ADR, the synchronized protocol/matrix/continuity updates, and PR #64 are accepted and merged.
+Acceptance of this ADR and merge of PR #64 authorize Slice 36 to resume from updated `main`.
