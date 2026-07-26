@@ -54,7 +54,7 @@ Proposed ADR 0009 requires:
 - one protected immutable `consultation_configuration` singleton stores Phase 2 policy
 - exact semantic `CP`/`RA`/`RC`/`TC`/`STAGE` mappings at enumerated table/column and event-type/JSON locations
 - explicit treatment of normal/maintenance checkpoint events, registration repair, retention prune/failure/reconciliation, rollback archive/source candidate/transformed candidate/completion, and semantic event export
-- per-side recomputation and bijective linkage for every projected-away digest, size, aggregate-byte count, and directory identity
+- per-side recomputation and bijective linkage for every projected-away digest, size, aggregate byte count, and directory identity
 - no wildcard, recursive walk, suffix/prefix match, regex-by-key, or global key normalization
 - active/artifact structural overhead ≤256 KiB per paired database and aggregate additional manifest/directory metadata ≤1 MiB
 - separate real absolute-limit tests for 8 MiB active/artifact, 40 MiB checkpoints, 64 MiB working set, and 1 MiB reserve
