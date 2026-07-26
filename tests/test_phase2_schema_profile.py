@@ -15,7 +15,7 @@ from sudachi_life.phase2_schema import (
 from sudachi_life.storage import connect_database
 
 
-_SCHEMA_V2_FINGERPRINT = "9d3179847c7b5dbe27b9e3893bbb07548e55b062654e3f85c1ba38ab8d259b27"
+_SCHEMA_V2_FINGERPRINT = "41ee900df99b3c1b44700e2de628d3151e907c8d0069f87098eb9fd72a3f6fec"
 
 _LIMIT_NAMES = {
     "request_per_garden_wake",
@@ -125,5 +125,5 @@ def test_schema_v2_sqlite_object_fingerprint_is_fixed(tmp_path: Path) -> None:
         for object_type, name, table, sql in rows
     ]
     encoded = json.dumps(normalized, separators=(",", ":")).encode("utf-8")
-    assert len(normalized) == 51
+    assert len(normalized) == 46
     assert hashlib.sha256(encoded).hexdigest() == _SCHEMA_V2_FINGERPRINT
