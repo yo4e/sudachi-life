@@ -103,31 +103,17 @@ PR #66 merged as `700dca34a70eca24ee024f07067f0f6fcb1f3f11`.
 
 Final reviewed head `46ba5b857794e63bf2e74552c2f5e84d1e042c93` passed run 433 with `175 passed in 21.95s` plus successful install, compile, and schema-v1 genesis CLI smoke.
 
-It implements the active-database and genesis-checkpoint core of `phase1-projection-v2`:
-
-- explicit schema-v1 left and schema-v2-zero right controls
-- fixed-order original Phase 1 rows and original AUTOINCREMENT sequences
-- exact declared schema-version normalization only
-- strict zero-caregiver absence
-- independent checkpoint directory/manifest/database/registry integrity
-- raw organism, registry, manifest, directory, and stabilized-event linkage before `CP(g,e)` projection
-- checkpoint database Phase 1 semantic state retained in equality
-- nested, unlisted, added, and wrong-location values remain exact
+It implements the active-database and genesis-checkpoint core of `phase1-projection-v2`: explicit side roles, fixed-order original Phase 1 rows, exact declared schema-version normalization, strict zero-caregiver absence, independent checkpoint artifact integrity, raw checkpoint linkage before `CP(g,e)` projection, checkpoint database semantic comparison, and exact nested/unlisted/wrong-location behavior.
 
 Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
 
-### Slice 36b2a1 — current merge gate
+### Slice 36b2a1 — merged
 
-PR #67 implements pending-checkpoint repair evidence.
+PR #67 merged as `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`.
 
-Test-first evidence:
+Final candidate head `322b9138487d7c8ddbef3bed3908dadff91220a3` passed run 439 with `178 passed in 14.38s` plus successful install, compile, and schema-v1 genesis CLI smoke.
 
-- tests-only head `53c3d4c1795c54d5872c113a0aa2e65653c9b412`
-- red run 435: merged 36b1 lacked the evidence-ledger API
-- implementation head before documentation synchronization `18c97c130be81f7d72c17a49d02c15fa3a5f9a58`
-- run 436: `178 passed in 12.95s`; install, compile, and schema-v1 genesis CLI smoke succeeded
-
-The oracle now has cumulative frozen per-run evidence for checkpoint artifacts, raw/projected event payloads, and ordered retained checkpoint boundaries. Existing evidence may be extended only when its immutable raw artifact and event facts remain identical.
+The oracle now has cumulative frozen per-run evidence for checkpoint artifacts, raw/projected event payloads, and ordered retained checkpoint boundaries. Existing evidence may be extended only when immutable raw artifact and event facts remain identical.
 
 For exact `checkpoint_registration_repaired` paths, capture independently validates:
 
@@ -140,20 +126,24 @@ Only the two declared checkpoint identity paths and four declared byte-derived p
 
 Durable note: `docs/phase2/SLICE36B2A1_PENDING_REPAIR_EVIDENCE.md`.
 
-PR #67 requires one final exact-head green CI result after continuity synchronization before ready/merge.
+### Exact next boundary — retention projection
 
-### Remaining Slice 36b2
+Create a new test-first branch from `main` at or after `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`.
 
-After PR #67 merges, continue in bounded sub-slices:
+Cover:
 
-1. retention prune, pre-commit failure, post-commit staging failure, pending reconciliation, interruption, and retry completion
-2. rollback archive, source candidate, transformed candidate, and completion
-3. semantic event export
-4. checkpoint/archive/candidate overhead, aggregate metadata, and absolute physical-limit evidence
+- normal `checkpoint_pruned`
+- pre-commit retention failure with candidate restoration
+- post-commit staging cleanup failure and exact `STAGE(CP(g,e))`
+- reconciliation-pending audit
+- interruption after staging deletion and before completion audit
+- retry and `checkpoint_retention_cleanup_reconciled`
 
-Retention must capture validated prunable artifact evidence before deletion. Later `checkpoint_pruned`, retention-failure, and reconciliation events must be checked against that immutable witness, not reconstructed from ID spelling.
+Capture prunable or staged artifact evidence before deletion. Later event fields must be validated against the immutable prior witness; deleted bytes may not be inferred from ID spelling.
 
-Exact `CP`, `STAGE`, `RA`, `RC`, and `TC` locations remain those accepted by ADR 0009. Do not weaken the merged 36b1 core.
+Do not weaken the merged 36b1 core or use wildcard, recursive key walk, suffix/prefix match, regex-by-key, or global key-name normalization.
+
+After retention, remaining Slice 36b2 work is rollback (`RA`/`RC`/`TC`), semantic event export, and physical checkpoint/archive/candidate closure.
 
 Slice 37 remains blocked until all Slice 36 evidence is merged and no blocker/high/medium boundary defect remains.
 
@@ -196,9 +186,9 @@ Codex audits are high-cost gates, not per-slice or per-PR review.
 ## Exact restart point
 
 1. verify Phase 1 closure and accepted ADRs 0008–0009
-2. inspect Issue #61, PR #67, `docs/HANDOFF.md`, and `docs/phase2/SLICE36B2A1_PENDING_REPAIR_EVIDENCE.md`
-3. if PR #67 is open, verify its final exact-head CI and complete review/squash merge
-4. create the retention projection sub-slice from updated `main`
+2. inspect Issue #61, `docs/HANDOFF.md`, and implemented Slice 36 notes
+3. verify PR #67 merged as `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`
+4. create a retention projection branch from updated `main`
 5. capture prunable/staged artifact evidence before deletion and extend the exact typed map through prune/failure/reconciliation
 6. keep all 152 Phase 1 tests unchanged and passing
 7. request the implementation audit only when the complete Phase 2 candidate is ready to freeze
