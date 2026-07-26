@@ -53,7 +53,6 @@ CREATE TRIGGER event_no_delete BEFORE DELETE ON event BEGIN SELECT RAISE(ABORT, 
 CREATE TABLE checkpoint_registry (checkpoint_id TEXT PRIMARY KEY, lineage_generation INTEGER NOT NULL CHECK (lineage_generation >= 0), event_sequence INTEGER NOT NULL CHECK (event_sequence >= 0), manifest_sha256 TEXT NOT NULL, database_sha256 TEXT NOT NULL, database_size_bytes INTEGER NOT NULL CHECK (database_size_bytes >= 0), created_wall_time_utc_us INTEGER NOT NULL, registered_wall_time_utc_us INTEGER NOT NULL, protected INTEGER NOT NULL DEFAULT 0 CHECK (protected IN (0, 1)));
 """
 
-# Backward-compatible name used by Phase 1 tests and callers.
 SQL_SCHEMA = PHASE1_SQL_SCHEMA
 PHASE2_SQL_SCHEMA = PHASE1_SQL_SCHEMA + PHASE2_SQL_EXTENSION
 SUPPORTED_SCHEMA_VERSIONS = (SCHEMA_VERSION, PHASE2_SCHEMA_VERSION)
@@ -120,7 +119,11 @@ def _require_singleton_count(connection: sqlite3.Connection, table: str) -> None
         )
 
 
-def _validate_phase1_configuration(connection: sqlite3.Connection) -> None:
+def _validate_phase1_configuration(
+    connection: sqlite3.Connection,
+    *,
+    require_canonical_json: bool,
+) -> None:
     for table in ("organism", "budget_config", "environment_state", "inventory"):
         _require_singleton_count(connection, table)
     budget_row = connection.execute(
@@ -141,7 +144,7 @@ def _validate_phase1_configuration(connection: sqlite3.Connection) -> None:
     expected_budget_json = json.dumps(
         PHASE1_BUDGETS.as_dict(), sort_keys=True, separators=(",", ":")
     )
-    if budget_row["config_json"] != expected_budget_json:
+    if require_canonical_json and budget_row["config_json"] != expected_budget_json:
         raise SchemaValidationError(
             "protected budget configuration is not canonical JSON"
         )
@@ -238,8 +241,6 @@ def validate_protected_schema_and_configuration(
     for key, definition in actual.items():
         if key in expected:
             continue
-        # Frozen schema-v1 permits only additional side-effect-free abort guards.
-        # Schema-v2 is exact because all consultation guards are fingerprinted.
         if (
             schema_version != SCHEMA_VERSION
             or key[0] != "trigger"
@@ -250,7 +251,10 @@ def validate_protected_schema_and_configuration(
                 f"unexpected mutable object {key!r}"
             )
 
-    _validate_phase1_configuration(connection)
+    _validate_phase1_configuration(
+        connection,
+        require_canonical_json=(schema_version == PHASE2_SCHEMA_VERSION),
+    )
     if schema_version == PHASE2_SCHEMA_VERSION:
         _validate_consultation_configuration(connection)
     return schema_version
