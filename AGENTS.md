@@ -52,9 +52,9 @@ Normative precedence:
 
 Phase 1 passed final independent audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`: all six findings resolved, no new blocker/high/medium defect, and 152 tests passed. Issues #13 and #56 are closed. PR #57 merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
 
-Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinterpret Phase 1 tests, alter garden actions/selector/executor/evaluators/clocks/checkpoints/rollback/authority, or add hidden network, subprocess, workspace, arbitrary-code, or continuous-execution routes.
+Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinterpret Phase 1 tests, alter garden actions, selector, executor, evaluators, clocks, checkpoints, rollback, or authority, or add hidden network, subprocess, workspace, arbitrary-code, or continuous-execution routes.
 
-## Accepted Phase 2 Consultation Boundary
+## Accepted Phase 2 consultation boundary
 
 ADRs 0008 and 0009, Consultation Protocol v1, and the Phase 2 matrix are the accepted design package. Issue #61 owns implementation.
 
@@ -65,7 +65,7 @@ Accepted invariants include:
 - original Phase 1 `budget_config` and all original budget-version locations remain exactly `phase1-v1`
 - Phase 2 policy lives only in one protected immutable `consultation_configuration` singleton
 - checkpoint, repair, retention, rollback, and export byte-derived identities use exact ADR 0009 locations and typed tokens
-- projected-away SHA/size/path values are independently recomputed and physically bounded on each side
+- projected-away SHA, size, and path values are independently recomputed and physically bounded on each side
 - no wildcard, recursive key walk, suffix/prefix match, regex-by-key, or global key-name normalization
 - schema-v2 overhead caps do not replace the absolute 8/40/64 MiB and 1 MiB reserve limits
 
@@ -73,11 +73,11 @@ Canonical writer categories remain exactly `organism` and `administration`. Care
 
 ## Operational boundaries
 
-1. Garden request wake preserves exact Phase 1 outcome/failure truth and uses only an optional storage-safe request extension.
+1. Garden request wake preserves exact Phase 1 outcome and failure truth and uses only an optional storage-safe request extension.
 2. Administrative dispatch admission commits and charges before external fixture work and releases SQLite ownership first.
 3. The deterministic fixture receives only the final request envelope and declared case, with no authority or runtime capability handles.
 4. Administrative ingress or terminalization validates exact schemas, identities, sizes, lineage, and physical budgets and never automatically retries fixture work.
-5. Explicit disposition wake considers at most one proposal, checkpoints, and has no selector/action/memory/skill effect in the first implementation.
+5. Explicit disposition wake considers at most one proposal, checkpoints, and has no selector, action, memory, or skill effect in the first implementation.
 
 Proposal types: `action_candidate`, `abstain`, `defer`.
 
@@ -103,7 +103,7 @@ PR #66 merged as `700dca34a70eca24ee024f07067f0f6fcb1f3f11`.
 
 Final reviewed head `46ba5b857794e63bf2e74552c2f5e84d1e042c93` passed run 433 with `175 passed in 21.95s` plus successful install, compile, and schema-v1 genesis CLI smoke.
 
-It implements the active-database and genesis-checkpoint core of `phase1-projection-v2`: explicit side roles, fixed-order original Phase 1 rows, exact declared schema-version normalization, strict zero-caregiver absence, independent checkpoint artifact integrity, raw checkpoint linkage before `CP(g,e)` projection, checkpoint database semantic comparison, and exact nested/unlisted/wrong-location behavior.
+It implements the active-database and genesis-checkpoint core of `phase1-projection-v2`: explicit side roles, fixed-order original Phase 1 rows, exact declared schema-version normalization, strict zero-caregiver absence, independent checkpoint artifact integrity, raw checkpoint linkage before `CP(g,e)` projection, checkpoint database semantic comparison, and exact nested, unlisted, and wrong-location behavior.
 
 Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
 
@@ -113,37 +113,46 @@ PR #67 merged as `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`.
 
 Final candidate head `322b9138487d7c8ddbef3bed3908dadff91220a3` passed run 439 with `178 passed in 14.38s` plus successful install, compile, and schema-v1 genesis CLI smoke.
 
-The oracle now has cumulative frozen per-run evidence for checkpoint artifacts, raw/projected event payloads, and ordered retained checkpoint boundaries. Existing evidence may be extended only when immutable raw artifact and event facts remain identical.
-
-For exact `checkpoint_registration_repaired` paths, capture independently validates:
-
-- repaired raw checkpoint identity against its `CP(lineage,event)` artifact
-- previous raw checkpoint identity against its exact prior `CP` boundary, including null/zero genesis semantics
-- database SHA, manifest SHA, and database size against the artifact
-- checkpoint-store bytes against the measured store
-
-Only the two declared checkpoint identity paths and four declared byte-derived paths are projected. Every unlisted field, event column, sequence, source, lineage, lifecycle, and authority remains exact.
+The oracle has cumulative frozen per-run evidence for checkpoint artifacts, raw/projected event payloads, and ordered retained checkpoint boundaries. `checkpoint_registration_repaired` validates exact current and prior `CP` linkage plus database SHA, manifest SHA, database size, and checkpoint-store bytes before projection.
 
 Durable note: `docs/phase2/SLICE36B2A1_PENDING_REPAIR_EVIDENCE.md`.
 
-### Exact next boundary — retention projection
+### Slice 36b2a2 — implemented on draft PR #69
 
-Create a new test-first branch from `main` at or after `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`.
+Branch: `slice36b2-retention-projection`.
 
-Cover:
+Base: `main` at `ca32482b4f59ef704041734552dfcd81c5eb4535`.
 
-- normal `checkpoint_pruned`
-- pre-commit retention failure with candidate restoration
-- post-commit staging cleanup failure and exact `STAGE(CP(g,e))`
-- reconciliation-pending audit
-- interruption after staging deletion and before completion audit
-- retry and `checkpoint_retention_cleanup_reconciled`
+Tests-only head `38bab7c49d41c16a8ef8b73da52fd4e4bd7e9f14` produced the intended red run 443 before the retention projection module existed.
 
-Capture prunable or staged artifact evidence before deletion. Later event fields must be validated against the immutable prior witness; deleted bytes may not be inferred from ID spelling.
+Implementation and corruption-test candidate `e2c87ebf9d20a09a83eba3179473fb6a24e4c356` passed run 447 with `185 passed in 16.65s` plus successful installation, compilation, and schema-v1 genesis CLI smoke. The unchanged 152 Phase 1 tests remain included.
 
-Do not weaken the merged 36b1 core or use wildcard, recursive key walk, suffix/prefix match, regex-by-key, or global key-name normalization.
+The extension adds immutable noncanonical evidence for prunable checkpoint artifacts, committed-prune staging artifacts, exact retention-event payload projections, and current staged boundaries. It covers normal prune, restored pre-commit failure, committed post-cleanup failure, pending reconciliation, interruption after deletion, retry, and completion.
 
-After retention, remaining Slice 36b2 work is rollback (`RA`/`RC`/`TC`), semantic event export, and physical checkpoint/archive/candidate closure.
+Raw pruned or staged identity and bytes must link to the prior checkpoint witness before `CP` or `STAGE(CP)` replacement. Completion follows the exact pending-event sequence instead of rediscovering deleted directories. A missing pre-deletion witness, wrong staging path, or one-byte pruned artifact-size discrepancy rejects before projection.
+
+It changes no Phase 1 runtime behavior, canonical schema, checkpoint retention policy, or previously merged oracle layer.
+
+Durable note: `docs/phase2/SLICE36B2A2_RETENTION_PROJECTION.md`.
+
+### Exact next boundary — rollback projection
+
+After PR #69 is reviewed and merged, create a new test-first branch from updated `main`.
+
+Cover the exact ADR 0009 rollback graph:
+
+- pre-rollback archive as `RA(g,e)`
+- source restore candidate as `RC(g,e)`
+- transformed candidate as `TC(g,e)`
+- selected checkpoint as `CP(g,e)`
+- rollback-completion identity and lineage linkage
+- independent archive, source-candidate, and transformed-candidate integrity before projection
+
+Capture artifact evidence before deletion, replacement, or transformation. Raw digest, size, manifest, identity, and semantic database state must be independently validated before typed replacement.
+
+Do not weaken the merged checkpoint, repair, or retention layers. Do not use wildcard, recursive key walk, suffix/prefix match, regex-by-key, or global key-name normalization.
+
+After rollback, remaining Slice 36b2 work is semantic event export and physical checkpoint, archive, and candidate closure, including aggregate overhead and absolute 8/40/64 MiB plus 1 MiB reserve evidence.
 
 Slice 37 remains blocked until all Slice 36 evidence is merged and no blocker/high/medium boundary defect remains.
 
@@ -169,7 +178,7 @@ A request created at lifecycle `N` is eligible through `N+2`. Proposal expiry is
 
 Every slice maps to accepted matrix IDs. The unchanged 152-test Phase 1 suite is always the first regression layer.
 
-The first implementation may add only accepted schema-v2 initialization/validation, exact typed envelopes/digests, request extension, dispatch/precharge, deterministic fixture boundary, ingress/terminalization, explicit disposition, reporting, projection evidence, and protected tests.
+The first implementation may add only accepted schema-v2 initialization and validation, exact typed envelopes and digests, request extension, dispatch and precharge, deterministic fixture boundary, ingress and terminalization, explicit disposition, reporting, projection evidence, and protected tests.
 
 It may not add live caregiver/API/human chat, memory, skills, source/test generation, training, arbitrary Python/shell/SQL/tools/paths/URLs/credentials, organism network/subprocess, continuous execution, personality/emotion state, caregiver authority, or a generic agent framework.
 
@@ -183,15 +192,18 @@ Codex audits are high-cost gates, not per-slice or per-PR review.
 2. Focused zero-caregiver correction re-audit: completed in Issue #63.
 3. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
 
+No Codex audit was used for Slice 36b2a2.
+
 ## Exact restart point
 
 1. verify Phase 1 closure and accepted ADRs 0008–0009
-2. inspect Issue #61, `docs/HANDOFF.md`, and implemented Slice 36 notes
-3. verify PR #67 merged as `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`
-4. create a retention projection branch from updated `main`
-5. capture prunable/staged artifact evidence before deletion and extend the exact typed map through prune/failure/reconciliation
-6. keep all 152 Phase 1 tests unchanged and passing
-7. request the implementation audit only when the complete Phase 2 candidate is ready to freeze
+2. inspect Issue #61, PR #69, `docs/HANDOFF.md`, and implemented Slice 36 notes
+3. verify PR #69 final head and CI, then review and merge it before dependent work
+4. create a rollback projection branch from updated `main`
+5. capture archive, source-candidate, and transformed-candidate evidence before deletion or replacement
+6. extend exact `RA`, `RC`, `TC`, and `CP` paths test-first
+7. keep all 152 Phase 1 tests unchanged and passing
+8. request the Codex implementation audit only when the complete Phase 2 candidate is ready to freeze
 
 ## End-of-work protocol
 
