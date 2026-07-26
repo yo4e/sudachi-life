@@ -1,8 +1,8 @@
 # Phase 2 Consultation Boundary Test Matrix
 
-Status: **Accepted ADR 0008 evidence map with proposed ADR 0009 re-audit corrections; no Phase 2 implementation exists yet**
+Status: **Accepted design evidence map with ADRs 0008 and 0009; no Phase 2 implementation exists yet**
 
-This matrix maps accepted ADR 0008, proposed ADR 0009, and `docs/phase2/CONSULTATION_PROTOCOL_V1.md` to protected evidence required before the deterministic-fixture implementation can be accepted.
+This matrix maps accepted ADRs 0008 and 0009 and `docs/phase2/CONSULTATION_PROTOCOL_V1.md` to protected evidence required before the deterministic-fixture implementation can be accepted.
 
 The unchanged 152-test Phase 1 suite is always the first regression layer.
 
@@ -274,11 +274,11 @@ The unchanged 152-test Phase 1 suite is always the first regression layer.
 
 ## Acceptance and audit rule
 
-The independent Phase 2.0 design audit was followed by one focused read-only re-audit of proposed ADR 0009 at PR #64 head `e4f3527518cbc4e4ff8ab239a90f48bfa47fdbb8`. The focused audit concluded:
+The independent Phase 2.0 design audit was followed by one focused read-only re-audit of ADR 0009 at PR #64 head `e4f3527518cbc4e4ff8ab239a90f48bfa47fdbb8`. The focused audit concluded:
 
 > ADR 0009 is ready after specified documentation or matrix corrections.
 
-This matrix incorporates the required corrections for:
+Accepted ADR 0009 and this matrix incorporate the required corrections for:
 
 - an exhaustive exact-location semantic artifact projection across checkpoint events, repair, retention, rollback, and export
 - complete protected separation of `phase1-v1` budget configuration from `consultation_configuration`
