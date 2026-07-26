@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/slice36-schema-v2-genesis
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
