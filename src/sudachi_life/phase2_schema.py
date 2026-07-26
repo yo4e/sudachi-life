@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from types import MappingProxyType
 from typing import Final, Mapping
 
 PHASE2_SCHEMA_VERSION: Final = 2
@@ -90,13 +89,6 @@ _CONSULTATION_CONFIGURATIONS_MUTABLE: Final[dict[str, dict[str, object]]] = {
         _FIXTURE_LIMITS,
     ),
 }
-
-CONSULTATION_CONFIGURATIONS: Final[Mapping[str, Mapping[str, object]]] = MappingProxyType(
-    {
-        key: MappingProxyType(value)
-        for key, value in _CONSULTATION_CONFIGURATIONS_MUTABLE.items()
-    }
-)
 
 ACCEPTED_CONSULTATION_CONFIGURATION_VERSIONS: Final[tuple[str, str]] = (
     ZERO_CAREGIVER_CONFIGURATION_VERSION,
