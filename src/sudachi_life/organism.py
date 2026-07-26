@@ -15,10 +15,17 @@ def initialize_organism(
     organism_id: str,
     *,
     clock: Clock | None = None,
+    schema_version: int = 1,
+    consultation_configuration_version: str | None = None,
 ) -> tuple[OrganismStatus, CheckpointResult]:
     clock = clock or RealClock()
     paths = OrganismPaths.build(runtime_root, organism_id)
-    wall_time, boundary = initialize_database(paths, clock=clock)
+    wall_time, boundary = initialize_database(
+        paths,
+        clock=clock,
+        schema_version=schema_version,
+        consultation_configuration_version=consultation_configuration_version,
+    )
     checkpoint = create_and_register_genesis_checkpoint(
         paths,
         created_wall_time_utc_us=wall_time,
