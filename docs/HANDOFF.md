@@ -2,11 +2,11 @@
 
 Updated: **2026-07-26**
 
-This is the operational restart point after Phase 1 SUDACHI-0, Slices 1–35, completion-audit repairs, and successful final independent audit. Phase 1 is frozen.
+This is the operational restart point after Phase 1 SUDACHI-0, Slices 1–35, completion-audit repairs, and the successful final independent audit. Phase 1 is frozen.
 
-Current authorized work is Phase 2.0 Consultation Boundary design review in Issue #59 and draft PR #60. There is no authorized Slice 36 or implementation.
+Current work is Phase 2 Consultation Boundary design in Issue #59 and PR #60. The design is reviewed through the ordinary repository process. Codex is reserved for one completion audit after the full Phase 2 implementation and protected test matrix are finished.
 
-Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, this handoff, Contract v0.2, accepted ADRs 0001–0007, Phase 1 matrix, audit policy, and current Issues/PRs. For Phase 2.0 also read proposed ADR 0008, protocol v1, and Phase 2 matrix from PR #60.
+Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, this handoff, Minimal Organism Contract v0.2, accepted ADRs 0001–0007, the Phase 1 matrix, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, and current Issues/PRs. For Phase 2 also read ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`.
 
 ## Project thesis
 
@@ -16,265 +16,232 @@ SUDACHI asks whether a bounded artificial organism can convert finite external c
 parent reasoning -> verified experience -> reusable skill -> cheap local behavior
 ```
 
-Repository is auditable body, developmental history, skill base, and lineage record. A model may later be caregiver/organ; it is not the organism.
+The repository is the organism's auditable body, developmental history, skill base, and lineage record. A language model may later be a caregiver or organ; it is not the organism itself.
 
 > As it becomes smarter, it should become smaller and quieter.
 
 ## Frozen Phase 1
 
-Precedence:
+Normative precedence:
 
-1. Minimal Organism Contract v0.2
+1. `docs/MINIMAL_ORGANISM_CONTRACT.md` v0.2
 2. accepted ADRs 0001–0007
-3. protected tests and Phase 1 matrix
+3. protected Phase 1 tests and `docs/PHASE1_TEST_MATRIX.md`
 
-Phase 1 provides canonical SQLite, append-only sequence events, injected clocks, fail-fast ownership, deterministic garden, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable retention, rollback lineage, exact authority, no external workspace, and narrow SQL action authority.
+Phase 1 provides one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, deterministic seed-garden behavior, concrete budgets, protected evaluation, exact checkpoint boundaries, immutable checkpoint and rollback evidence, exact authority provenance, no organism-writable external workspace, and narrow action-scoped SQL authority.
 
-It has no caregiver, model adapter, chat UI, organism network/subprocess, arbitrary code, learning, memory, skill, continuous loop, or generic agent framework.
+It has no caregiver, model adapter, chat UI, organism network or subprocess access, arbitrary generated code, learning, memory, skills, continuous loop, or generic agent framework.
 
-The body/trusted kernel are frozen. Proposed ADR 0008 is non-normative until accepted/merged.
+The Phase 1 body and trusted kernel are frozen.
 
 ## Completed Phase 1 work
 
 ### Issue #13
 
-Completed/closed. PR #57 repaired six Issue #56 defects and merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
+Completed and closed. PR #57 repaired all six defects found by Issue #56 and merged as `c92aa8efd0b9800afd637ce1f1d16d3223bdeb3b`.
 
 ### Issue #56
 
-Completed/closed. Final audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338` reported:
+Completed and closed. The final read-only audit checked `main` at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338` and reported:
 
 - Findings 1–6 resolved
-- no new blocker/high/medium defect
-- Python 3.12: 152 passed
-- real 8 MiB boundary reproduced
-- retention reconciliation interruption/retry reproduced
-- no tracked/index modification
+- no new blocker, high, or medium defect
+- Python 3.12 protected suite: 152 passed
+- the real 8 MiB storage boundary independently reproduced
+- retention-reconciliation interruption and retry independently reproduced
+- no tracked-file or index modification during audit
 
-Conclusion:
+Final conclusion:
 
 > Phase 1 is ready to freeze and Phase 2 design may begin.
 
-Codex audits now follow phase-gate policy, not per-slice review.
+Future Codex work follows the phase-completion policy rather than per-slice or design-gate review.
 
-## Current Phase 2.0 stream
+## Phase 2 Consultation Boundary
 
-### Issue #59
+### Issue #59 and PR #60
 
-Open design decision record.
+Issue #59 is the design decision record. PR #60 contains the documentation package:
 
-### Draft PR #60
+- ADR 0008
+- `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
+- `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+- synchronized continuity instructions
 
-Documentation only:
+The design begins with newly initialized schema-v2 organisms only. It does not authorize Phase 1 migration, downgrade, or cross-version rollback.
 
-- proposed ADR 0008
-- Consultation Protocol v1
-- Phase 2 Consultation Test Matrix
-- synchronized AGENTS/HANDOFF
-
-No Phase 2 code/tests exist.
-
-## Refined proposed design
-
-### New initialization only
-
-Schema-v2 organisms are newly initialized. No Phase1 migration, downgrade, or cross-version rollback decision.
-
-Base contract remains 0.2. Budget config is:
+The base contract remains `0.2`. Phase 2 uses protected consultation budget configurations:
 
 - `phase2-zero-caregiver-v1`
 - `phase2-fixture-v1`
 
-### Five explicit boundaries
+### Five operational boundaries
 
 1. **Garden request wake**
-   - only after unchanged no-applicable action with incomplete objective
-   - same tick/outcome/action/mutation accounting
-   - failure streak increments once
-   - request never resets failure
-   - no request on maintenance-entry wake
-   - commits/checkpoints before dispatch
-
+   - occurs only after the unchanged Phase 1 policy selects `no_applicable_action` for an incomplete objective
+   - preserves the same tick, abstention, action, mutation, and failure accounting
+   - increments the Phase 1 failure streak exactly once
+   - creates no request when that wake enters maintenance
+   - commits and checkpoints before dispatch admission
 2. **Administrative dispatch admission**
-   - fresh fail-fast transaction
-   - stable current-lineage request required
-   - immutable dispatch + event + conservative cost charge
-   - commit/release lock before fixture
-   - repeated admission never authorizes another call
-
+   - uses a fresh fail-fast transaction
+   - requires a stable, eligible, current-lineage request
+   - records immutable dispatch evidence and conservatively charges work before fixture execution
+   - commits and releases the SQLite write lock before external work
 3. **External deterministic fixture**
-   - receives only request envelope + declared fixture case
-   - no DB/path/workspace/executor/evaluator/checkpoint/rollback/network/subprocess/randomness capability
-   - returns package to explicit caller/harness
-   - package remains noncanonical before ingress
-
+   - receives only the canonical request envelope and declared fixture case
+   - receives no DB, path, workspace, executor, evaluator, checkpoint, rollback, network, subprocess, or ambient-randomness capability
+   - returns a noncanonical package to the explicit caller or harness
 4. **Administrative ingress or terminalization**
-   - external package has no writer authority or authoritative cost
-   - receipt/event separately records administration source, digest, measured bytes
-   - busy/pending rejection can be explicitly resubmitted with identical already-produced bytes; no fixture recall
-   - invalid/expired/interrupted dispatch records one terminal outcome and no retry
-
+   - external data cannot declare canonical writer authority or authoritative cost
+   - protected administrative receipt and event record writer provenance, package digest, and measured bytes
+   - busy or pending-checkpoint rejection permits explicit same-byte resubmission without fixture recall
+   - invalid, expired, or interrupted dispatch terminalizes once and is never automatically retried
 5. **Explicit disposition wake**
-   - caller selects this work class separately from garden wake
-   - fail-fast wake ownership
-   - no garden claim
-   - oldest ingress sequence then proposal ID
-   - one proposal max
-   - lifecycle increments, garden failure streak preserved
-   - no action/garden effect
-   - ordinary checkpoint
-   - requires sleeping and cannot bypass maintenance
+   - is caller-selected separately from a garden wake
+   - uses fail-fast wake ownership
+   - claims no garden tick
+   - selects at most one queued proposal deterministically
+   - increments lifecycle but preserves the garden failure streak
+   - creates the ordinary checkpoint
+   - has no action or garden effect in the first implementation
 
-### Proposal boundary
+### Proposal and authority boundaries
 
-Types:
+Protocol v1 proposal types:
 
-- action_candidate
-- abstain
-- defer
+- `action_candidate`
+- `abstain`
+- `defer`
 
 Final dispositions:
 
-- accepted
-- rejected
-- deferred
-- clarification_requested
+- `accepted`
+- `rejected`
+- `deferred`
+- `clarification_requested`
 
-First slice stops at disposition. Accepted proposal does not enter selector/execute action. Clarification budget is zero.
+Clarification rounds are zero. An accepted proposal does not enter the existing action selector or execute an action.
 
-### Authority boundary
+Canonical writer categories remain exactly:
 
-Only canonical writer categories:
+- `organism`
+- `administration`
 
-- organism
-- administration
+Caregiver and adapter identity are immutable provenance only.
 
-Caregiver/adapter are provenance only. External package cannot declare writer authority/cost. Protected admin receipt/event does.
+### Acyclic identifier graph
 
-### Acyclic IDs
-
-Order:
+Derivation order is:
 
 1. request
 2. dispatch
-3. proposal content/ID
+3. proposal content and proposal ID
 4. response ID
 5. final package digest
 6. disposition
 
-Proposal ID excludes response ID. Pre-insert IDs exclude later event sequences.
+Proposal ID excludes response ID. Pre-insert identifiers exclude later-assigned event sequences only where explicitly declared.
 
 ### Lineage budget epoch
 
-Budget epoch is current `lineage_generation`.
+Consultation budget epoch is the current `lineage_generation`:
 
-- four requests/charged invocations per lineage
+- at most four requests and four charged fixture invocations per lineage
 - one current-lineage outstanding request
-- 64 KiB logical payload per lineage
-- old-lineage rows are immutable historical evidence and inactive
-- rollback starts a new four-call epoch
-- ADR 0007 permits one completed rollback, so total physical-organism maximum is eight charged fixture invocations
+- 64 KiB logical consultation payload per lineage
+- old-lineage rows remain immutable historical evidence and inactive
+- rollback starts a fresh bounded epoch
+- ADR 0007 permits one completed rollback, bounding one physical organism to at most eight charged fixture invocations
 
-A global cross-lineage four-call counter is rejected because enforcing it would alter frozen rollback transformation or introduce another authority.
+A global four-call counter across rollback lineages is not claimed because enforcing it would alter frozen rollback transformation or introduce another authority.
 
 ### Finite limits
 
-- request <=16 KiB
-- response+proposal <=16 KiB
-- provenance <=8 KiB
-- zero human/model/money/declared latency
-- exact record/step caps in ADR/protocol
-- inherited 8 MiB active DB, 40 MiB checkpoint store, 64 MiB working set
-- admin writes preserve 1 MiB next-wake reserve predicted and post-write
+- request: at most 16 KiB
+- response plus proposal: at most 16 KiB
+- external provenance: at most 8 KiB
+- fixture human minutes, model units, money, and declared latency: zero
+- exact record and semantic-step caps are fixed by ADR 0008 and protocol v1
+- inherited active database: 8 MiB
+- inherited checkpoint store: 40 MiB
+- inherited runtime working set: 64 MiB
+- every Phase 2 administrative write preserves the existing 1 MiB next-wake reserve before and after mutation
 
-### Expiry/state
+Request expiry is lifecycle-based: a request created in lifecycle `N` is eligible through `N+2`.
 
-Request created lifecycle N eligible through N+2.
+### Zero-caregiver control
 
-Current-lineage state derived from immutable rows:
+`phase2-zero-caregiver-v1` creates no consultation row, event, source, adapter invocation, cost, disposition, or caregiver-derived effect.
 
-- no dispatch + expired: terminal for admission, no longer outstanding
-- admitted dispatch: outstanding until response/terminal even after expiry
-- unavailable: terminal
-- success response: outstanding until disposition
-- terminal dispatch: terminal
-- disposition: terminal
-- old-lineage rows: historical/inactive
+The protected Phase 1-relevant projection:
 
-No caregiver-writable status flag.
+1. normalizes only existing schema and budget configuration values
+2. compares every original Phase 1 row, column, event payload, and original-table sequence exactly
+3. requires operational consultation tables and sequences to remain empty
+4. requires no consultation event, source, cost, or effect
+5. preserves behavior, status, lifecycle, checkpoint, rollback, and authority semantics
 
-### Maintenance/checkpoint/rollback
+## Audit cadence and implementation gate
 
-- request does not block later garden wakes; current state may diverge
-- dispatch requires sleeping and stable request checkpoint
-- ingress/terminal may record already-admitted evidence in sleeping/maintenance with no pending checkpoint
-- disposition requires sleeping; cannot clear/bypass maintenance
-- garden/disposition wakes checkpoint
-- admin dispatch/ingress/terminal do not checkpoint
-- rollback increments lineage and makes old consultation rows inactive
-- abandoned-lineage package/proposal cannot ingress/dispose
-- ADR0007 limit/evidence unchanged
+There is no separate Codex audit for Phase 2 design acceptance.
 
-### Strict zero-caregiver control
+The correct sequence is:
 
-Zero config creates no consultation row/event/source/import/cost/effect.
+1. finish ordinary review of Issue #59 and PR #60
+2. accept ADR 0008 and merge the design package
+3. open a separate test-first Phase 2 implementation Issue
+4. implement bounded slices mapped to `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+5. keep all 152 Phase 1 tests unchanged and passing
+6. complete the Phase 2 matrix and CI evidence
+7. run one independent read-only Codex audit of the complete implemented Phase 2 candidate
+8. repair accepted findings and freeze Phase 2 only after a satisfactory conclusion
 
-Projection normalizes only existing schema/budget config values, compares every original Phase1 row/column/event payload/sequence exactly, and requires operational consultation tables/sequences empty.
-
-## Required review before implementation
-
-1. finish internal consistency review of PR #60
-2. run one read-only Codex Phase2.0 design audit against exact head
-3. post report to Issue #59
-4. resolve accepted findings through normal design work
-5. change ADR0008 Proposed -> Accepted only after satisfactory review
-6. merge PR #60
-7. create separate test-first implementation Issue
-8. only then define Slice36
-
-No repeated per-edit audits.
+Do not run Codex for each slice, PR, intermediate fix, or design draft.
 
 ## Issue #3 research
 
 Research continues independently. Deterministic fixture plumbing is not blocked.
 
-Live human/model experiments, provider automation, retained provider output, or strong novelty claims remain blocked pending current first-party review of privacy, consent, terms, retention, pricing, limits, and transformation.
+Live human or model experiments, provider automation, retained provider output, and strong novelty claims remain blocked pending current first-party review of privacy, consent, terms, retention, pricing, limits, and transformation rules.
 
 ## Validation state
 
-Phase 1 evidence includes PR54, runs 317/323, repair runs 335/336/340/343, PR57 merge, and final independent 152-pass audit.
+Phase 1 evidence includes PR #54, runs 317 and 323, repair runs 335, 336, 340, and 343, PR #57 merge, and the final independent 152-pass audit.
 
-PR #60 changes documentation only. No Phase2 executable test is claimed.
+PR #60 is documentation-only. No Phase 2 executable behavior is claimed until the separate implementation stream begins.
 
 ## Explicit exclusions
 
-No:
+Do not add:
 
-- live API/model caregiver
-- live human chat/unattended automation
-- memory/skill generation
-- caregiver source/test generation
-- model training/fine-tuning/imitation/distillation/synthetic training
-- arbitrary Python/shell/SQL/tools/paths/URLs/credentials/executable payload
-- organism network/subprocess
-- continuous loop/autonomous internet
-- personality/emotion/pet presentation
-- caregiver-controlled budgets/permissions/evaluation/checkpoints/migration/rollback
-- generic agent framework
+- live API or model caregiver
+- live human chat or unattended consumer automation
+- long-term memory or skill generation
+- caregiver source or test generation
+- model training, fine-tuning, imitation, distillation, or synthetic-data training
+- arbitrary Python, shell, SQL, tools, paths, URLs, credentials, or executable payloads
+- organism network or subprocess access
+- continuous or always-on execution
+- autonomous internet use
+- personality, emotion, affection, mood, or virtual-pet presentation
+- caregiver-controlled budgets, permissions, evaluation, checkpoints, migration, or rollback
+- a generic agent framework
 
 ## Exact next gate
 
-Complete internal review, then one Phase2.0 independent design audit. Do not write code or create Slice36.
+Complete ordinary design review and merge ADR 0008 through PR #60. Then open the separate test-first Phase 2 implementation Issue. Do not request Codex review until the complete Phase 2 implementation is a candidate for freezing.
 
 ## Restart
 
-1. read AGENTS and collaboration operations
-2. read this handoff, Contract, ADRs1-7, Phase1 matrix
-3. verify Issues13/56 closed and PR57 merged
-4. inspect Issues3/59 and draft PR60
-5. read proposed ADR8/protocol/matrix
-6. verify failure honesty, dispatch precharge, same-byte ingress retry, authority separation, acyclic IDs, explicit disposition, lineage epoch, reserve, checkpoint, rollback
-7. stop at design audit gate
-8. no Slice36 before accepted merged design and separate implementation Issue
+1. read `AGENTS.md` and collaboration operations
+2. read this handoff, Contract v0.2, ADRs 0001–0007, and the Phase 1 matrix
+3. verify Issues #13 and #56 are closed and PR #57 is merged
+4. inspect Issues #3 and #59 and PR #60
+5. read ADR 0008, protocol v1, and the Phase 2 matrix
+6. complete normal design acceptance and merge
+7. create the test-first implementation Issue
+8. map every implementation slice to matrix IDs
+9. run one Codex completion audit only after implementation is complete
 
 No critical decision may remain only in chat.
