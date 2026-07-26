@@ -44,6 +44,25 @@ def _paired_genesis(tmp_path: Path) -> tuple[OrganismPaths, OrganismPaths]:
     )
 
 
+def _replace_event_payload(database: Path, event_sequence: int, payload: dict[str, object]) -> None:
+    connection = connect_database(database)
+    try:
+        trigger_rows = connection.execute(
+            "SELECT name, sql FROM sqlite_master WHERE type='trigger' "
+            "AND name IN ('event_no_update','event_no_delete') ORDER BY name"
+        ).fetchall()
+        for row in trigger_rows:
+            connection.execute(f"DROP TRIGGER {row['name']}")
+        connection.execute(
+            "UPDATE event SET payload_json=? WHERE event_sequence=?",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")), event_sequence),
+        )
+        for row in trigger_rows:
+            connection.execute(row["sql"])
+    finally:
+        connection.close()
+
+
 def test_paired_genesis_projects_to_exact_semantic_equality(tmp_path: Path) -> None:
     v1, v2 = _paired_genesis(tmp_path)
 
@@ -81,19 +100,16 @@ def test_fixture_configuration_is_not_a_zero_caregiver_control(
 
 def test_unlisted_event_payload_key_is_not_hidden(tmp_path: Path) -> None:
     v1, v2 = _paired_genesis(tmp_path)
-    connection = connect_database(v2.database)
+    connection = connect_database(v2.database, read_only=True)
     try:
         row = connection.execute(
             "SELECT payload_json FROM event WHERE event_sequence=2"
         ).fetchone()
         payload = json.loads(row["payload_json"])
-        payload["checkpoint_id"] = "checkpoint:unlisted-location"
-        connection.execute(
-            "UPDATE event SET payload_json=? WHERE event_sequence=2",
-            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
-        )
     finally:
         connection.close()
+    payload["checkpoint_id"] = "checkpoint:unlisted-location"
+    _replace_event_payload(v2.database, 2, payload)
 
     with pytest.raises(
         ZeroCaregiverProjectionError,
@@ -104,19 +120,16 @@ def test_unlisted_event_payload_key_is_not_hidden(tmp_path: Path) -> None:
 
 def test_nested_schema_version_is_not_normalized(tmp_path: Path) -> None:
     v1, v2 = _paired_genesis(tmp_path)
-    connection = connect_database(v2.database)
+    connection = connect_database(v2.database, read_only=True)
     try:
         row = connection.execute(
             "SELECT payload_json FROM event WHERE event_sequence=1"
         ).fetchone()
         payload = json.loads(row["payload_json"])
-        payload["nested"] = {"schema_version": 1}
-        connection.execute(
-            "UPDATE event SET payload_json=? WHERE event_sequence=1",
-            (json.dumps(payload, sort_keys=True, separators=(",", ":")),),
-        )
     finally:
         connection.close()
+    payload["nested"] = {"schema_version": 1}
+    _replace_event_payload(v2.database, 1, payload)
 
     with pytest.raises(
         ZeroCaregiverProjectionError,
