@@ -7,23 +7,23 @@
 
 ## Context
 
-Phase 1 is complete, independently re-audited, and frozen as a 152-test protected baseline. It provides one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, concrete budgets, protected action and evaluator authority, checkpoint stability, rollback evidence, and exact organism-versus-administration provenance.
+Phase 1 is complete, independently re-audited, and frozen as a 152-test protected baseline. It provides one canonical SQLite body, append-only sequence-ordered events, injected clocks, fail-fast write ownership, concrete budgets, protected action/evaluator authority, checkpoint stability, rollback evidence, and exact organism-versus-administration provenance.
 
-Phase 2 begins the smallest possible experiment in external cognitive scaffolding. The purpose is not to add a chatbot, generic agent framework, long-term memory, skill learning, or live model API. The purpose is to prove that one bounded proposal can cross an explicit authority boundary without obtaining canonical authority or bypassing the Phase 1 metabolism.
+Phase 2 begins the smallest possible experiment in external cognitive scaffolding. It does not add a chatbot, generic agent framework, long-term memory, skill learning, or live model API. It tests whether one bounded proposal can cross an explicit authority boundary without obtaining canonical authority or bypassing Phase 1 metabolism.
 
-ADR 0003 requires caregiver latency to remain outside a wake transaction and to return only through a later short transaction. This ADR fixes the request, dispatch, response, proposal, disposition, authority, budget, expiry, crash, initialization, comparison, and test boundaries for the first deterministic fixture.
+ADR 0003 requires caregiver latency outside a wake transaction and permits return only through a later short transaction. This ADR fixes request, dispatch, response, proposal, disposition, authority, budget, expiry, crash, rollback-lineage, initialization, comparison, and test boundaries for a deterministic fixture.
 
 ## Decision
 
 ### 1. Phase 1 remains frozen
 
-Minimal Organism Contract v0.2, ADRs 0001–0007, schema-v1 behavior, and the complete 152-test suite remain a supported frozen baseline.
+Minimal Organism Contract v0.2, ADRs 0001–0007, schema-v1 behavior, and the complete 152-test suite remain supported and frozen.
 
 Phase 2 is an explicit schema-v2 extension. It must not make a Phase 1 test conditional, reinterpret a Phase 1 invariant, or silently broaden organism authority.
 
-The base `contract_version` remains `0.2`. Schema-v2 adds a consultation protocol and a protected Phase 2 budget configuration; it does not pretend to replace the accepted Phase 1 contract.
+The base `contract_version` remains `0.2`. Schema-v2 adds consultation protocol v1 and a protected Phase 2 budget configuration.
 
-Any change to an existing Phase 1 trusted-kernel boundary requires separate review and protected regression evidence. This design authorizes no such hidden change.
+Any change to an existing Phase 1 trusted-kernel boundary requires separate review and protected regression evidence. This design authorizes no hidden change.
 
 ### 2. The first experiment uses newly initialized schema-v2 organisms only
 
@@ -33,123 +33,127 @@ A Phase 2 organism is newly initialized with:
 
 - database schema version `2`
 - consultation protocol version `1`
-- one protected budget configuration: `phase2-zero-caregiver-v1` or `phase2-fixture-v1`
-- unchanged Phase 1 garden actions, action selector, evaluators, clock rules, checkpoint rules, rollback rules, physical storage ceilings, and authority protections
+- protected budget config `phase2-zero-caregiver-v1` or `phase2-fixture-v1`
+- unchanged Phase 1 garden actions, selector, evaluators, clock rules, checkpoint rules, rollback rules, physical ceilings, and authority protections
 - empty operational consultation tables
 
 Phase 1-to-Phase 2 migration, downgrade, and rollback across schema versions require a later decision. No wake performs automatic migration.
 
-### 3. Consultation has five explicit operational boundaries
+### 3. Consultation has five explicit boundaries
 
-The first consultation round has five distinct stages. No stage silently invokes the next one after a busy rejection or process restart.
+No boundary silently invokes the next one after a busy rejection or process restart.
 
 #### A. Garden request wake
 
-A schema-v2 garden wake may create at most one immutable request only after the unchanged Phase 1 policy has selected `no_applicable_action` while the objective remains incomplete.
+A schema-v2 garden wake may create one immutable request only after the unchanged Phase 1 policy selects `no_applicable_action` while the objective remains incomplete.
 
-The underlying garden lifecycle remains exactly a classified `no_applicable_action` abstention:
+The garden lifecycle remains exactly a classified Phase 1 `no_applicable_action` abstention:
 
 - it consumes the same garden tick
 - it records the same Phase 1 action, mutation, and outcome accounting
 - it increments `consecutive_failures` exactly once
-- it never resets the failure streak merely because a request was created
-- it may not create a request on a wake whose resulting failure streak enters `maintenance_required`
+- request creation never resets failure
+- no request is created on a wake whose resulting streak enters `maintenance_required`
 
 Request creation is an additional bounded schema-v2 effect. It does not convert failure into success or hide the original reason.
 
-The wake commits, creates its required checkpoint, and terminates normally. It never waits for a fixture.
+The wake commits, creates its required checkpoint, and terminates. It never waits for a fixture.
 
 #### B. Administrative dispatch admission
 
-Only after the request checkpoint is stable may administration admit one dispatch through a fresh fail-fast `BEGIN IMMEDIATE` transaction.
+Only after the request checkpoint is stable may administration admit one dispatch through fresh fail-fast `BEGIN IMMEDIATE`.
 
-Dispatch admission:
+Admission:
 
-- validates the exact request, current lineage, stable checkpoint, expiry, status, budgets, and absence of an earlier dispatch
-- records one immutable dispatch row and one administrative event
-- charges one dispatch attempt and one fixture work unit conservatively before external work begins
-- commits and releases the SQLite write lock before fixture execution
+- validates exact request, current lineage, stable checkpoint, expiry, status, budgets, and absence of earlier dispatch
+- records one immutable dispatch and administrative event
+- conservatively charges one dispatch attempt and one fixture work unit before external work
+- commits and releases SQLite write ownership before fixture execution
 
-The charge is not refunded if the process later crashes. Conservative pre-charging prevents hidden or undercounted external work.
+The charge is not refunded after process interruption. Pre-charging prevents hidden or undercounted external work.
 
-A repeated dispatch admission returns the existing admitted state and must not authorize another invocation.
+Repeated admission returns already-admitted state and must not authorize another invocation.
 
 #### C. External deterministic fixture execution
 
-After dispatch admission commits, the deterministic fixture executes outside every SQLite write transaction.
+After admission commits, fixture execution occurs outside every SQLite write transaction.
 
 It receives only:
 
-- the canonical request envelope
-- the protected declared `fixture_case_id` from the dispatch admission
+- canonical request envelope
+- protected declared `fixture_case_id`
 
-It receives no database connection, repository workspace, filesystem path, arbitrary configuration object, action executor, evaluator handle, checkpoint authority, migration authority, rollback authority, network capability, or subprocess capability.
+It receives no database connection, repository workspace, filesystem path, arbitrary configuration object, action executor, evaluator, checkpoint/migration/rollback authority, network capability, subprocess capability, or ambient randomness.
+
+The produced package is returned to the explicit caller/harness. It is not canonical until ingress succeeds.
 
 #### D. Administrative response ingress or dispatch terminalization
 
-If the fixture returns a valid package, administration may ingress it through a new fail-fast `BEGIN IMMEDIATE` transaction.
+A valid fixture package may be submitted through a separate fail-fast administrative transaction.
 
-Ingress validates versions, deterministic identifiers, request and dispatch linkage, current lineage, payload sizes, expiry, duplicate identity, adapter provenance, and protected cost expectations before mutation. It records immutable untrusted response/proposal data, a protected ingress receipt, and one administrative event.
+Ingress validates versions, deterministic identifiers, request/dispatch linkage, current lineage, payload sizes, expiry, duplicate identity, adapter provenance, and protected cost expectations. It records immutable untrusted response/proposal data, protected ingress receipt, measured-byte completion, and one administrative event.
 
-The external response package contains no canonical writer authority and no authoritative cost ledger. Writer category/source belong to the administrative ingress receipt and event. Cost is protected accounting created at dispatch admission and completed with measured ingress byte counts.
+External response/proposal packages contain no canonical writer authority and no authoritative cost ledger. Writer category/source belong to the administrative receipt/event. Protected cost is created at dispatch admission.
 
-Ingress may not adopt a proposal, execute an action, change an evaluator, raise a budget, clear maintenance, checkpoint, migrate, roll back, or alter prior history.
+Ingress may not adopt a proposal, execute an action, change evaluator/budget/permission, clear maintenance, checkpoint, migrate, roll back, or alter prior history.
 
-A byte-identical duplicate is idempotent. A conflicting duplicate, unknown version, malformed package, unknown request, stale lineage, over-budget payload, or invalid linkage fails closed.
+A byte-identical duplicate is idempotent. A conflicting duplicate, unknown version, malformed package, unknown request, stale lineage, over-budget package, or invalid linkage fails closed.
 
-When a dispatch cannot produce an ingressible response, administration records one immutable terminal outcome instead of retrying. Initial terminal reasons are:
+A valid package rejected only because the database is busy or a checkpoint is pending may be explicitly resubmitted later. This is a new bounded ingress attempt using the same already-produced bytes; it is not fixture retry and does not spend another fixture charge. No automatic queue or wait exists.
+
+When a dispatch cannot produce an ingressible response, administration records one immutable terminal outcome instead of retrying:
 
 - `dispatch_interrupted`
 - `fixture_output_invalid`
 - `expired_before_ingress`
 
-The normal dispatch command records a terminal outcome after a caught fixture or ingress failure. A process crash after dispatch admission requires an explicit bounded reconciliation command. Reconciliation never invokes the fixture again.
+Caught fixture/validation failure is terminalized by the normal administrative workflow. Process crash after dispatch admission requires explicit bounded reconciliation. Reconciliation never invokes the fixture again.
 
 #### E. Explicit consultation disposition wake
 
-Disposition is not hidden inside a garden wake and does not have implicit priority over garden input.
+Disposition is not hidden inside a garden wake and has no implicit priority over garden input.
 
-A caller explicitly invokes a schema-v2 consultation disposition wake. It:
+A caller explicitly invokes a schema-v2 disposition wake. It:
 
-- uses a fresh connection and the same fail-fast `BEGIN IMMEDIATE` wake ownership rule
+- uses a fresh connection and fail-fast `BEGIN IMMEDIATE`
 - begins only from `sleeping` with no pending checkpoint
 - claims no garden tick
-- selects the oldest queued proposal by ingress event sequence and then proposal identifier
+- selects oldest queued proposal by ingress event sequence, then proposal identifier
 - considers at most one proposal
 - records exactly one disposition
 - creates the ordinary required checkpoint
 - terminates
 
-If no proposal is queued, maintenance is required, or a checkpoint is pending, the operation returns a typed non-mutating rejection. It is never queued to run later.
+No-work, maintenance, busy, unsupported, or pending-checkpoint attempts are typed, non-mutating, and never queued.
 
-The disposition wake increments the lifecycle number but does not change the Phase 1 garden `consecutive_failures` counter. It neither counts as garden progress nor as garden failure. Schema/provenance/current-state ineligibility is expressed as a typed proposal disposition. Unexpected internal errors roll back the whole wake.
+The disposition wake increments lifecycle number but preserves the Phase 1 garden `consecutive_failures` counter. It is neither garden progress nor garden failure. Proposal ineligibility becomes a typed disposition. Unexpected internal errors roll back the whole wake.
 
-The first fixture slice stops at disposition. An `accepted` proposal does not influence the existing action selector, execute an action, create memory, change policy, or promote a skill.
+The first fixture slice stops at disposition. `accepted` does not influence the existing action selector, execute action, create memory, change policy, or promote a skill.
 
 ### 4. Initial proposal and disposition semantics are narrow
 
-Protocol v1 permits exactly one proposal per successful response and exactly these proposal types:
+Protocol v1 permits one proposal per successful response and exactly:
 
 - `action_candidate`
 - `abstain`
 - `defer`
 
-`action_candidate` may name only an existing registered Phase 1 action and schema-valid parameters. It cannot define a new action or executable payload.
+`action_candidate` may name only an existing registered Phase 1 action and schema-valid parameters. It cannot define new action or executable payload.
 
-`abstain` and `defer` are bounded proposals with no direct execution or scheduling effect.
+`abstain` and `defer` are bounded data with no direct execution/scheduling effect.
 
-A proposal receives exactly one of:
+One proposal receives exactly one final disposition:
 
 - `accepted`
 - `rejected`
 - `deferred`
 - `clarification_requested`
 
-A proposal of type `defer` and a disposition of `deferred` are distinct: the first is caregiver data; the second is the organism evaluator's final choice not to decide the proposal.
+Proposal type `defer` and disposition `deferred` are distinct: the first is caregiver data; the second is organism evaluator choice.
 
-`clarification_requested` is final in protocol v1. Clarification rounds are zero, so it creates no follow-up request.
+`clarification_requested` is final. Clarification rounds are zero, so no follow-up request is created.
 
-No proposal type in the first slice has direct execution semantics. Free-form explanation, preference, demonstration, correction, question, memory, and skill proposals remain out of scope.
+Free-form explanation, preference, demonstration, correction, question, memory, and skill proposals remain out of scope.
 
 ### 5. Canonical writer authority remains binary
 
@@ -158,280 +162,297 @@ The only canonical writer categories remain:
 - `organism`
 - `administration`
 
-Caregiver, adapter, evaluator, and repository-maintainer roles are not SQLite writer-authority categories.
+Caregiver, adapter, evaluator, and repository-maintainer are not SQLite writer categories.
 
-- request creation and proposal disposition use protected `organism:consultation.*` sources
-- dispatch admission, response ingress, and dispatch reconciliation use protected `administration:consultation.*` sources
-- caregiver identity, adapter version, and fixture case are immutable provenance data
-- external response/proposal envelopes contain no `authority_category` or `authority_source`
-- protected evaluator code executes under organism runtime authority; caregiver data cannot modify or self-certify it
-- repository changes continue through reviewed source changes and are not runtime canonical authority
+- request/disposition use protected `organism:consultation.*` sources
+- dispatch/ingress/reconciliation use protected `administration:consultation.*` sources
+- caregiver identity, adapter version, and fixture case are immutable provenance
+- external response/proposal contains no `authority_category` or `authority_source`
+- evaluator code is protected repository-defined code under organism runtime authority
+- repository changes remain reviewed source changes, not runtime authority
 
-This preserves the Phase 1 provenance distinction and prevents a caregiver label from becoming an implicit write capability.
+### 6. Caregiver returns data, never commands
 
-### 6. The caregiver returns data, never commands
+Fixture response has no access to:
 
-A fixture response is a typed data package. The fixture has no access to:
-
-- canonical database connections
+- canonical DB connection
 - SQL or migration execution
 - action execution
 - evaluator modification
-- permission or budget modification
-- checkpoint publication or repair
-- rollback preparation or completion
-- source or test modification
-- arbitrary tools, code, shell, subprocess, network, or filesystem paths inside organism execution
+- permission/budget modification
+- checkpoint publication/repair
+- rollback preparation/completion
+- source/test modification
+- arbitrary code, shell, tools, subprocess, network, or filesystem paths inside organism execution
 
-Free-form human or model text is not accepted by protocol v1. A later adapter may translate external text into the typed package outside organism authority only after a separate reviewed decision.
+Free-form human/model text is not accepted. Later text adaptation requires separate reviewed scope.
 
 ### 7. Identifier derivation is ordered and non-circular
 
-All identifiers are deterministic SHA-256 identifiers over explicit canonical JSON identity objects. The identifier being derived and later-assigned event sequence fields are excluded from their identity objects.
+Identifiers are deterministic SHA-256 values over explicit canonical identity objects. Derived ID and later-assigned event sequence are excluded only where declared.
 
-Derivation order is fixed:
+Derivation order:
 
-1. derive `request_id` from request identity fields, including a canonical request ordinal, but excluding `request_event_sequence`
-2. derive `dispatch_id` from `request_id`, lineage, adapter version, fixture case, and dispatch ordinal
-3. derive `proposal_id` from `request_id`, `dispatch_id`, proposal ordinal, and proposal content; it excludes `response_id`
-4. derive `response_id` from request/dispatch linkage, response status, adapter provenance, ordered proposal identifiers, and proposal content digests
-5. insert `response_id` into the final proposal linkage and compute the complete external package digest
-6. derive `disposition_id` from request/response/proposal linkage, considering lifecycle, current-state digest, evaluator versions, disposition, and reason; it excludes `disposition_event_sequence`
+1. `request_id` from request identity, current lineage, and per-lineage request ordinal; excludes request event sequence
+2. `dispatch_id` from request, lineage, adapter, fixture case, and dispatch ordinal
+3. `proposal_id` from request/dispatch, proposal ordinal, and proposal content; excludes response ID
+4. `response_id` from request/dispatch, status, adapter provenance, ordered proposal IDs, and proposal content digests
+5. insert response ID into final proposal linkage and compute complete package digest
+6. `disposition_id` from request/dispatch/response/proposal, considering lifecycle, current-state digest, evaluator versions, disposition, and reason; excludes event sequence
 
-Tests must prove that the graph has no circular dependency and that identical declared inputs produce identical identifiers, envelopes, package digests, rows, and events.
+Tests must prove acyclic dependency and exact reproducibility.
 
 ### 8. Independent protected evaluation precedes disposition
 
-Before recording a disposition, organism runtime independently validates:
+Organism runtime independently validates:
 
 - request, dispatch, response, proposal, and protocol versions
-- exact identifier, digest, event, and provenance linkage
-- request reason and observation/objective references
-- current organism identity and lineage generation
-- current canonical state rather than fixture assumptions
-- registered action and parameter schemas when applicable
-- permissions and protected authority
-- concrete counters, payload sizes, and expiry
-- duplicate, contradiction, ambiguity, and stale-state conditions
+- IDs, digests, event and provenance linkage
+- reason and observation/objective references
+- current identity and lineage
+- current canonical state
+- registered action/parameter schema
+- permissions and authority
+- counters, payload sizes, expiry
+- duplicates, contradiction, ambiguity, stale state
 
-The fixture cannot mark its proposal successful. Outcome evaluation for any later action remains the existing protected Phase 1 evaluator boundary.
+Fixture cannot certify success. Any later action remains under existing Phase 1 evaluator authority.
 
-### 9. Consultation budgets are concrete and small
+### 9. Consultation budgets use a lineage budget epoch
 
-The `phase2-zero-caregiver-v1` configuration sets every consultation request, dispatch, response, proposal, disposition, work, and cost limit to zero.
+Rollback restores an older checkpoint and increments `lineage_generation`. Phase 1 rollback intentionally does not consult abandoned-future artifacts to reconstruct mutable counters. Therefore protocol v1 does not claim an unprovable cross-lineage lifetime counter.
 
-The `phase2-fixture-v1` configuration fixes:
+The consultation budget epoch is exactly the current `lineage_generation`.
+
+- request ordinal and counters are calculated only from current-lineage rows
+- old-lineage consultation rows remain immutable historical evidence but are never active work
+- an external package must match current lineage
+- rollback starts a fresh bounded consultation epoch
+- ADR 0007 permits at most one completed rollback, so `phase2-fixture-v1` permits at most four charged invocations in each of at most two lineage epochs: eight total across the physical organism's complete Phase 1-compatible life
+
+A global cross-lineage limit would require changing rollback transformation or introducing another non-rollback authority, so it is rejected for protocol v1.
+
+`phase2-zero-caregiver-v1` sets every consultation request, dispatch, response, proposal, disposition, work, and cost limit to zero.
+
+`phase2-fixture-v1` fixes:
 
 | Resource | Limit |
 | --- | ---: |
 | requests created per garden wake | 1 |
-| outstanding requests per organism | 1 |
-| requests over one organism lifetime | 4 |
+| outstanding requests in current lineage | 1 |
+| requests per lineage budget epoch | 4 |
 | dispatch admissions per request | 1 |
-| charged fixture invocations over one organism lifetime | 4 |
+| charged fixture invocations per lineage epoch | 4 |
 | successful responses per request | 1 |
 | proposals per successful response | 1 |
 | proposals considered per disposition wake | 1 |
 | dispositions per proposal | 1 |
 | clarification rounds | 0 |
-| request canonical JSON bytes | 16 KiB |
-| response-plus-proposal canonical JSON bytes | 16 KiB |
+| request JSON bytes | 16 KiB |
+| response-plus-proposal JSON bytes | 16 KiB |
 | provenance subset bytes | 8 KiB |
-| total consultation logical payload bytes per organism | 64 KiB |
+| total consultation logical payload per lineage epoch | 64 KiB |
 | fixture work units charged per dispatch | 1 |
 | human minutes | 0 |
 | model input units | 0 |
 | model output units | 0 |
-| money in integer minor units | 0 |
-| declared fixture latency milliseconds | 0 |
-| Phase 1 core canonical records in a garden wake | at most 16 |
-| additional request records in that garden wake | at most 2 |
-| total canonical records in a request garden wake | at most 18 |
-| semantic steps in a disposition wake | at most 10 |
-| canonical records in a disposition wake | at most 12 |
-| canonical records in one dispatch admission | at most 3 |
-| canonical records in one response ingress | at most 5 |
-| canonical records in one dispatch terminalization | at most 3 |
+| money minor units | 0 |
+| declared fixture latency ms | 0 |
+| Phase 1 core records in request garden wake | at most 16 |
+| extra request records in that wake | at most 2 |
+| total records in request garden wake | at most 18 |
+| semantic steps in disposition wake | at most 10 |
+| records in disposition wake | at most 12 |
+| records in dispatch admission | at most 3 |
+| records in response ingress | at most 5 |
+| records in dispatch terminalization | at most 3 |
 
-Logical payload limits supplement rather than replace the existing physical active-database, checkpoint-store, and runtime-working-set ceilings.
+Logical limits supplement existing active DB, checkpoint store, and working-set ceilings.
 
-Every Phase 2 administrative write must perform predicted and post-write physical accounting and preserve the existing 1 MiB active-database reserve for one complete next wake. The implementation must prove that a maximum permitted disposition wake and its checkpoint fit inside that reserve. If the proof fails, implementation stops and returns to design review; the reserve is not silently reduced.
+Every Phase 2 administrative write performs predicted/post-write accounting and preserves the existing 1 MiB active-database reserve. Implementation must prove maximum disposition wake plus checkpoint fits. If not, return to design review; never silently reduce reserve.
 
-Budget exhaustion produces a typed bounded result and no hidden retry. No scalar energy field is introduced.
+Budget exhaustion is typed and bounded with no hidden retry. No scalar energy exists.
 
 ### 10. Expiry and terminal state are lifecycle-based
 
-A request created in lifecycle `N` has `expires_after_lifecycle_number = N + 2`.
+Request created in lifecycle `N` has expiry `N + 2`.
 
-Dispatch admission and response ingress require the current committed lifecycle number to be at most that value. A disposition wake evaluates eligibility using its new considering lifecycle number.
+Dispatch and ingress require current committed lifecycle at most expiry. Disposition eligibility uses the new considering lifecycle.
 
-A response may ingress while valid and later become stale before disposition; the disposition wake then records `rejected` with reason `expired`.
+Response may ingress validly and become stale before disposition; later wake records `rejected/expired`.
 
-Ambient wall time never determines canonical eligibility. Injected timestamps may be audit metadata, but lifecycle and event sequence remain authoritative.
+Wall time never controls canonical eligibility.
 
-Request state is derived from immutable rows:
+Current-lineage request state is derived from immutable rows:
 
-- a request with no dispatch and current lifecycle beyond expiry is terminally expired for admission purposes and no longer counts as outstanding
-- an admitted dispatch remains outstanding until a response or dispatch terminal outcome exists, even if lifecycle expiry passes
-- an `unavailable` response is terminal and has no proposal or disposition
-- a dispatch terminal outcome is terminal and has no response, proposal, or disposition
-- a successful response remains outstanding until its proposal has one disposition
-- a disposition is final
+- no dispatch and lifecycle beyond expiry: terminally expired for admission and no longer outstanding
+- admitted dispatch: outstanding until response or dispatch terminal, even after expiry
+- unavailable response: terminal, no proposal/disposition
+- dispatch terminal: terminal, no response/proposal/disposition
+- successful response: outstanding until one disposition
+- disposition: final
 
-No caregiver-writable mutable status flag is authoritative.
+Rows from earlier lineage generations are historical and never count as current outstanding work or current epoch budget.
 
 ### 11. Maintenance and concurrent work remain explicit
 
-Creating a request never prevents later garden wakes. Current-state divergence is therefore possible and must be evaluated at disposition.
+Request does not block later garden wakes; current state may diverge.
 
-Dispatch admission requires `sleeping`, a stable checkpoint, and a currently eligible request. Response ingress or dispatch terminalization for an already admitted dispatch may record immutable administrative evidence while status is `sleeping` or `maintenance_required`; they may not clear maintenance or run organism behavior.
+Dispatch admission requires `sleeping`, no pending checkpoint, and eligible current-lineage request.
 
-A consultation disposition wake requires `sleeping`. If the organism enters maintenance before disposition, the proposal remains queued until existing protected administration clears maintenance or rollback abandons that lineage. No automatic retry or maintenance bypass occurs.
+Ingress/terminalization for already admitted current-lineage dispatch may record evidence while `sleeping` or `maintenance_required`, but only with no pending checkpoint and no rollback/quarantine. They cannot clear maintenance or run organism behavior.
+
+Disposition requires `sleeping`. If maintenance begins first, proposal waits until protected administration clears maintenance or rollback abandons that lineage. No automatic retry or maintenance bypass occurs.
 
 ### 12. Provenance is complete and immutable
 
-Every request records its ordinal, creating event sequence, lifecycle, lineage generation, observation/objective references, policy and budget versions, permitted actions, expiry, parent events, and canonical envelope digest.
+Request records per-lineage ordinal, creating event/lifecycle/lineage, observation/objective, policy/budget versions, actions, expiry, parents, and envelope digest.
 
-Every dispatch records its request, lineage, adapter, fixture case, charged work, admission event, and protected cost-ledger linkage.
+Dispatch records request/lineage, adapter/case, charged work, event, and cost link.
 
-Every external response records request/dispatch linkage, adapter identity, response status, ordered proposal identifiers, and bounded provenance. The protected ingress receipt records writer authority, ingress event, measured bytes, and complete package digest separately.
+External response records request/dispatch, adapter identity, status, proposal IDs, and bounded provenance. Protected receipt separately records writer authority, event, measured bytes, and package digest.
 
-Every proposal records request, dispatch, response, type, bounded value, rationale code, confidence basis, expiry, and evaluator identifiers.
+Proposal records request/dispatch/response, type/value/rationale/confidence, expiry, evaluators.
 
-Every disposition records request/response/proposal linkage, evaluator versions, current-state digest, exact reason, lifecycle, event sequence, and parent events.
+Disposition records complete linkage, evaluator versions, current-state digest, reason, lifecycle, event, and parents.
 
-Every dispatch terminal outcome records dispatch linkage, bounded reason, optional rejected-package digest and measured bytes, and its administrative event.
+Dispatch terminal records linkage, bounded reason, optional rejected-package digest/size, and event.
 
-Prior rows and events are immutable. Correction never edits earlier history.
+All rows/events are immutable. Correction never edits prior history.
 
 ### 13. Zero-caregiver behavior has two controls
 
 #### Frozen Phase 1 control
 
-The existing 152-test suite runs unchanged against schema-v1 organisms with no consultation capability.
+All 152 tests run unchanged against schema-v1 with no consultation capability.
 
-#### Phase 2 zero-caregiver control
+#### Schema-v2 zero-caregiver control
 
-A newly initialized schema-v2 organism using `phase2-zero-caregiver-v1`:
+`phase2-zero-caregiver-v1`:
 
 - creates no request
 - admits no dispatch
 - invokes no fixture
 - ingresses no response
-- records no proposal, disposition, terminal outcome, or consultation cost
-- emits no consultation event or source
+- records no proposal/disposition/terminal/cost
+- emits no consultation event/source
 - performs no caregiver-derived action
 
-For identical declared inputs, compare schema-v2 with schema-v1 using a protected Phase 1-relevant projection:
+Protected Phase 1-relevant projection:
 
-1. normalize only existing `schema_version` and `budget_config_version` values
-2. compare every original Phase 1 table row, column, event payload, and original-table SQLite sequence entry exactly
-3. require all operational consultation tables and their sequences to be empty
-4. require no consultation source, event type, inbox work item, cost entry, or action effect
-5. compare ordinary behavior, status, lifecycle outcomes, authority provenance, checkpoint eligibility, and rollback eligibility
+1. normalize only existing `schema_version` and `budget_config_version`
+2. compare every original Phase 1 row, column, event payload, and original-table SQLite sequence exactly
+3. require operational consultation tables/sequences empty
+4. require no consultation source/event/inbox/cost/effect
+5. compare behavior, status, lifecycle, authority, checkpoint, and rollback eligibility
 
-Schema-v2 must add consultation state through new protected objects rather than new columns in original Phase 1 tables. SQLite files and checkpoint digests are not expected to be byte-identical because schema-v2 contains additional empty objects.
+Schema-v2 adds new protected objects, never new columns to original Phase 1 tables. SQLite bytes/checkpoint digests differ because empty objects exist.
 
 ### 14. Narrow extension points
 
-The first implementation may add only:
+First implementation may add only:
 
-- schema-v2 initialization and exact validation
-- protected immutable consultation request, dispatch, response, proposal, ingress receipt, cost, disposition, and dispatch-terminal tables
-- source-neutral typed envelopes and deterministic identifier/digest functions
-- one bounded request decision inside the existing schema-v2 `no_applicable_action` garden path
-- one administrative dispatch-admission path
-- one deterministic fixture call outside all write transactions
-- one administrative response-ingress path
-- one administrative dispatch-terminal reconciliation path
-- one explicit organism consultation-disposition wake
-- read-only consultation status/reporting
-- protected tests and the Phase 2 matrix
+- schema-v2 initialization/validation
+- immutable request, dispatch, cost, response, proposal, receipt, disposition, and dispatch-terminal objects
+- typed envelopes and deterministic ID/digest functions
+- request admission inside schema-v2 no-applicable-action garden path
+- administrative dispatch admission
+- deterministic fixture call outside write transaction
+- administrative response ingress
+- administrative dispatch-terminal reconciliation
+- explicit organism disposition wake
+- read-only consultation reporting
+- protected tests and matrix
 
-The first implementation may not alter registered garden actions, action executor authority, ordinary action selector, outcome evaluators, Phase 1 checkpoint semantics, rollback semantics, external workspace restrictions, clock access rules, or Phase 1 tests.
+It may not alter registered garden actions, executor authority, selector, outcome evaluators, Phase 1 checkpoint/rollback semantics, external workspace rules, clock rules, or Phase 1 tests.
 
 ### 15. Planned independent audit cadence
 
-After Issue #59, this ADR, protocol v1, budgets, no-migration decision, zero-caregiver projection, state machine, and protected test matrix are internally coherent, one read-only Codex design audit reviews the exact draft PR head.
+When Issue #59, ADR, protocol, lineage budget, state machine, zero-caregiver projection, and matrix are internally coherent, one read-only Codex design audit reviews exact PR head.
 
-There is no per-slice Codex audit requirement. A later single implementation audit occurs before the implemented Phase 2 baseline is frozen.
+No per-slice audit is required. A later single implementation audit occurs before freezing implemented Phase 2.
 
 ## Consequences
 
 ### Positive
 
-- caregiver latency cannot hold organism write ownership
-- external data cannot directly mutate protected state or execute actions
-- dispatch work is charged before the non-atomic external boundary
-- process interruption cannot authorize hidden retry
-- caregiver provenance is separated from canonical writer authority
-- identifier derivation is reproducible and non-circular
-- garden and disposition work selection is explicit
-- Phase 1 remains a stable regression control
-- finite work, storage, cost, and lifetime limits are concrete
-- action influence is deferred until the proposal boundary is proven
+- fixture latency never holds organism write ownership
+- external data cannot mutate protected state or execute action
+- work is charged before non-atomic boundary
+- crash cannot authorize hidden retry
+- writer authority is separate from caregiver provenance
+- ID graph is acyclic/reproducible
+- garden/disposition selection is explicit
+- rollback does not silently refund within a lineage epoch
+- Phase 1 remains stable control
+- finite work/storage/cost limits are concrete
+- action influence waits for later review
 
 ### Negative
 
-- the first accepted proposal produces no action benefit
-- conservative dispatch charging may count work that a crash prevented from completing
-- an interrupted dispatch needs explicit reconciliation
-- a queued proposal can wait behind maintenance until maintenance is cleared or lineage is abandoned
-- the experiment requires a new schema-v2 initializer
-- the four-request lifetime cap is intentionally too small for long-lived operation
-- no clarification round is possible
-- byte-identical comparison with schema-v1 is impossible
+- accepted proposal gives no action benefit
+- conservative charge may count work a crash prevented
+- interrupted dispatch needs explicit reconciliation
+- queued proposal may wait behind maintenance
+- rollback begins a new four-call lineage epoch; with ADR 0007 maximum total is eight rather than a global four
+- new schema-v2 initializer is required
+- clarification cannot round-trip
+- schema-v1/v2 files are not byte-identical
 
-These limitations are intentional. Phase 2.0 proves authority-safe plumbing, not useful caregiver intelligence.
+These are intentional. Phase 2.0 proves authority-safe plumbing, not caregiver intelligence.
 
 ## Rejected alternatives
 
-### Let the fixture execute a registered action directly
+### Fixture executes action directly
 
-Rejected because it collapses proposal, evaluation, action, and authority boundaries.
+Rejected because proposal, evaluation, action, and authority collapse.
 
-### Let an accepted action candidate influence the existing selector immediately
+### Accepted proposal immediately influences selector
 
-Rejected because it combines new ingress semantics with action selection and mutation before the proposal boundary is independently protected.
+Rejected because ingress and mutation would be combined before proposal boundary is protected.
 
-### Run fixture consultation inside the wake transaction
+### Fixture runs inside wake
 
-Rejected because caregiver latency would hold write ownership and violate ADR 0003.
+Rejected because latency holds write ownership and violates ADR 0003.
 
-### Compute fixture output before charging or recording dispatch
+### Fixture output computed before dispatch charge
 
-Rejected because a process crash could create hidden unaccounted work or duplicate invocation.
+Rejected because crash can create hidden/duplicate work.
 
-### Retry an admitted dispatch after a crash
+### Retry admitted dispatch after crash
 
-Rejected because exactly-once external work cannot be proven across the non-atomic boundary. Protocol v1 charges once and reconciles without retry.
+Rejected because exactly-once external work cannot be proven. Reconcile without retry.
 
-### Put administrative authority fields or budget claims in the caregiver response
+### Caregiver package declares writer authority or authoritative cost
 
-Rejected because untrusted data must not declare its own writer authority or authoritative cost.
+Rejected because untrusted data cannot declare its own authority/accounting.
 
-### Add caregiver as a canonical writer category
+### Caregiver is a canonical writer category
 
-Rejected because caregiver is a data producer, not a SQLite authority principal.
+Rejected because it is data producer, not SQLite principal.
 
-### Use one automatic wake selector for garden and proposal work
+### Automatic unified garden/proposal scheduler
 
-Rejected because hidden priority would change Phase 1 input behavior and complicate deterministic starvation analysis. The caller chooses an explicit bounded wake class.
+Rejected because hidden priority changes Phase 1 behavior and creates starvation ambiguity.
 
-### Begin with a live human or model caregiver
+### Global four-call counter across rollback lineages
 
-Rejected because deterministic source-neutral plumbing must be verified before privacy, consent, provider, retention, pricing, and operational concerns are introduced.
+Rejected because enforcing it requires altering rollback transformation or consulting abandoned external evidence as mutable authority. Per-lineage limits plus ADR 0007 remain strictly bounded and locally verifiable.
 
-### Migrate existing Phase 1 organisms immediately
+### Live human/model caregiver first
 
-Rejected because migration, rollback lineage, checkpoint compatibility, and failure recovery would enlarge the first experiment without testing the core boundary.
+Rejected until deterministic plumbing, privacy, consent, provider, retention, pricing, and operation are separately reviewed.
 
-### Permit unbounded request history
+### Immediate Phase 1 migration
 
-Rejected because finite organism storage and caregiver use are core experimental variables.
+Rejected because migration/checkpoint/rollback compatibility would enlarge first experiment.
+
+### Unbounded history
+
+Rejected because finite storage and caregiver use are core variables.
 
 ## Scope
 
-This ADR authorizes design review only while its status is Proposed.
+While Proposed, this ADR authorizes design review only.
 
-Acceptance may authorize a separate test-first implementation issue for deterministic fixture plumbing. It does not itself authorize implementation, live APIs, live human interaction, long-term memory, skill creation or promotion, model training, arbitrary code, network/subprocess access inside organism execution, continuous execution, personality/emotion features, or a generic agent framework.
+Acceptance may authorize a separate test-first implementation issue for deterministic fixture plumbing. It does not authorize implementation itself, live APIs/humans, memory, skills, training, arbitrary code, network/subprocess inside organism execution, continuous execution, personality/emotion features, or generic agent framework.
