@@ -1,8 +1,8 @@
 # Phase 2 Consultation Boundary Test Matrix
 
-Status: **Proposed design targets after independent design-audit corrections; no Phase 2 implementation exists yet**
+Status: **Accepted design evidence map with ADR 0008; no Phase 2 implementation exists yet**
 
-This matrix maps proposed ADR 0008 and `docs/phase2/CONSULTATION_PROTOCOL_V1.md` to protected evidence required before the deterministic-fixture implementation can be accepted.
+This matrix maps accepted ADR 0008 and `docs/phase2/CONSULTATION_PROTOCOL_V1.md` to protected evidence required before the deterministic-fixture implementation can be accepted.
 
 The unchanged 152-test Phase 1 suite is always the first regression layer.
 
@@ -257,14 +257,12 @@ The independent Phase 2.0 design audit at PR #60 head `8cfd65d6e6b153a9dd028333d
 
 > Phase 2.0 Consultation Boundary is ready after specified documentation or test-matrix corrections.
 
-This matrix incorporates the required corrections for:
+This accepted matrix incorporates the required corrections for:
 
 - exact zero-caregiver projection rules
 - exact proposal schemas and inherited expiry
 - exact digest preimages and lineage 64 KiB formula
 - real request-wake storage-boundary evidence
-
-Under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, these bounded documentation/matrix corrections are verified through ordinary review and green CI; they do not automatically trigger audit-repair-reaudit ping-pong.
 
 The implementation Issue must map every slice to matrix IDs. No test may weaken or condition the 152-test Phase 1 baseline.
 
