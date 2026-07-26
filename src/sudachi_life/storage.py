@@ -21,8 +21,17 @@ from .constants import (
 )
 from .errors import OrganismExistsError, OrganismNotFoundError, SchemaValidationError
 from .paths import OrganismPaths
+from .phase2_schema import (
+    ACCEPTED_CONSULTATION_CONFIGURATION_VERSIONS,
+    PHASE2_SCHEMA_VERSION,
+    consultation_configuration_json,
+)
 from .runtime_storage import ensure_active_database_within_limit
-from .schema_contract import SQL_SCHEMA, validate_protected_schema_and_configuration
+from .schema_contract import (
+    schema_sql_for_version,
+    validate_protected_schema_and_configuration,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class OrganismStatus:
@@ -31,6 +40,7 @@ class OrganismStatus:
     schema_version: int
     environment_version: str
     budget_config_version: str
+    consultation_configuration_version: str | None
     lineage_generation: int
     lifecycle_number: int
     status: str
@@ -67,6 +77,10 @@ class OrganismStatus:
             "plots": list(self.plots),
             "event_count": self.event_count,
         }
+        if self.consultation_configuration_version is not None:
+            payload["consultation_configuration_version"] = (
+                self.consultation_configuration_version
+            )
         if self.maintenance_reason is not None:
             payload["maintenance_reason"] = self.maintenance_reason
         return payload
@@ -96,6 +110,8 @@ def _insert_event(
     event_type: str,
     source: str,
     payload: dict[str, Any],
+    schema_version: int,
+    budget_config_version: str = BUDGET_CONFIG_VERSION,
 ) -> int:
     cursor = connection.execute(
         """
@@ -113,9 +129,9 @@ def _insert_event(
             event_type,
             source,
             json.dumps(payload, sort_keys=True, separators=(",", ":")),
-            SCHEMA_VERSION,
+            schema_version,
             ENVIRONMENT_VERSION,
-            BUDGET_CONFIG_VERSION,
+            budget_config_version,
         ),
     )
     return int(cursor.lastrowid)
@@ -125,10 +141,30 @@ def initialize_database(
     paths: OrganismPaths,
     *,
     clock: Clock | None = None,
+    schema_version: int = SCHEMA_VERSION,
+    consultation_configuration_version: str | None = None,
 ) -> tuple[int, int]:
     """Create canonical genesis state and return (wall_time, event boundary)."""
 
     clock = clock or RealClock()
+
+    if schema_version == SCHEMA_VERSION:
+        if consultation_configuration_version is not None:
+            raise SchemaValidationError(
+                "schema-v1 initialization does not accept consultation configuration"
+            )
+    elif schema_version == PHASE2_SCHEMA_VERSION:
+        if (
+            consultation_configuration_version
+            not in ACCEPTED_CONSULTATION_CONFIGURATION_VERSIONS
+        ):
+            raise SchemaValidationError(
+                "schema-v2 initialization requires one accepted consultation configuration"
+            )
+    else:
+        raise SchemaValidationError(
+            f"unsupported database schema version: {schema_version}"
+        )
 
     if paths.organism_dir.exists():
         raise OrganismExistsError(f"organism already exists: {paths.organism_dir}")
@@ -147,8 +183,8 @@ def initialize_database(
     try:
         connection.execute("PRAGMA journal_mode = DELETE")
         connection.execute("PRAGMA synchronous = FULL")
-        connection.executescript(SQL_SCHEMA)
-        connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+        connection.executescript(schema_sql_for_version(schema_version))
+        connection.execute(f"PRAGMA user_version = {schema_version}")
         connection.execute("BEGIN IMMEDIATE")
 
         connection.execute(
@@ -168,7 +204,7 @@ def initialize_database(
             (
                 paths.organism_id,
                 CONTRACT_VERSION,
-                SCHEMA_VERSION,
+                schema_version,
                 ENVIRONMENT_VERSION,
                 BUDGET_CONFIG_VERSION,
                 DEVELOPMENTAL_STAGE,
@@ -176,18 +212,38 @@ def initialize_database(
             ),
         )
         connection.execute(
-            "INSERT INTO budget_config (singleton_id, config_version, config_json) VALUES (1, ?, ?)",
+            "INSERT INTO budget_config (singleton_id, config_version, config_json) "
+            "VALUES (1, ?, ?)",
             (
                 BUDGET_CONFIG_VERSION,
-                json.dumps(PHASE1_BUDGETS.as_dict(), sort_keys=True, separators=(",", ":")),
+                json.dumps(
+                    PHASE1_BUDGETS.as_dict(),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
             ),
         )
+        if schema_version == PHASE2_SCHEMA_VERSION:
+            assert consultation_configuration_version is not None
+            connection.execute(
+                """INSERT INTO consultation_configuration (
+                       singleton_id, protocol_version, configuration_version,
+                       configuration_json
+                   ) VALUES (1, 1, ?, ?)""",
+                (
+                    consultation_configuration_version,
+                    consultation_configuration_json(
+                        consultation_configuration_version
+                    ),
+                ),
+            )
         connection.execute(
             "INSERT INTO environment_state VALUES (1, ?, 0, 0)",
             (ENVIRONMENT_VERSION,),
         )
         connection.executemany(
-            "INSERT INTO garden_plot (plot_id, stage, moisture, fruit) VALUES (?, ?, ?, ?)",
+            "INSERT INTO garden_plot (plot_id, stage, moisture, fruit) "
+            "VALUES (?, ?, ?, ?)",
             [
                 ("bed-a", "sprout", 0, 0),
                 ("bed-b", "mature", 1, 1),
@@ -209,10 +265,11 @@ def initialize_database(
             source="administration:init",
             payload={
                 "contract_version": CONTRACT_VERSION,
-                "schema_version": SCHEMA_VERSION,
+                "schema_version": schema_version,
                 "environment_version": ENVIRONMENT_VERSION,
                 "budget_config_version": BUDGET_CONFIG_VERSION,
             },
+            schema_version=schema_version,
         )
         boundary = _insert_event(
             connection,
@@ -223,14 +280,18 @@ def initialize_database(
             event_type="checkpoint_pending",
             source="administration:init",
             payload={"reason": "genesis"},
+            schema_version=schema_version,
         )
         connection.execute(
-            "UPDATE organism SET pending_checkpoint_event_sequence = ? WHERE singleton_id = 1",
+            "UPDATE organism SET pending_checkpoint_event_sequence = ? "
+            "WHERE singleton_id = 1",
             (boundary,),
         )
         validate_canonical_state(connection, expect_checkpoint_pending=True)
         ensure_active_database_within_limit(
-            connection, context="initialization", limit=ACTIVE_DATABASE_MAX_BYTES
+            connection,
+            context="initialization",
+            limit=ACTIVE_DATABASE_MAX_BYTES,
         )
         connection.commit()
     except Exception:
@@ -257,15 +318,17 @@ def validate_canonical_state(
     *,
     expect_checkpoint_pending: bool | None = None,
 ) -> None:
-    validate_protected_schema_and_configuration(connection)
+    schema_version = validate_protected_schema_and_configuration(connection)
 
-    row = connection.execute("SELECT * FROM organism WHERE singleton_id = 1").fetchone()
+    row = connection.execute(
+        "SELECT * FROM organism WHERE singleton_id = 1"
+    ).fetchone()
     if row is None:
         raise SchemaValidationError("missing organism singleton")
 
     expected = {
         "contract_version": CONTRACT_VERSION,
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": schema_version,
         "environment_version": ENVIRONMENT_VERSION,
         "budget_config_version": BUDGET_CONFIG_VERSION,
         "developmental_stage": DEVELOPMENTAL_STAGE,
@@ -273,19 +336,15 @@ def validate_canonical_state(
     for column, value in expected.items():
         if row[column] != value:
             raise SchemaValidationError(
-                f"protected {column} mismatch: expected {value!r}, found {row[column]!r}"
+                f"protected {column} mismatch: expected {value!r}, "
+                f"found {row[column]!r}"
             )
-
-    user_version = connection.execute("PRAGMA user_version").fetchone()[0]
-    if user_version != SCHEMA_VERSION:
-        raise SchemaValidationError(
-            f"SQLite user_version mismatch: expected {SCHEMA_VERSION}, found {user_version}"
-        )
 
     pending = bool(row["checkpoint_pending"])
     if expect_checkpoint_pending is not None and pending is not expect_checkpoint_pending:
         raise SchemaValidationError(
-            f"checkpoint_pending mismatch: expected {expect_checkpoint_pending}, found {pending}"
+            f"checkpoint_pending mismatch: expected {expect_checkpoint_pending}, "
+            f"found {pending}"
         )
 
     status = str(row["status"])
@@ -320,9 +379,12 @@ def read_status(paths: OrganismPaths) -> OrganismStatus:
     connection = connect_database(paths.database, read_only=True)
     try:
         validate_canonical_state(connection)
-        organism = connection.execute("SELECT * FROM organism WHERE singleton_id = 1").fetchone()
+        organism = connection.execute(
+            "SELECT * FROM organism WHERE singleton_id = 1"
+        ).fetchone()
         environment = connection.execute(
-            "SELECT environment_step, objective_complete FROM environment_state WHERE singleton_id = 1"
+            "SELECT environment_step, objective_complete FROM environment_state "
+            "WHERE singleton_id = 1"
         ).fetchone()
         inventory = connection.execute(
             "SELECT water_units, harvested_fruit FROM inventory WHERE singleton_id = 1"
@@ -330,16 +392,33 @@ def read_status(paths: OrganismPaths) -> OrganismStatus:
         plots = tuple(
             dict(row)
             for row in connection.execute(
-                "SELECT plot_id, stage, moisture, fruit FROM garden_plot ORDER BY plot_id"
+                "SELECT plot_id, stage, moisture, fruit FROM garden_plot "
+                "ORDER BY plot_id"
             ).fetchall()
         )
         event_count = connection.execute("SELECT COUNT(*) FROM event").fetchone()[0]
+        consultation_configuration_version: str | None = None
+        if int(organism["schema_version"]) == PHASE2_SCHEMA_VERSION:
+            consultation_row = connection.execute(
+                "SELECT configuration_version FROM consultation_configuration "
+                "WHERE singleton_id = 1"
+            ).fetchone()
+            if consultation_row is None:
+                raise SchemaValidationError(
+                    "missing protected consultation configuration"
+                )
+            consultation_configuration_version = str(
+                consultation_row["configuration_version"]
+            )
         return OrganismStatus(
             organism_id=organism["organism_id"],
             contract_version=organism["contract_version"],
             schema_version=organism["schema_version"],
             environment_version=organism["environment_version"],
             budget_config_version=organism["budget_config_version"],
+            consultation_configuration_version=(
+                consultation_configuration_version
+            ),
             lineage_generation=organism["lineage_generation"],
             lifecycle_number=organism["lifecycle_number"],
             status=organism["status"],
