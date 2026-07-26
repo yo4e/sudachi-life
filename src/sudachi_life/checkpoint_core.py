@@ -17,11 +17,11 @@ from .constants import (
     CONTRACT_VERSION,
     ENVIRONMENT_VERSION,
     MAINTENANCE_REASON_CHECKPOINT_RETENTION_FAILED,
-    SCHEMA_VERSION,
 )
 from .errors import CheckpointError, SchemaValidationError
 from .paths import OrganismPaths
 from .runtime_storage import checkpoint_store_bytes
+from .schema_contract import SUPPORTED_SCHEMA_VERSIONS
 from .storage import connect_database, validate_canonical_state
 
 
@@ -239,7 +239,8 @@ def validate_checkpoint_directory(
         raise CheckpointError("unsupported checkpoint format")
     if manifest.get("contract_version") != CONTRACT_VERSION:
         raise CheckpointError("checkpoint contract version mismatch")
-    if manifest.get("schema_version") != SCHEMA_VERSION:
+    manifest_schema_version = manifest.get("schema_version")
+    if manifest_schema_version not in SUPPORTED_SCHEMA_VERSIONS:
         raise CheckpointError("checkpoint schema version mismatch")
     if manifest.get("environment_version") != ENVIRONMENT_VERSION:
         raise CheckpointError("checkpoint environment version mismatch")
@@ -277,6 +278,8 @@ def validate_checkpoint_directory(
         ).fetchone()[0]
         if organism["organism_id"] != manifest.get("organism_id"):
             raise CheckpointError("checkpoint organism identity mismatch")
+        if organism["schema_version"] != manifest_schema_version:
+            raise CheckpointError("snapshot schema version mismatch")
         if organism["lineage_generation"] != manifest.get("lineage_generation"):
             raise CheckpointError("checkpoint lineage mismatch")
         if organism["lifecycle_number"] != manifest.get("lifecycle_number"):
