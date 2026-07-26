@@ -27,7 +27,7 @@ Do not rely on conversation memory, prior model context, an Issue title, or one 
 15. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 16. `docs/HANDOFF.md`
 17. current Issues and PRs
-18. for Phase 2: ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+18. for Phase 2: proposed ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`, and `docs/phase2/CODEX_PHASE2_DESIGN_AUDIT.md`
 
 Repository and GitHub state outrank conversation history.
 
@@ -86,7 +86,7 @@ Do not reopen Phase 1 Issues to add Phase 2 features.
 
 ## Phase 2 Consultation Boundary
 
-Issue #59 and PR #60 define the first deterministic fixture consultation boundary.
+Issue #59 and draft PR #60 define the first deterministic fixture consultation boundary. No Phase 2 implementation or Slice 36 is authorized while ADR 0008 remains Proposed.
 
 The design keeps five explicit operational boundaries:
 
@@ -115,29 +115,11 @@ The design keeps five explicit operational boundaries:
 
 The first implementation stops at disposition. An accepted proposal does not enter the existing action selector or execute an action.
 
-Protocol v1 proposal types are:
-
-- `action_candidate`
-- `abstain`
-- `defer`
-
-Final dispositions are:
-
-- `accepted`
-- `rejected`
-- `deferred`
-- `clarification_requested`
-
-Clarification rounds are zero.
+Protocol v1 proposal types are `action_candidate`, `abstain`, and `defer`. Final dispositions are `accepted`, `rejected`, `deferred`, and `clarification_requested`. Clarification rounds are zero.
 
 ## Authority, identifiers, and budgets
 
-Canonical writer categories remain exactly:
-
-- `organism`
-- `administration`
-
-Caregiver and adapter identity are provenance only. External packages contain no canonical writer-authority fields and no authoritative cost or budget fields.
+Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identity are provenance only. External packages contain no canonical writer-authority fields and no authoritative cost or budget fields.
 
 Identifier derivation is acyclic:
 
@@ -148,7 +130,7 @@ Identifier derivation is acyclic:
 5. final package digest
 6. disposition
 
-Consultation budget epoch is the current `lineage_generation`:
+Consultation budget epoch is current `lineage_generation`:
 
 - at most four requests and four charged fixture invocations per lineage
 - one current-lineage outstanding request
@@ -157,7 +139,7 @@ Consultation budget epoch is the current `lineage_generation`:
 - rollback starts a fresh bounded lineage epoch
 - ADR 0007 permits one completed rollback, bounding the physical organism to at most eight charged fixture invocations
 
-Logical limits supplement the inherited physical limits:
+Logical limits supplement inherited physical limits:
 
 - request at most 16 KiB
 - response plus proposal at most 16 KiB
@@ -172,24 +154,27 @@ Expiry is lifecycle-based. A request created in lifecycle `N` is eligible throug
 
 ## Codex audit cadence
 
-Codex audits are high-cost phase-completion gates, not per-slice, per-PR, or design-draft review. Follow `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
+Codex audits are high-cost phase gates, not per-slice or per-PR review. Follow `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
 
-There is no separate Codex audit for Phase 2 design acceptance.
+Phase 2 has two planned independent read-only audits:
 
-Use ordinary repository review, protected tests, CI, and Issues while accepting ADR 0008 and implementing Phase 2. Run one independent read-only Codex audit only after the complete Phase 2 implementation and protected test matrix are finished and the baseline is a candidate for freezing.
+1. one design audit after Issue #59, proposed ADR 0008, protocol v1, authority and provenance rules, budgets, expiry, initialization policy, zero-caregiver comparison, and the Phase 2 matrix are internally coherent
+2. one implementation audit after the complete Phase 2 implementation, protected matrix, unchanged Phase 1 suite, and CI evidence are ready to freeze
 
-Avoid audit-repair-reaudit ping-pong unless a completion conclusion blocks freezing or evidence is insufficient.
+Avoid audit-repair-reaudit ping-pong unless a gate conclusion blocks progress, evidence is insufficient, or accepted repairs change the same critical boundary being certified.
 
 ## Exact restart point
 
 1. verify Issues #13 and #56 are closed and PR #57 is merged
 2. verify the final Phase 1 audit and unchanged 152-test baseline
-3. inspect Issues #3 and #59 and PR #60
-4. read ADR 0008, protocol v1, and the Phase 2 matrix
-5. complete ordinary design review and merge the accepted design
-6. open a separate test-first Phase 2 implementation Issue
-7. implement bounded slices mapped to matrix IDs
-8. run one Codex completion audit only after the complete implemented Phase 2 candidate is ready to freeze
+3. inspect Issues #3 and #59 and draft PR #60
+4. read proposed ADR 0008, protocol v1, matrix, and design-audit brief
+5. complete ordinary internal review of the design package
+6. run one read-only Codex Phase 2.0 design audit against one exact PR head
+7. resolve accepted findings, accept ADR 0008, and merge PR #60 only after a satisfactory design conclusion
+8. open a separate test-first Phase 2 implementation Issue
+9. implement bounded slices mapped to matrix IDs
+10. run one later Codex implementation audit only after the complete Phase 2 candidate is ready to freeze
 
 Do not begin live caregiver or API integration, human chat, memory, skills, model training, arbitrary Python, shell, SQL, continuous execution, personality or emotion features, or a generic agent framework.
 
