@@ -1,8 +1,8 @@
 # Phase 2 Consultation Protocol v1
 
-Status: **Accepted with ADR 0008**
+Status: **Accepted with ADRs 0008 and 0009**
 
-This document defines the accepted source-neutral deterministic-fixture protocol for ADR 0008. It is not a live human or model interface. The caregiver side produces bounded untrusted data; it never receives organism authority.
+This document defines the accepted source-neutral deterministic-fixture protocol for ADRs 0008 and 0009. It is not a live human or model interface. The caregiver side produces bounded untrusted data; it never receives organism authority.
 
 ## 1. Versions
 
@@ -443,4 +443,4 @@ The independent Phase 2.0 design audit was followed by one focused read-only re-
 
 > ADR 0009 is ready after specified documentation or matrix corrections.
 
-ADR 0009 and the synchronized evidence map incorporate those corrections. No further automatic design re-audit is required unless the semantic artifact boundary changes materially again. A separate implementation audit occurs after the accepted protocol is implemented, all matrix evidence exists, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.
+ADR 0009 and the synchronized evidence map are accepted and incorporate those corrections. No further automatic design re-audit is required unless the semantic artifact boundary changes materially again. A separate implementation audit occurs after the accepted protocol is implemented, all matrix evidence exists, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.
