@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a, Slice 36b1, Slice 36b2a1, Slice 36b2a2, and Slice 36b2a3 are merged. Slice 36b2a4 semantic event-export projection is implemented test-first on PR #71. The exact next implementation boundary after PR #71 merges is physical projection closure.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a, Slice 36b1, Slice 36b2a1, Slice 36b2a2, Slice 36b2a3, and Slice 36b2a4 are merged. Slice 36b2a5 paired physical overhead is implemented test-first on PR #72. The exact next boundary after PR #72 merges is independent absolute-limit and real near-ceiling evidence.
 
 No live caregiver integration is authorized.
 
@@ -30,7 +30,7 @@ Do not alter Phase 1 garden actions, selector, executor, evaluators, injected cl
 
 ADRs 0008 and 0009, Consultation Protocol v1, and `docs/PHASE2_CONSULTATION_TEST_MATRIX.md` form one accepted design package.
 
-Original Phase 1 budget locations stay exactly `phase1-v1`; Phase 2 policy lives in immutable `consultation_configuration`; checkpoint, repair, retention, rollback, and export byte-derived differences use the exact closed semantic projection in ADR 0009.
+Original Phase 1 budget locations stay exactly `phase1-v1`; Phase 2 policy lives in immutable `consultation_configuration`; checkpoint, repair, retention, rollback, export, and physical evidence use the exact closed rules in ADR 0009.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are provenance only.
 
@@ -40,7 +40,7 @@ Canonical writer categories remain exactly `organism` and `administration`. Care
 
 PR #65 merged as `75077220ecb52256857f2b234283d36e3c0f51d2`.
 
-It delivers explicit schema-v2 genesis, exact protected zero/fixture configuration, unchanged original Phase 1 tables and budget locations, nine empty immutable consultation operational tables, stable schema-v2 checkpoint validation, no migration/downgrade path, zero-caregiver absence, and the accepted active-database overhead bound.
+It delivers schema-v2 genesis, exact protected zero/fixture configuration, unchanged Phase 1 tables and budget locations, immutable consultation objects, stable schema-v2 checkpoint validation, zero-caregiver absence, and the genesis active-database overhead bound.
 
 Durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`.
 
@@ -48,7 +48,7 @@ Durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`.
 
 PR #66 merged as `700dca34a70eca24ee024f07067f0f6fcb1f3f11`.
 
-It delivers the active-database and genesis-checkpoint core of `phase1-projection-v2`, including exact side roles, fixed-order original Phase 1 rows, strict zero-caregiver absence, independent checkpoint integrity, raw checkpoint linkage before `CP(g,e)` projection, checkpoint-database semantic comparison, and exact nested/unlisted/wrong-location behavior.
+It delivers the active-database and genesis-checkpoint core of `phase1-projection-v2`, including exact side roles, fixed-order original Phase 1 rows, strict zero-caregiver absence, independent checkpoint integrity, raw checkpoint linkage before `CP(g,e)`, and exact nested/unlisted/wrong-location behavior.
 
 Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
 
@@ -56,7 +56,7 @@ Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
 
 PR #67 merged as `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`.
 
-It validates exact `checkpoint_registration_repaired` current/prior `CP` linkage plus database SHA, manifest SHA, database size, and checkpoint-store bytes before projection.
+It validates exact pending-checkpoint repair identity, digest, size, previous-boundary, and checkpoint-store evidence before projection.
 
 Durable note: `docs/phase2/SLICE36B2A1_PENDING_REPAIR_EVIDENCE.md`.
 
@@ -64,7 +64,7 @@ Durable note: `docs/phase2/SLICE36B2A1_PENDING_REPAIR_EVIDENCE.md`.
 
 PR #69 merged as `64ea9eb094a687c056a571d362c1914aaf7911f2`.
 
-It validates normal prune, restored pre-commit failure, committed cleanup failure, `STAGE(CP(g,e))`, pending reconciliation, interruption after deletion, retry, and completion. Deleted identity and bytes come only from prior immutable artifact evidence.
+It validates normal prune, restored pre-commit failure, committed cleanup failure, `STAGE(CP(g,e))`, pending reconciliation, interruption after deletion, retry, and completion. Deleted identity and bytes come only from prior immutable evidence.
 
 Durable note: `docs/phase2/SLICE36B2A2_RETENTION_PROJECTION.md`.
 
@@ -72,56 +72,65 @@ Durable note: `docs/phase2/SLICE36B2A2_RETENTION_PROJECTION.md`.
 
 PR #70 merged as `054382a1ea57fa3e3c87d70d725b5a4a5415334b`.
 
-Tests-only head `38a8933f53d09ac5c4d39748a498cf90c5fa631e` produced red run 452 before implementation. Final head `4a0f82432e780245b3258983735c4f224a2f89fc` passed run 461 with `191 passed in 19.74s`; installation, compilation, and schema-v1 genesis CLI smoke succeeded.
-
-The rollback graph validates and projects selected checkpoint `CP`, abandoned-future archive `RA`, source candidate `RC`, transformed candidate `TC`, exact rollback events, cross-lineage latest-stable checkpoint references, preserved abandoned-future checkpoints, and lineage-aware event-sequence reuse.
+Final head `4a0f82432e780245b3258983735c4f224a2f89fc` passed run 461 with `191 passed in 19.74s`. It validates exact `CP`, `RA`, `RC`, and `TC` artifact/event linkage, cross-lineage checkpoint references, abandoned-future preservation, and lineage-aware event-sequence reuse.
 
 Durable note: `docs/phase2/SLICE36B2A3_ROLLBACK_PROJECTION.md`.
 
-### Slice 36b2a4 — implemented on PR #71
+### Slice 36b2a4 — merged
 
-Branch: `slice36b2-event-export-projection`.
+PR #71 merged as `d7ce1703eaaf9aca1a33f72add4a9dfa707e7abe`.
 
-Base: merged PR #70 at `054382a1ea57fa3e3c87d70d725b5a4a5415334b`.
+Tests-only head `9430b314f925ed09c1e8b9a49b7b21961bcd1e70` produced red run 463. Final head `31736c45ff1879002991a6249c86ffa86c0f07b8` passed run 468 with `196 passed in 19.01s`; installation, compilation, and schema-v1 genesis CLI smoke succeeded.
 
-Tests-only head `9430b314f925ed09c1e8b9a49b7b21961bcd1e70` produced the intended red run 463 before the event-export projection module existed.
-
-Implementation and corruption-test candidate `379868664f1724f7c1cd5c2c82e0db09a7dfe960` passed run 465 with `196 passed in 22.75s`; dependency installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
-
-The paired scenario performs one real water wake and exports through stable checkpoint boundary `13`. Each raw file is independently validated as canonical JSONL and must equal the protected Phase 1 reconstruction byte-for-byte before projection.
-
-The export projection validates:
-
-- exact manifest and event key sets
-- UTF-8 canonical JSON lines and terminating newline
-- exact event range, count, order, organism identity, and source boundary
-- active source checkpoint registry and immutable artifact linkage
-- recomputed raw export size and SHA-256
-- source checkpoint projection to `CP(0,13)`
-- prior exported `checkpoint_stabilized` identity projection to `CP(0,2)`
-- exact reuse of the accepted checkpoint/repair/retention/rollback event map
-
-Path, raw bytes, raw SHA, raw size, and result-wrapper presentation are excluded from cross-run equality only after independent validation. A byte-identical copy at another presentation path compares semantically; a changed, noncanonical, incomplete, or post-capture-modified file rejects.
+It independently validates raw canonical JSONL, exact manifest/event schemas, event range/count/order, active source-checkpoint linkage, reconstructed bytes, raw size, and raw SHA before semantic event projection. Changed, noncanonical, incomplete, and post-capture-modified files reject.
 
 Durable note: `docs/phase2/SLICE36B2A4_EVENT_EXPORT_PROJECTION.md`.
 
-## Exact next boundary: physical projection closure
+### Slice 36b2a5 — implemented on PR #72
 
-After PR #71 is reviewed and merged, create a new test-first branch from updated `main`.
+Branch: `slice36b2-physical-overhead`.
 
-Close ADR 0009 section 9 and remaining Phase 2 matrix P2-O evidence:
+Base: merged PR #71 at `d7ce1703eaaf9aca1a33f72add4a9dfa707e7abe`.
 
-- schema-v2-zero active database overhead over paired schema-v1 state is at most 256 KiB
-- each schema-v2-zero checkpoint/archive/candidate database overhead is at most 256 KiB over its paired schema-v1 artifact
-- aggregate additional manifest/directory metadata across the retained working set is at most 1 MiB
-- schema-v2-zero independently obeys the absolute 8 MiB active database limit
+Tests-only head `32aae47219da80d56baa6a65bcf87d29b59987d8` produced the intended red run 470 before `phase2_physical_projection` existed.
+
+Implementation and active-cap enforcement head `2464ba1eb6fe95520efcf1c6fa20e3664d6351ee` passed run 472 with `200 passed in 22.14s`; dependency installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
+
+The measurement layer first recaptures and compares the complete checkpoint/repair/retention/rollback semantic graph. It then requires identical typed token sets before comparing bytes:
+
+- checkpoints `CP`
+- rollback archives `RA`
+- source candidates `RC`
+- transformed candidates `TC`
+
+Real paired scenarios cover one stable water wake and one full retained rollback working set.
+
+It enforces:
+
+- active schema-v2-zero database overhead over schema-v1: `0..256 KiB`
+- each paired checkpoint/archive/source/transformed database overhead: `0..256 KiB`
+- aggregate additional non-database artifact bytes: `0..1 MiB`
+
+Each cap is tested by lowering it below the measured real value and requiring rejection. These are active validation rules, not descriptive after-the-fact checks.
+
+Durable note: `docs/phase2/SLICE36B2A5_PHYSICAL_OVERHEAD.md`.
+
+## Exact next boundary: independent absolute limits
+
+After PR #72 is reviewed and merged, create a new test-first branch from updated `main`.
+
+Close remaining ADR 0009 section 9 and P2-O18/P2-O19/P2-O21/P2-O22 evidence:
+
+- schema-v2-zero independently obeys the absolute 8 MiB active-database limit
 - every checkpoint/archive/candidate independently obeys the absolute 8 MiB artifact limit
 - checkpoint store independently obeys the absolute 40 MiB limit
 - runtime working set independently obeys the absolute 64 MiB limit
-- enqueue and future operations preserve the exact 1 MiB next-wake reserve
-- real near-ceiling checkpoint, repair, retention, rollback, and reserve paths proceed or fail without partial canonical mutation
+- enqueue and subsequent operations preserve the exact 1 MiB next-wake reserve
+- real one-below, at, and one-over cases use physical files rather than mocked accounting
+- near-ceiling checkpoint, repair, retention, rollback, and reserve paths proceed or fail without partial canonical mutation
+- schema-v2 checkpoint/repair/retention/rollback artifacts preserve exact immutable consultation configuration and empty zero-caregiver operational state
 
-Do not replace absolute-limit tests with paired byte equality. Legitimate schema-v2 overhead is measured but never granted a larger absolute ceiling.
+Do not require paired byte-threshold equality near a ceiling. Each side independently obeys the same absolute rule.
 
 Slice 37 remains blocked until all Slice 36 evidence is merged and no blocker/high/medium boundary defect remains.
 
@@ -140,8 +149,6 @@ Slice 37 remains blocked until all Slice 36 evidence is merged and no blocker/hi
 - working set 64 MiB
 - next-wake reserve 1 MiB
 
-Request lifecycle `N` is eligible through `N+2`; proposal expiry is identical. Rollback starts a fresh lineage epoch, while ADR 0007 still permits at most one completed rollback.
-
 ## Audit cadence
 
 The next Codex use is the single Phase 2 implementation-completion audit, after every accepted matrix requirement has protected evidence and one exact CI-green candidate is ready to freeze. Do not use Codex per slice or for ordinary editing.
@@ -152,9 +159,9 @@ No live model/API/human caregiver, memory or skill generation, source/test gener
 
 ## Exact restart
 
-1. inspect Issue #61, PR #71, this handoff, and all implemented Slice 36 notes
-2. verify PR #71 final head and CI; review and merge it before dependent work
+1. inspect Issue #61, PR #72, this handoff, and all implemented Slice 36 notes
+2. verify PR #72 final head and CI; review and merge it before dependent work
 3. confirm the unchanged 152 Phase 1 tests remain included and passing
-4. create a physical-closure branch from updated `main`
-5. implement paired overhead and independent absolute-limit evidence test-first
+4. create an absolute-physical-limits branch from updated `main`
+5. implement real per-side near-ceiling evidence test-first
 6. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit
