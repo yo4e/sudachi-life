@@ -99,11 +99,13 @@ Canonical writer categories remain exactly `organism` and `administration`. Care
 
 ## Slice 36 implementation state
 
-Issue #61 splits Slice 36 into two reviewable boundaries.
+Issue #61 splits Slice 36 into bounded reviewable PRs.
 
 ### Slice 36a — schema-v2 genesis and protected configuration
 
-PR #65 implements:
+PR #65 merged as `75077220ecb52256857f2b234283d36e3c0f51d2`.
+
+It implements:
 
 - explicit schema-v2 initialization while schema-v1 remains the default
 - exact zero/fixture protected consultation configuration objects
@@ -118,25 +120,45 @@ PR #65 implements:
 
 The exact SQLite schema-v2 profile is 19 tables plus 27 triggers, normalized SHA-256 `41ee900df99b3c1b44700e2de628d3151e907c8d0069f87098eb9fd72a3f6fec`.
 
+Durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`.
+
+### Slice 36b1 — canonical database and genesis checkpoint projection core
+
+PR #66 is the current merge gate.
+
+It implements the first closed core of `phase1-projection-v2`:
+
+- schema-v1 left control and schema-v2-zero right control are explicit
+- all original Phase 1 canonical rows and original AUTOINCREMENT sequences compare in fixed order
+- only declared schema-version locations are normalized
+- fixture configuration and every zero-caregiver consultation row/sequence/event/source are rejected
+- checkpoint directory, manifest, database, registry, active organism ID, and `checkpoint_stabilized` ID are independently linked before projection
+- projected-away digests and sizes are recomputed before omission
+- checkpoint database Phase 1 semantic state remains in equality
+- nested, unlisted, and wrong-location fields remain exact
+
 Test-first evidence:
 
-- red CI run 409: missing `sudachi_life.phase2_schema`
-- later green candidate runs preserve all 152 Phase 1 tests and add protected Phase 2 genesis/profile tests
-- durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`
+- red run 426 at tests-only head `3a784e6c3bebc8914569b347701aa8677e6215c7`
+- implementation head `b48e20b2ea917fc4f6a0cbe85ee124b3d04c8a9e` passed run 430 with `175 passed in 13.85s`
+- durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`
 
-PR #65 must be merged before Slice 36b begins. If GitHub already shows it merged, treat Slice 36a as complete.
+PR #66 requires one final exact-head green CI result after continuity-note synchronization before ready/merge.
 
-### Slice 36b — semantic artifact projection oracle
+### Slice 36b2 — remaining semantic artifact graph
 
-After 36a, implement the accepted closed `phase1-projection-v2` oracle for:
+After PR #66 merges, extend the same closed typed map to:
 
-- P2-C01–P2-C05
-- P2-C08–P2-C18
-- P2-O16–P2-O22
+- checkpoint registration repair
+- retention prune/failure/reconciliation
+- rollback archive/source candidate/transformed candidate/completion
+- event export
+- exact `CP`, `RA`, `RC`, `TC`, and `STAGE` locations
+- remaining checkpoint/archive/candidate and absolute physical-limit evidence
 
-It must cover checkpoint, repair, retention, rollback, and event export artifacts with independent per-side integrity and no wildcard projection.
+Do not weaken the 36b1 checkpoint core or add wildcard, recursive, suffix, prefix, or global key-name normalization.
 
-Slice 37 remains blocked until 36a and 36b are both merged and no blocker/high/medium boundary defect remains.
+Slice 37 remains blocked until 36b2 is merged and no blocker/high/medium boundary defect remains.
 
 ## Accepted budgets and expiry
 
@@ -181,10 +203,10 @@ Avoid audit-repair-reaudit ping-pong unless evidence is insufficient, a gate rem
 ## Exact restart point
 
 1. verify Phase 1 closure and accepted ADRs 0008–0009
-2. inspect Issue #61, PR #65, and `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`
-3. if PR #65 is open, complete its CI/review/merge without starting 36b
-4. if PR #65 is merged, create a new Slice 36b branch from updated `main`
-5. implement the exact semantic artifact oracle for the declared C/O matrix IDs
+2. inspect Issue #61, PR #66, and `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`
+3. if PR #66 is open, verify its final exact-head CI and complete review/squash merge
+4. after PR #66 merges, create Slice 36b2 from updated `main`
+5. extend the exact typed map through repair, retention, rollback, export, and remaining physical evidence
 6. keep all 152 Phase 1 tests unchanged and passing
 7. request one implementation audit only when the complete Phase 2 candidate is ready to freeze
 
