@@ -27,7 +27,7 @@ Do not rely on conversation memory, prior model context, an Issue title, or one 
 15. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 16. `docs/HANDOFF.md`
 17. current Issues and PRs
-18. for Phase 2: proposed ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`, and `docs/phase2/CODEX_PHASE2_DESIGN_AUDIT.md`
+18. for Phase 2: ADR 0008, `docs/phase2/CONSULTATION_PROTOCOL_V1.md`, `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`, and the Issue #59 design-audit report
 
 Repository and GitHub state outrank conversation history.
 
@@ -86,97 +86,113 @@ Do not reopen Phase 1 Issues to add Phase 2 features.
 
 ## Phase 2 Consultation Boundary
 
-Issue #59 and draft PR #60 define the first deterministic fixture consultation boundary. No Phase 2 implementation or Slice 36 is authorized while ADR 0008 remains Proposed.
+Issue #59 and draft PR #60 define the first deterministic fixture consultation boundary. ADR 0008 remains Proposed until the audit corrections are reviewed and the design PR is accepted.
 
-The design keeps five explicit operational boundaries:
+The independent design audit reviewed exact head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647` and concluded:
+
+> Phase 2.0 Consultation Boundary is ready after specified documentation or test-matrix corrections.
+
+The required corrections are now incorporated in the ADR, protocol, and matrix:
+
+- exact `phase1-projection-v1` zero-caregiver comparison with only two exact version-key exceptions
+- exact proposal field sets, type-specific values, protected evaluator sets, and proposal expiry equal to request expiry
+- exact domain-separated digest preimages and package object
+- exact 64 KiB per-lineage formula without double counting
+- optional request-extension savepoint and real 8 MiB/reserve boundary evidence
+
+These are bounded documentation and matrix repairs. Under the audit policy, ordinary review and CI verify them; no automatic second design audit is required unless the repairs materially invalidate the audit conclusion.
+
+### Five operational boundaries
 
 1. **Garden request wake**
-   - preserves the unchanged Phase 1 `no_applicable_action` result and failure increment
-   - creates no request on the wake that enters maintenance
-   - commits and checkpoints before dispatch
+   - preserves unchanged Phase 1 `no_applicable_action` and failure accounting
+   - creates no request on maintenance entry
+   - treats request metadata as an optional savepoint extension
+   - commits the core Phase 1 wake and checkpoint even when the extension alone cannot fit
 2. **Administrative dispatch admission**
-   - uses a fresh fail-fast transaction
-   - records and conservatively charges one current-lineage dispatch before external work
-   - releases SQLite write ownership before fixture execution
+   - fresh fail-fast transaction
+   - stable current-lineage request required
+   - conservative charge before external work
+   - releases SQLite ownership before fixture execution
 3. **External deterministic fixture**
-   - receives only the request envelope and declared fixture case
-   - has no DB, path, workspace, executor, evaluator, checkpoint, rollback, network, subprocess, or ambient-randomness capability
+   - receives only final request envelope and declared fixture case
+   - has no DB, path, workspace, executor, evaluator, checkpoint, rollback, network, subprocess, credential, tool, or randomness capability
 4. **Administrative ingress or terminalization**
-   - records immutable untrusted data or one terminal reason
+   - independently verifies exact schemas, preimages, IDs, sizes, expiry, lineage, proposal shape, and physical budgets
    - keeps writer authority and protected cost separate from caregiver provenance
-   - permits explicit same-byte ingress resubmission after busy or pending-checkpoint rejection without recalling the fixture
-   - never automatically retries an admitted fixture invocation
+   - permits explicit same-byte ingress resubmission after busy/pending rejection without fixture recall
+   - never automatically retries admitted fixture work
 5. **Explicit disposition wake**
-   - is caller-selected separately from a garden wake
+   - caller-selected separately from garden work
    - claims no garden input
-   - considers at most one proposal
-   - preserves the garden failure streak
+   - considers one proposal at most
+   - preserves garden failure streak
    - checkpoints normally
-
-The first implementation stops at disposition. An accepted proposal does not enter the existing action selector or execute an action.
+   - produces no selector/action/memory/skill effect in the first implementation
 
 Protocol v1 proposal types are `action_candidate`, `abstain`, and `defer`. Final dispositions are `accepted`, `rejected`, `deferred`, and `clarification_requested`. Clarification rounds are zero.
 
-## Authority, identifiers, and budgets
+## Authority, identifiers, expiry, and budgets
 
-Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identity are provenance only. External packages contain no canonical writer-authority fields and no authoritative cost or budget fields.
+Canonical writer categories remain exactly `organism` and `administration`. Caregiver/adapter identity is provenance only. External packages contain no canonical writer-authority or authoritative cost/budget/permission/evaluator fields.
 
-Identifier derivation is acyclic:
+Identifiers use the exact domain-separated digest function and acyclic order fixed in the protocol:
 
 1. request
 2. dispatch
 3. proposal content and proposal ID
 4. response ID
-5. final package digest
-6. disposition
+5. final package digest over exactly `response` and `proposals`
+6. current-state digest
+7. disposition
+
+Proposal expiry equals request expiry exactly. A request created at lifecycle `N` is eligible through `N+2`; disposition at considering lifecycle `N+3` rejects as expired.
 
 Consultation budget epoch is current `lineage_generation`:
 
 - at most four requests and four charged fixture invocations per lineage
 - one current-lineage outstanding request
-- 64 KiB consultation logical payload per lineage
-- old-lineage rows remain immutable historical evidence and are inactive
-- rollback starts a fresh bounded lineage epoch
-- ADR 0007 permits one completed rollback, bounding the physical organism to at most eight charged fixture invocations
+- 64 KiB logical payload per lineage, exactly request-envelope bytes plus successfully ingressed complete-package bytes
+- provenance is inside, not added to, the package limit
+- duplicate ingress adds zero logical bytes
+- old-lineage rows remain immutable historical evidence and inactive
+- rollback starts a fresh bounded epoch
+- ADR 0007 bounds one physical organism to at most eight charged fixture invocations
 
-Logical limits supplement inherited physical limits:
+Physical limits remain:
 
-- request at most 16 KiB
-- response plus proposal at most 16 KiB
-- external provenance at most 8 KiB
-- zero human minutes, model units, money, and declared latency for the fixture
+- request envelope at most 16 KiB
+- complete external package at most 16 KiB
+- provenance at most 8 KiB within package limit
+- zero human/model/money/declared latency for deterministic fixture
 - 8 MiB active database
 - 40 MiB checkpoint store
-- 64 MiB runtime working set
-- every Phase 2 administrative write preserves the existing 1 MiB next-wake reserve before and after mutation
-
-Expiry is lifecycle-based. A request created in lifecycle `N` is eligible through `N+2`.
+- 64 MiB working set
+- 1 MiB next-wake active-database reserve
 
 ## Codex audit cadence
 
 Codex audits are high-cost phase gates, not per-slice or per-PR review. Follow `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
 
-Phase 2 has two planned independent read-only audits:
+Phase 2 has two planned independent audits:
 
-1. one design audit after Issue #59, proposed ADR 0008, protocol v1, authority and provenance rules, budgets, expiry, initialization policy, zero-caregiver comparison, and the Phase 2 matrix are internally coherent
-2. one implementation audit after the complete Phase 2 implementation, protected matrix, unchanged Phase 1 suite, and CI evidence are ready to freeze
+1. the completed design audit in Issue #59
+2. one implementation audit after accepted ADR 0008 is fully implemented, every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze
 
-Avoid audit-repair-reaudit ping-pong unless a gate conclusion blocks progress, evidence is insufficient, or accepted repairs change the same critical boundary being certified.
+Avoid audit-repair-reaudit ping-pong unless evidence is insufficient, the gate remains blocked, or a repair materially changes the same critical boundary being certified.
 
 ## Exact restart point
 
-1. verify Issues #13 and #56 are closed and PR #57 is merged
-2. verify the final Phase 1 audit and unchanged 152-test baseline
-3. inspect Issues #3 and #59 and draft PR #60
-4. read proposed ADR 0008, protocol v1, matrix, and design-audit brief
-5. complete ordinary internal review of the design package
-6. run one read-only Codex Phase 2.0 design audit against one exact PR head
-7. resolve accepted findings, accept ADR 0008, and merge PR #60 only after a satisfactory design conclusion
-8. open a separate test-first Phase 2 implementation Issue
-9. implement bounded slices mapped to matrix IDs
-10. run one later Codex implementation audit only after the complete Phase 2 candidate is ready to freeze
+1. verify Issues #13/#56 are closed and PR #57 is merged
+2. verify the frozen 152-test Phase 1 baseline
+3. inspect Issues #3/#59 and PR #60
+4. read proposed ADR 0008, corrected protocol, corrected matrix, and design-audit report
+5. verify audit corrections and green CI
+6. if satisfactory, change ADR 0008 to Accepted, merge PR #60, close Issue #59, and open a separate test-first Phase 2 implementation Issue
+7. implement bounded slices mapped to matrix IDs
+8. run one implementation audit only after the complete Phase 2 candidate is ready to freeze
 
-Do not begin live caregiver or API integration, human chat, memory, skills, model training, arbitrary Python, shell, SQL, continuous execution, personality or emotion features, or a generic agent framework.
+Do not begin live caregiver/API integration, human chat, memory, skills, model training, arbitrary Python/shell/SQL, continuous execution, personality/emotion features, or a generic agent framework.
 
 ## End-of-work protocol
 
