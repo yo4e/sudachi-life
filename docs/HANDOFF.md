@@ -2,11 +2,11 @@
 
 Updated: **2026-07-26**
 
-Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation and Slice 36 is authorized to resume test-first from updated `main`.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a is implemented on draft PR #65; verify its current GitHub state before beginning Slice 36b.
 
-A focused read-only re-audit confirmed the contradiction and concluded that ADR 0009 was ready after specified documentation or matrix corrections. Those corrections passed CI and were accepted. PR #64 and Issue #63 close the design correction gate. No live caregiver integration is authorized.
+No live caregiver integration is authorized.
 
-Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, Minimal Organism Contract v0.2, accepted ADRs 0001–0009, the Phase 1 matrix, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, this handoff, the accepted Consultation Protocol v1, the accepted Phase 2 matrix, and current Issues/PRs.
+Read `AGENTS.md`, `docs/AI_COLLABORATION_OPERATIONS.md`, Minimal Organism Contract v0.2, accepted ADRs 0001–0009, the Phase 1 matrix, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`, this handoff, the accepted Consultation Protocol v1, the accepted Phase 2 matrix, implemented Phase 2 notes, and current Issues/PRs.
 
 ## Thesis
 
@@ -36,61 +36,76 @@ The design audit reviewed PR #60 head `8cfd65d6e6b153a9dd028333ddf898e7dd4b0647`
 
 > Phase 2.0 Consultation Boundary is ready after specified documentation or test-matrix corrections.
 
-Required corrections were incorporated:
+A focused re-audit of ADR 0009 confirmed the zero-caregiver checkpoint/artifact contradiction and concluded:
 
-- exact zero-caregiver semantic artifact projection under accepted ADR 0009
-- exact proposal schemas, evaluator sets, and inherited expiry
-- exact digest preimages and package graph
-- exact 64 KiB lineage accounting without double counting
-- optional request savepoint and real request-wake storage-boundary evidence
+> ADR 0009 is ready after specified documentation or matrix corrections.
 
-Corrected design CI remained green with the unchanged 152-test suite. A later focused re-audit of ADR 0009 found additional exact-location propagation requirements across checkpoint events, repair, retention, rollback, and export; those corrections are accepted.
+Those corrections are accepted. The original Phase 1 budget stays exactly `phase1-v1`; Phase 2 policy lives in an immutable `consultation_configuration`; and byte-derived checkpoint/repair/retention/rollback/export identities use the exact semantic projection in ADR 0009.
 
-## Accepted zero-caregiver correction
+## Current implementation: Slice 36a
 
-ADR 0009 requires:
+Issue #61 splits Slice 36 into:
 
-- original `budget_config` and every original budget-version location remain exactly `phase1-v1`
-- one protected immutable `consultation_configuration` singleton stores Phase 2 policy
-- exact semantic `CP`/`RA`/`RC`/`TC`/retention-staging mappings at enumerated canonical locations
-- per-side recomputation and linkage checks for every projected-away digest, size, aggregate byte count, and directory name
-- no wildcard/recursive/suffix/prefix/global-key normalization
-- bounded schema-v2 structural overhead and separate real absolute-limit tests
+- 36a: schema-v2 genesis and protected configuration
+- 36b: full `phase1-projection-v2` semantic artifact oracle
 
-Slice 36 may resume under Issue #61.
+PR #65 implements 36a for P2-A01–A05, P2-B01–B12, genesis/configuration P2-C06–C07, and P2-O15.
+
+Delivered behavior:
+
+- schema-v1 remains the default API/CLI path
+- schema-v2 requires explicit schema version and one accepted consultation configuration
+- original Phase 1 tables, budget singleton, event budget versions, and default public status remain unchanged
+- one exact immutable `consultation_configuration` singleton
+- nine empty immutable operational consultation tables
+- foreign-key/linkage, successful-response proposal, cost-completion, and response-versus-terminal guards fixed at genesis
+- schema-v2 checkpoint-stable genesis and version-aware checkpoint validation
+- no migration/downgrade surface
+- strict zero-caregiver genesis absence
+- schema-v2 active DB overhead within the accepted 256 KiB cap
+
+Exact protected schema-v2 SQL profile:
+
+- 19 tables
+- 27 triggers
+- normalized SHA-256 `41ee900df99b3c1b44700e2de628d3151e907c8d0069f87098eb9fd72a3f6fec`
+
+Test-first history:
+
+- run 409 failed at collection because `sudachi_life.phase2_schema` did not exist
+- implementation candidates preserve all 152 Phase 1 tests and add protected genesis/configuration/profile tests
+- durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`
+
+If PR #65 is still open, finish its exact-head CI and merge before any 36b work. If merged, treat 36a as complete.
+
+## Next implementation: Slice 36b
+
+Slice 36b owns:
+
+- P2-C01–C05
+- P2-C08–C18
+- P2-O16–O22
+
+It must implement the closed typed `phase1-projection-v2` oracle across:
+
+- normal and maintenance checkpoints
+- checkpoint registration repair
+- retention prune/failure/reconciliation
+- rollback archive/source candidate/transformed candidate/completion
+- event export
+- per-side digest/size/linkage/integrity validation
+- exact no-wildcard location guards
+- paired and real near-ceiling physical evidence
+
+Slice 37 remains blocked until both 36a and 36b are merged and no blocker/high/medium boundary defect remains.
 
 ## Five operational boundaries
 
-1. **Garden request wake**
-   - preserves exact Phase 1 `no_applicable_action` outcome and failure increment
-   - creates no request on maintenance entry
-   - treats request metadata as an optional savepoint extension
-   - commits the Phase 1 core wake/checkpoint when extension-only storage does not fit
-2. **Administrative dispatch admission**
-   - fresh fail-fast transaction
-   - stable eligible current-lineage request required
-   - conservative fixture charge before external work
-   - releases SQLite ownership before fixture execution
-3. **External deterministic fixture**
-   - receives only final request envelope and declared case
-   - no DB, path, workspace, repository, executor, evaluator, checkpoint, migration, rollback, network, subprocess, credential, tool, or randomness capability
-4. **Administrative ingress or terminalization**
-   - exact independent verification of schemas, preimages, IDs, proposal constraints, expiry, sizes, lineage, and physical budgets
-   - writer authority/cost authority remain protected administration
-   - identical-byte resubmission after busy/pending rejection without fixture recall
-   - no automatic fixture retry
-5. **Explicit disposition wake**
-   - separate caller-selected work class
-   - no garden claim
-   - at most one proposal
-   - preserves garden failure streak and checkpoints
-   - no selector, action, memory, skill, or garden effect in first implementation
-
-Proposal types: `action_candidate`, `abstain`, `defer`.
-
-Dispositions: `accepted`, `rejected`, `deferred`, `clarification_requested`.
-
-Clarification rounds: zero.
+1. **Garden request wake** preserves exact Phase 1 `no_applicable_action` outcome/failure truth and uses an optional storage-safe request extension.
+2. **Administrative dispatch admission** commits and charges before external work, then releases SQLite ownership.
+3. **External deterministic fixture** receives only the request envelope and declared case, with no authority/capability handles.
+4. **Administrative ingress or terminalization** verifies exact data and never automatically retries fixture work.
+5. **Explicit disposition wake** considers at most one proposal, checkpoints, and has no action/memory/skill effect in the first implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver identity is provenance only.
 
@@ -110,55 +125,28 @@ Canonical writer categories remain exactly `organism` and `administration`. Care
 - working set 64 MiB
 - next-wake reserve 1 MiB
 
-Logical payload is exactly final request-envelope bytes plus successfully ingressed complete-package bytes. Response/proposal/provenance are not double-counted. Duplicate ingress adds zero.
+Request lifecycle `N` is eligible through `N+2`; proposal expiry is identical. Considering lifecycle `N+3` or later rejects as expired.
 
-Request lifecycle `N` is eligible through `N+2`; every proposal inherits that expiry exactly. Considering lifecycle `N+3` or later rejects as expired.
-
-Rollback starts a fresh lineage epoch. Old-lineage consultation rows remain immutable history and inactive. ADR 0007 bounds one physical organism to at most two epochs/eight charged fixture invocations.
-
-## Implementation plan boundary
-
-The separate implementation Issue must map bounded slices to accepted matrix IDs. A recommended grouping is:
-
-1. schema-v2 initialization and zero-caregiver projection — A/B/C
-2. request envelope and optional storage-safe extension — D/E
-3. exact digests and typed response/proposal schemas — H/I
-4. dispatch, precharge, and fixture capability boundary — F/G
-5. ingress, logical payload, and terminalization — J/K
-6. explicit disposition wake — L
-7. lineage, authority, physical budgets, checkpoint/rollback, and absence closure — M/N/O/P
-
-The exact issue may split these further, but no slice may weaken or condition the 152-test Phase 1 baseline.
+Rollback starts a fresh lineage epoch. ADR 0007 bounds one physical organism to at most two epochs/eight charged fixture invocations.
 
 ## Audit cadence
 
 The Phase 2 design audit and focused ADR 0009 correction re-audit are complete. The next Codex audit occurs once only after the full accepted Phase 2 implementation, every matrix item has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green candidate is ready to freeze.
 
-Do not use Codex for each slice, PR, ordinary bug, or documentation edit. Avoid audit-repair-reaudit ping-pong unless evidence is insufficient, a gate remains blocked, or a repair materially replaces the same certified boundary.
+Do not use Codex for each slice, PR, ordinary bug, or documentation edit.
 
 ## Explicit exclusions
 
-No:
-
-- live model/API/human caregiver or consumer chat automation
-- memory or skill generation/promotion
-- caregiver source/test generation
-- model training/fine-tuning/imitation/distillation
-- arbitrary Python, SQL, shell, tool, path, URL, credential, or executable payload
-- organism network or subprocess
-- continuous/always-on execution or autonomous internet
-- personality, emotion, affection, mood, or virtual-pet state
-- caregiver-controlled budgets, permissions, evaluation, checkpoints, migration, rollback, or execution
-- generic agent framework
+No live model/API/human caregiver, memory or skill generation, source/test generation, training, arbitrary code/SQL/shell/tools/paths/URLs/credentials, organism network/subprocess, continuous execution, personality/emotion state, caregiver-controlled authority, or generic agent framework.
 
 ## Exact restart
 
-1. verify Issue #63 is closed completed and PR #64 is merged
-2. inspect Issue #61, accepted ADRs 0008–0009, protocol, and matrix
-3. create a new Slice 36 implementation branch from updated `main`
-4. write failing protected tests for the exact configuration singleton and semantic artifact oracle
-5. implement only the declared Slice 36 matrix scope
+1. inspect Issue #61, PR #65, and `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`
+2. if PR #65 is open, verify exact-head CI and complete review/merge
+3. after PR #65 merges, create a new Slice 36b branch from updated `main`
+4. write failing protected tests for the exact semantic artifact projection
+5. implement only the declared 36b C/O matrix scope
 6. keep all 152 Phase 1 tests unchanged and passing
-7. run the implementation audit only when the complete Phase 2 candidate is ready to freeze
+7. do not begin Slice 37 until all Slice 36 evidence is merged
 
 No critical decision may remain only in chat.
