@@ -1,8 +1,8 @@
 # Phase 2 Consultation Protocol v1
 
-Status: **Proposed for Issue #59 review**
+Status: **Proposed for Issue #59 ordinary review**
 
-This document fixes source-neutral envelopes and canonical-state semantics referenced by proposed ADR 0008. It defines a deterministic fixture protocol, not a live human/model interface.
+This document fixes source-neutral envelopes and canonical-state semantics referenced by proposed ADR 0008. It defines a deterministic fixture protocol, not a live human or model interface.
 
 ## 1. Version identifiers
 
@@ -17,53 +17,34 @@ This document fixes source-neutral envelopes and canonical-state semantics refer
 - disposition schema: `sudachi.consultation.disposition/v1`
 - dispatch terminal schema: `sudachi.consultation.dispatch_terminal/v1`
 - cost schema: `sudachi.consultation.cost/v1`
-- zero-caregiver budget config: `phase2-zero-caregiver-v1`
-- fixture budget config: `phase2-fixture-v1`
-- fixture adapter version: `deterministic-fixture-v1`
-- fixture work class: `fixture-constant-v1`
+- zero-caregiver budget configuration: `phase2-zero-caregiver-v1`
+- deterministic fixture budget configuration: `phase2-fixture-v1`
+- deterministic fixture adapter version: `deterministic-fixture-v1`
+- deterministic fixture work class: `fixture-constant-v1`
 
 Unknown versions fail closed before canonical mutation.
 
 ## 2. Canonical value rules
 
-All envelope/identity values are canonical JSON-compatible values.
+All envelope and identity values are canonical JSON-compatible values.
 
 - UTF-8 only
-- object keys sorted lexicographically for encoding
+- objects use lexicographically sorted keys for canonical encoding
 - arrays preserve declared order
-- sets represented as sorted unique arrays
-- integers only; no floating point
-- booleans only where declared
-- `null` forbidden unless declared
-- strings NFC-normalized and bounded
+- sets are represented as sorted unique arrays
+- integers only; floating-point numbers are forbidden
+- booleans are permitted only where explicitly declared
+- `null` is forbidden unless explicitly declared
+- strings are NFC-normalized UTF-8 and bounded by their enclosing limit
 - identifiers match `^[a-z0-9][a-z0-9._:-]{0,127}$`
-- digests are lowercase SHA-256 hex
-- SQL, Python, shell, tools, paths, URLs, credentials, executable code, hidden chat history, and opaque binary payloads forbidden
+- digests are lowercase SHA-256 hexadecimal strings
+- arbitrary SQL, Python, shell, tool names, filesystem paths, URLs, credentials, executable code, hidden chat history, and opaque binary payloads are forbidden
 
-Canonical JSON uses UTF-8, sorted keys, no insignificant whitespace, separators equivalent to `(',', ':')`.
+Canonical JSON bytes use UTF-8, sorted keys, no insignificant whitespace, and separators equivalent to `(',', ':')`.
 
-## 3. Lineage budget epoch
+## 3. Digest and identifier construction
 
-The consultation budget epoch is exactly current `lineage_generation`.
-
-Phase 1 rollback restores an older checkpoint and creates a new lineage. Protocol v1 does not modify rollback transformation to carry abandoned-future mutable counters.
-
-Rules:
-
-- request ordinals/counters include only rows whose lineage equals current lineage
-- outstanding work includes only current-lineage rows
-- old-lineage rows remain immutable historical evidence
-- old-lineage rows never authorize dispatch, ingress, disposition, or current budget use
-- external packages must match current lineage
-- rollback begins a new bounded consultation epoch
-- `phase2-fixture-v1` permits four charged invocations per lineage epoch
-- ADR 0007 permits at most one completed rollback, bounding total charged invocations across one physical organism to at most eight
-
-No cross-lineage global four-call claim is made.
-
-## 4. Digest and identifier construction
-
-### 4.1 General rule
+### 3.1 General rule
 
 Each identifier is:
 
@@ -71,90 +52,62 @@ Each identifier is:
 <prefix>:<sha256(canonical identity object)>
 ```
 
-The derived identifier and later-assigned event sequence are excluded only where explicitly listed.
+The identifier being derived is excluded from its identity object. Event sequences assigned after derivation are also excluded. Every exclusion is explicit; no implementation may invent additional normalization.
 
-### 4.2 Request identity
+### 3.2 Request identity
 
-```text
-request_id = consultation-request:<sha256(request identity object)>
-```
+`request_id` is derived from exactly:
 
-Identity object contains exactly:
+- request schema and protocol version
+- organism identity and current lineage generation
+- current-lineage request ordinal
+- request lifecycle number
+- reason code and requested proposal types
+- observation and objective digests
+- allowed action and permission identifiers
+- policy context and budget configuration versions
+- expiry lifecycle
 
-- `request_schema`
-- `consultation_protocol_version`
-- `organism_id`
-- `lineage_generation`
-- `request_ordinal`
-- `request_lifecycle_number`
-- `reason_code`
-- `requested_proposal_types`
-- observation digest
-- objective digest
-- `allowed_action_ids`
-- `allowed_permission_ids`
-- `policy_context_version`
-- `budget_config_version`
-- `expires_after_lifecycle_number`
+It excludes request ID, request event sequence, wall timestamp, and event-authority metadata.
 
-It excludes `request_id`, `request_event_sequence`, wall timestamp, and authority event metadata.
+### 3.3 Dispatch identity
 
-### 4.3 Dispatch identity
+`dispatch_id` is derived from exactly:
 
-```text
-dispatch_id = consultation-dispatch:<sha256(dispatch identity object)>
-```
-
-Identity object contains exactly:
-
-- `dispatch_schema`
-- protocol version
-- organism ID
-- lineage generation
+- dispatch schema and protocol version
+- organism identity and current lineage
 - request ID
-- dispatch ordinal `1`
+- dispatch ordinal, exactly `1`
 - adapter version
-- fixture case ID
+- fixture case identifier
 - fixture work class
 
-It excludes dispatch ID/event sequence/wall timestamp.
+It excludes dispatch ID, dispatch event sequence, and wall timestamp.
 
-### 4.4 Proposal identity
+### 3.4 Proposal identity
 
-```text
-proposal_id = consultation-proposal:<sha256(proposal identity object)>
-```
+`proposal_id` is derived from exactly:
 
-Identity object contains exactly:
-
-- proposal schema/protocol
-- request ID
-- dispatch ID
-- proposal ordinal `1`
+- proposal schema and protocol version
+- request ID and dispatch ID
+- proposal ordinal, exactly `1`
 - proposal type
 - subject reference
 - proposed value
 - rationale code
 - confidence basis
 - expiry lifecycle
-- required evaluator IDs
+- required evaluator identifiers
 
-It excludes proposal ID and response ID.
+It excludes proposal ID and response ID. The digest of this identity object is the proposal content digest.
 
-Its digest is `proposal_content_digest`.
+### 3.5 Response identity
 
-### 4.5 Response identity
+`response_id` is derived from exactly:
 
-```text
-response_id = consultation-response:<sha256(response identity object)>
-```
-
-Identity object contains exactly:
-
-- response schema/protocol
-- request ID
-- dispatch ID
-- adapter type/version/instance
+- response schema and protocol version
+- request ID and dispatch ID
+- adapter type, version, and instance identity
 - response status
 - ordered proposal IDs
 - ordered proposal content digests
@@ -162,54 +115,45 @@ Identity object contains exactly:
 
 It excludes response ID.
 
-After response ID derivation, it is inserted into final proposal linkage. Complete package digest is:
+After response ID is derived, it is inserted into final proposal linkage. The complete external package digest is then SHA-256 over canonical JSON containing the final response and ordered proposal envelopes.
 
-```text
-sha256(canonical JSON({"response": <final response>, "proposals": [<final proposal>] }))
-```
+For `unavailable`, the proposal array is empty.
 
-For unavailable response, proposals is empty.
+### 3.6 Disposition identity
 
-### 4.6 Disposition identity
+`disposition_id` is derived from exactly:
 
-```text
-disposition_id = consultation-disposition:<sha256(disposition identity object)>
-```
-
-Identity object contains exactly:
-
-- disposition schema/protocol
-- organism ID
-- current lineage
-- request/dispatch/response/proposal IDs
-- disposition/reason
-- disposition lifecycle
+- disposition schema and protocol version
+- organism identity and current lineage
+- request, dispatch, response, and proposal identifiers
+- disposition and reason code
+- considering lifecycle number
 - current-state reference
 - evaluator versions
 
-It excludes disposition ID/event sequence/wall timestamp.
+It excludes disposition ID, disposition event sequence, and wall timestamp.
 
-### 4.7 Reproducibility
+### 3.7 Reproducibility requirement
 
-Two independent constructions from identical declared inputs must produce identical identity objects, IDs, envelopes, content/package digests, rows, and event payloads.
+Protected tests construct the complete graph twice from identical declared inputs and require identical identity objects, identifiers, envelopes, content digests, package digest, canonical rows, and event payloads.
 
-Tests must prove no response/proposal circular dependency.
+They must also prove there is no response/proposal circular dependency.
 
-## 5. Protected budget configurations
+## 4. Protected budget configurations
 
-### 5.1 `phase2-zero-caregiver-v1`
+### 4.1 `phase2-zero-caregiver-v1`
 
-All consultation request, dispatch, fixture work, response, proposal, disposition, clarification, payload, human, model, money, and consultation-record limits are zero.
+Every consultation request, dispatch, fixture work, response, proposal, disposition, clarification, payload, human, model, money, and consultation-record limit is zero.
 
-Operational consultation tables remain empty. No consultation event/source or fixture import/invocation occurs.
+Operational consultation tables remain empty and no consultation event or source is emitted.
 
-### 5.2 `phase2-fixture-v1`
+### 4.2 `phase2-fixture-v1`
 
 | Resource | Limit |
 | --- | ---: |
-| requests per eligible garden wake | 1 |
+| requests created per garden wake | 1 |
 | outstanding requests in current lineage | 1 |
-| requests per lineage epoch | 4 |
+| requests per lineage budget epoch | 4 |
 | dispatch admissions per request | 1 |
 | charged fixture invocations per lineage epoch | 4 |
 | successful responses per request | 1 |
@@ -217,480 +161,271 @@ Operational consultation tables remain empty. No consultation event/source or fi
 | proposals considered per disposition wake | 1 |
 | dispositions per proposal | 1 |
 | clarification rounds | 0 |
-| request JSON bytes | 16 KiB |
-| response-plus-proposal JSON bytes | 16 KiB |
-| external provenance bytes | 8 KiB |
-| total logical consultation payload per lineage | 64 KiB |
+| request canonical JSON bytes | 16 KiB |
+| response-plus-proposal canonical JSON bytes | 16 KiB |
+| external provenance subset bytes | 8 KiB |
+| total consultation logical payload per lineage epoch | 64 KiB |
 | fixture work units charged per dispatch | 1 |
 | human minutes | 0 |
 | model input units | 0 |
 | model output units | 0 |
-| money minor units | 0 |
-| declared fixture latency ms | 0 |
-| Phase 1 core records in request garden wake | <=16 |
-| extra request records | <=2 |
-| total request garden-wake records | <=18 |
-| disposition wake semantic steps | <=10 |
-| disposition wake records | <=12 |
-| dispatch admission records | <=3 |
-| response ingress records | <=5 |
-| dispatch terminal records | <=3 |
+| money in integer minor units | 0 |
+| declared fixture latency milliseconds | 0 |
+| Phase 1 core canonical records in a request garden wake | at most 16 |
+| additional request records in that wake | at most 2 |
+| total canonical records in a request garden wake | at most 18 |
+| semantic steps in a disposition wake | at most 10 |
+| canonical records in a disposition wake | at most 12 |
+| canonical records in dispatch admission | at most 3 |
+| canonical records in response ingress | at most 5 |
+| canonical records in dispatch terminalization | at most 3 |
 
-All administrative writes perform predicted/post-write active DB and working-set accounting and preserve the inherited 1 MiB next-wake reserve.
+All administrative writes perform predicted and post-write active-database and working-set accounting and preserve the existing 1 MiB next-wake reserve.
 
-## 6. Request envelope
+## 5. Request envelope
 
 Schema: `sudachi.consultation.request/v1`
 
-Created only by organism runtime inside schema-v2 garden wake.
+A request is created only by organism runtime inside a schema-v2 garden wake.
 
-### 6.1 Required fields
+Required fields:
 
-| Field | Rule |
-| --- | --- |
-| `request_id` | exact deterministic ID |
-| `request_schema` | exact schema |
-| `consultation_protocol_version` | `1` |
-| `organism_id` | canonical identity |
-| `lineage_generation` | exact current lineage |
-| `request_ordinal` | current-lineage request count + 1; `1..4` |
-| `request_event_sequence` | exact creating event |
-| `request_lifecycle_number` | exact garden lifecycle |
-| `reason_code` | `no_applicable_action` |
-| `requested_proposal_types` | sorted unique non-empty allowed subset |
-| `observation_reference` | event sequence + canonical digest |
-| `objective_reference` | ID/version/digest |
-| `allowed_action_ids` | sorted unique registered IDs |
-| `allowed_permission_ids` | sorted unique protected IDs |
-| `policy_context_version` | exact policy version |
-| `budget_config_version` | `phase2-fixture-v1` |
-| `consultation_budget_snapshot` | current-lineage counters/remaining limits |
-| `expires_after_lifecycle_number` | request lifecycle + 2 |
-| `authority_category` | `organism` |
-| `authority_source` | `organism:consultation.request` |
-| `provenance_parent_event_sequences` | sorted unique existing earlier current-lineage events |
+- `request_id`
+- `request_schema`
+- `consultation_protocol_version`
+- `organism_id`
+- `lineage_generation`
+- `request_ordinal`
+- `request_event_sequence`
+- `request_lifecycle_number`
+- `reason_code`, exactly `no_applicable_action`
+- sorted unique requested proposal types
+- observation and objective references
+- sorted unique allowed action and permission identifiers
+- policy and budget configuration versions
+- exact budget snapshot before creation
+- expiry lifecycle, exactly request lifecycle plus two
+- `authority_category = organism`
+- `authority_source = organism:consultation.request`
+- sorted unique existing parent event sequences
 
-Optional `declared_context_summary` is bounded typed codes/IDs only, no free text.
+Optional declared context is limited to bounded typed codes and identifiers. No free text is accepted.
 
-Allowed requested types:
+Request admission requires:
+
+- fixture budget configuration
+- no current-lineage outstanding request
+- fewer than four current-lineage requests
+- resulting garden failure streak below maintenance threshold
+- logical and physical limits fit
+
+The garden lifecycle remains a Phase 1 `no_applicable_action` abstention and increments `consecutive_failures` exactly once. Request creation never resets or replaces that accounting.
+
+The request row and event are immutable, commit atomically, and become checkpoint-stable before dispatch admission.
+
+## 6. Dispatch admission
+
+Schema: `sudachi.consultation.dispatch/v1`
+
+Dispatch admission is an administrative operation with a fresh fail-fast `BEGIN IMMEDIATE` transaction.
+
+Required linkage includes:
+
+- deterministic dispatch identity
+- exact organism and current lineage
+- exact eligible request
+- dispatch ordinal `1`
+- deterministic fixture adapter identity, version, case, and work class
+- administrative event sequence and protected source
+
+Admission requires schema-v2 support, `sleeping`, no pending checkpoint, a stable request checkpoint, current lineage, unexpired request, no prior dispatch, nonterminal request, and all logical and physical budgets fitting.
+
+The same transaction creates one immutable protected cost charge:
+
+- one dispatch attempt
+- one charged fixture invocation
+- one charged work unit
+- zero human, model, money, and declared-latency values
+- exact request payload bytes
+- response and provenance bytes initially zero
+
+The transaction commits before fixture execution. The charge is never refunded. Repeated admission cannot authorize a second invocation.
+
+## 7. External deterministic fixture
+
+Fixture execution occurs only after dispatch admission commits and outside every SQLite write transaction.
+
+The fixture receives exactly:
+
+- the canonical request envelope
+- the protected fixture case identifier
+
+It receives no database handle, path, workspace, repository handle, executor, evaluator, checkpoint, rollback, network, subprocess, or randomness capability.
+
+The output is a noncanonical external package until ingress succeeds.
+
+## 8. External response and proposal package
+
+Response schema: `sudachi.consultation.response/v1`
+
+Required response data includes deterministic response identity, request and dispatch linkage, exact adapter provenance, response status, ordered proposal identifiers and content digests, and bounded external provenance.
+
+Allowed statuses:
+
+- `proposals_returned`
+- `unavailable`
+
+`proposals_returned` contains exactly one proposal. `unavailable` contains none.
+
+Proposal schema: `sudachi.consultation.proposal/v1`
+
+Allowed proposal types:
 
 - `action_candidate`
 - `abstain`
 - `defer`
 
-### 6.2 Admission
+`action_candidate` may reference only an existing action allowed by the request and schema-valid parameters. It cannot define code, tools, paths, SQL, permissions, budgets, or a new action.
 
-Request admission occurs only after unchanged Phase 1 policy selects `no_applicable_action` for incomplete objective.
+External packages contain no writer-authority fields and no authoritative cost, budget, permission, evaluator, checkpoint, migration, rollback, or execution command.
 
-Create request only when:
+## 9. Administrative response ingress
 
-- config is fixture config
-- no current-lineage outstanding request
-- fewer than four current-lineage requests
-- resulting garden failure streak remains below maintenance threshold
-- logical/physical/reserve budgets fit
+Ingress uses a new fresh fail-fast administrative transaction.
 
-Garden lifecycle remains Phase 1 no-applicable abstention and increments `consecutive_failures` exactly once. Request never resets/replaces accounting.
+Administration independently recomputes identifiers, canonical bytes, content digests, package digest, measured byte counts, and exact request, dispatch, adapter, case, lineage, expiry, and cardinality linkage before mutation.
 
-Zero-caregiver config creates no consultation row/event/source/import.
+Successful ingress creates immutable response, proposal when present, ingress receipt, measured-byte cost completion, and one administrative event atomically.
 
-### 6.3 Invariants
+The protected receipt carries:
 
-- one request/wake
-- one current-lineage outstanding request
-- four requests/current lineage
-- request <=16 KiB
-- row/event atomic and immutable
-- one `consultation_request_created` organism event
-- stable request checkpoint before dispatch
-- no request on maintenance-entering wake
+- `authority_category = administration`
+- `authority_source = administration:consultation.response_ingress`
+- package digest
+- measured bytes
+- exact parent event linkage
 
-## 7. Dispatch admission
+Ingress cannot adopt, execute, clear maintenance, checkpoint, migrate, roll back, or alter protected budgets or permissions.
 
-Schema: `sudachi.consultation.dispatch/v1`
+Byte-identical duplicate ingress is idempotent. Conflicting duplicate or invalid package fails closed.
 
-Administrative fresh fail-fast `BEGIN IMMEDIATE`.
+A valid package rejected only by busy ownership or pending checkpoint may be explicitly resubmitted with identical bytes. Fixture execution is not repeated and no additional fixture charge is created.
 
-### 7.1 Required fields
+`unavailable` terminalizes the request with no proposal or disposition.
 
-| Field | Rule |
-| --- | --- |
-| `dispatch_id` | exact deterministic ID |
-| `dispatch_schema` | exact schema |
-| protocol | `1` |
-| organism/lineage | exact current |
-| `request_id` | eligible current-lineage request |
-| `dispatch_ordinal` | `1` |
-| adapter type | `deterministic_fixture` |
-| adapter version | `deterministic-fixture-v1` |
-| adapter instance | deterministic declared ID |
-| `fixture_case_id` | protected declared case |
-| work class | `fixture-constant-v1` |
-| `dispatch_event_sequence` | exact administrative event |
-| authority | `administration:consultation.dispatch_admitted` |
-
-### 7.2 Admission checks
-
-Require:
-
-- schema2/protocol1
-- sleeping
-- no pending checkpoint
-- stable checkpoint at/beyond request event
-- request lineage equals current lineage
-- current lifecycle <= expiry
-- no prior dispatch
-- request nonterminal
-- current-lineage dispatch/work/payload budgets fit
-- physical ceilings/reserve fit
-
-### 7.3 Conservative cost charge
-
-Same transaction creates immutable cost charge:
-
-- `dispatch_attempts=1`
-- `fixture_invocations_charged=1`
-- `fixture_work_units_charged=1`
-- human/model/money/latency all zero
-- request payload bytes exact
-- response/provenance measured completion absent until ingress
-
-Charge remains if process crashes before call.
-
-### 7.4 Invariants
-
-- one admission/request
-- dispatch + cost + event atomic
-- no fixture before commit
-- repeated admission never authorizes call
-- no write lock during fixture
-- rows immutable
-- no checkpoint/action
-
-## 8. External deterministic fixture
-
-Fixture receives exactly:
-
-1. canonical request envelope
-2. protected `fixture_case_id`
-
-Returns one external package or bounded error.
-
-No DB/state path/workspace/repository/executor/evaluator/budget/checkpoint/rollback/network/subprocess/randomness handle.
-
-Fixture package is returned to explicit caller/harness. It remains noncanonical until ingress.
-
-Identical request/case yields identical bytes, but only one charged fixture attempt is allowed.
-
-## 9. External response envelope
-
-Schema: `sudachi.consultation.response/v1`
-
-Untrusted caregiver data; no writer authority or authoritative cost.
-
-### 9.1 Required fields
-
-| Field | Rule |
-| --- | --- |
-| `response_id` | exact deterministic ID |
-| response schema/protocol | exact/current |
-| request/dispatch | exact parent linkage |
-| adapter type/version/instance | exact dispatch provenance |
-| `response_status` | `proposals_returned` or `unavailable` |
-| `proposal_ids` | one for success; empty unavailable |
-| `proposal_content_digests` | matches proposal IDs; empty unavailable |
-| `provenance` | request digest, dispatch, case, adapter, bounded parents |
-
-Forbidden:
-
-- authority category/source
-- canonical event sequence
-- budget limit
-- authoritative cost
-- permission/evaluator/checkpoint/migration/rollback/execution command
-
-### 9.2 Status
-
-`proposals_returned`: exactly one proposal.
-
-`unavailable`: zero proposals; valid fixture result; terminal after ingress; no retry/disposition.
-
-## 10. Proposal envelope
-
-Schema: `sudachi.consultation.proposal/v1`
-
-### 10.1 Common fields
-
-| Field | Rule |
-| --- | --- |
-| proposal ID/schema/protocol | exact |
-| request/dispatch/response IDs | exact |
-| proposal ordinal | `1` |
-| type | action_candidate/abstain/defer |
-| subject reference | exact objective/observation/action subject |
-| proposed value | exact type-specific object |
-| rationale code | bounded; no free text |
-| confidence basis | typed case/evidence; no required probability |
-| expiry | <= parent request expiry |
-| required evaluators | sorted unique protected IDs |
-
-`action_candidate` value: existing allowed `action_id` + registered-schema parameters only.
-
-`abstain` value: bounded `reason_code` only.
-
-`defer` value: bounded `reason_code` only; no scheduling/retry effect.
-
-Proposal is immutable, exactly one on success, none unavailable, one disposition max, no action selection.
-
-## 11. Response ingress
-
-Protected receipt schema: `sudachi.consultation.ingress_receipt/v1`
-
-Separate administrative fresh fail-fast transaction. Caller supplies external package bytes; administration independently computes IDs, canonical bytes, sizes, and digests.
-
-### 11.1 Receipt fields
-
-- deterministic receipt ID from dispatch + package digest
-- exact schema
-- organism/current lineage
-- request/dispatch/response IDs
-- complete external package digest
-- response/proposal/provenance byte counts
-- exact ingress event sequence
-- `authority_category=administration`
-- `authority_source=administration:consultation.response_ingress`
-
-### 11.2 Preconditions
-
-- status sleeping or maintenance-required
-- no pending checkpoint
-- no rollback/quarantine
-- dispatch exists in current lineage
-- no dispatch terminal
-- current lifecycle <= request expiry
-- exact protocol/envelope versions
-- all ID derivations/package digest valid
-- adapter/instance/case equals dispatch
-- response/proposal cardinality/type valid
-- logical limits, current-lineage epoch limit, physical limits, reserve fit
-- protected zero human/model/money/latency expectations
-
-Current garden state consistency is not required at ingress; it is evaluated later at disposition.
-
-### 11.3 Effects
-
-Atomically create:
-
-- response row
-- zero/one proposal row
-- ingress receipt
-- administrative event
-- separate immutable measured-byte cost completion when normalized schema needs it
-
-No original cost charge is reduced.
-
-No checkpoint, disposition, action, maintenance clear, migration, or rollback.
-
-### 11.4 Duplicates/failure
-
-- byte-identical duplicate: idempotent, no new row/event/clock/artifact
-- conflicting duplicate: fail closed
-- malformed/version/lineage/expiry/limit/link failure: fail closed
-- busy/pending-checkpoint rejection may be explicitly retried later using identical already-produced bytes; never automatically queued and never re-invokes fixture
-- invalid fixture output is later terminalized once
-
-## 12. Dispatch terminalization and reconciliation
+## 10. Dispatch terminalization and reconciliation
 
 Schema: `sudachi.consultation.dispatch_terminal/v1`
 
-One terminal outcome for admitted dispatch with no valid response.
-
-### 12.1 Fields
-
-- deterministic terminal ID
-- exact schema
-- organism + dispatch lineage
-- request/dispatch IDs
-- terminal reason
-- optional rejected-package digest
-- rejected-package byte count
-- terminal event sequence
-- `administration:consultation.dispatch_terminal`
-
-Reasons:
+Allowed terminal reasons:
 
 - `dispatch_interrupted`
 - `fixture_output_invalid`
 - `expired_before_ingress`
 
-### 12.2 Preconditions/rules
+The normal administrative workflow terminalizes caught fixture or validation failures. A crash after dispatch admission leaves one charged unresolved dispatch. An explicit bounded reconciliation command may record interruption but may never invoke the fixture again.
 
-- status sleeping or maintenance-required
-- no pending checkpoint/rollback/quarantine
-- dispatch current-lineage and unresolved
-- one terminal max
-- no terminal after response
-- no response after terminal
-- no fixture retry
-- caught fixture error terminalized by normal workflow
-- process crash requires explicit `reconcile-dispatch`
-- reconciliation invokes no fixture
-- row/event atomic, immutable, no checkpoint
+Response and terminal rows are mutually exclusive. Repeated terminalization is idempotent.
 
-## 13. Explicit disposition wake
+## 11. Explicit disposition wake
 
-Schema: `sudachi.consultation.disposition/v1`
+Disposition schema: `sudachi.consultation.disposition/v1`
 
-Separate organism work class from garden wake.
+A caller explicitly invokes the disposition work class. It is not hidden inside a garden wake and has no implicit priority.
 
-### 13.1 Admission/selection
+The wake:
 
-Caller explicitly invokes it. Fresh connection and fail-fast `BEGIN IMMEDIATE` before mutable reads.
+- uses a fresh fail-fast wake transaction
+- requires schema-v2, fixture budget configuration, `sleeping`, and no pending checkpoint
+- claims no garden input
+- selects the oldest queued current-lineage proposal by ingress event sequence and then proposal ID
+- considers at most one proposal
+- independently validates current state, versions, linkage, permissions, budgets, and expiry
+- records exactly one final disposition and one ordinary checkpoint boundary
+- increments lifecycle while preserving Phase 1 garden `consecutive_failures`
 
-Require:
+Final dispositions:
 
-- schema2
-- sleeping
-- no pending checkpoint
-- fixture config
-- queued current-lineage proposal without disposition
+- `accepted`
+- `rejected`
+- `deferred`
+- `clarification_requested`
 
-Claims no garden inbox row.
+The first implementation records disposition only. No disposition enters the existing action selector or changes garden state.
 
-Selection:
+Clarification is final because clarification rounds are zero.
 
-1. smallest ingress event sequence
-2. smallest proposal ID
+## 12. Lineage, expiry, and derived state
 
-At most one proposal.
+Consultation budget epoch is current `lineage_generation`.
 
-No-work/maintenance/pending/busy/unsupported/invalid attempts are typed, nonmutating, nonqueued, and consume zero clock where rejection path is specified.
+Only current-lineage rows can be active or budget-counting. Old-lineage rows remain immutable historical evidence.
 
-### 13.2 Required fields
+Rollback starts a fresh bounded epoch. ADR 0007 permits at most one completed rollback, bounding one physical organism to at most two consultation epochs and eight charged fixture invocations.
 
-- deterministic disposition ID/schema/protocol
-- organism/current lineage
-- request/dispatch/response/proposal IDs
-- disposition: accepted/rejected/deferred/clarification_requested
-- protected reason code
-- event sequence
-- considering lifecycle
-- current-state reference
-- evaluator versions
-- `organism:consultation.disposition`
-- exact existing earlier current-lineage parent events
+A request created in lifecycle `N` is eligible through `N+2`. Wall time never determines canonical eligibility.
 
-### 13.3 Evaluation
+Current-lineage state is derived from immutable rows:
 
-Protected evaluator recomputes linkage, lineage, current state, action/parameter validity, permission, budget, expiry, contradiction, ambiguity, provenance.
+- pre-dispatch expired request is terminal for admission and no longer outstanding
+- admitted dispatch remains outstanding until response or terminal outcome
+- unavailable response is terminal
+- successful response remains outstanding until disposition
+- terminal dispatch and disposition are final
 
-`accepted`: eligible; recorded only, no action effect.
+No caregiver-writable mutable status flag exists.
 
-`rejected` initial reasons:
+## 13. Maintenance, checkpoint, and rollback interactions
 
-- expired
-- stale_observation
-- unknown_action
-- invalid_parameters
-- permission_denied
-- budget_exhausted
-- contradictory_state
-- provenance_invalid
+- request creation does not block later garden wakes
+- dispatch requires sleeping and stable request checkpoint
+- ingress and terminalization may record already-admitted evidence while sleeping or maintenance-required, but never behind a pending checkpoint, rollback, or quarantine
+- ingress and terminalization cannot clear maintenance
+- disposition requires sleeping and cannot bypass maintenance
+- garden and disposition wakes checkpoint
+- dispatch, ingress, and terminalization do not checkpoint
+- rollback increments lineage and makes prior-lineage consultation rows inactive
+- abandoned-lineage packages and proposals fail before mutation
+- ADR 0007 rollback limit and evidence retention remain unchanged
 
-`deferred`: evaluator does not decide; final, no retry.
+## 14. Canonical state concepts
 
-`clarification_requested`: schema-valid but materially ambiguous; final, no follow-up due zero clarification budget.
+Implementation SQL is deferred to the implementation Issue, but schema-v2 must normalize immutable concepts for:
 
-### 13.4 Effects/accounting
+- requests
+- dispatch admissions
+- protected cost charges and measured-byte completions
+- responses
+- proposals
+- ingress receipts
+- dispositions
+- dispatch terminal outcomes
 
-Accepted disposition wake:
+All identities, versions, digests, links, cardinalities, no-update, and no-delete protections are exact.
 
-- increments lifecycle
-- appends one disposition row/event
-- records bounded lifecycle/budget outcome
-- marks ordinary checkpoint pending
-- commits/stabilizes via existing checkpoint machinery
-- changes no garden/inventory/environment/action-attempt/mutation state
-- preserves Phase 1 garden failure streak exactly
+No new column is added to an original Phase 1 table. Extension uses new protected objects.
 
-Unexpected internal exceptions roll back. Ineligible proposal becomes disposition, not garden failure. Repeated wake cannot create second disposition.
+## 15. Zero-caregiver projection
 
-## 14. Current-lineage request state derivation
+For schema-v2 zero-caregiver configuration:
 
-Only rows matching current lineage can be active.
+1. normalize only existing schema and budget configuration values
+2. compare every original Phase 1 row, column, event payload, and original-table sequence exactly
+3. require operational consultation tables and sequences empty
+4. require no consultation event, source, dispatch, import, cost, or effect
+5. compare status, behavior, checkpoints, rollback, and authority
 
-### `awaiting_dispatch`
+Extra empty schema objects make SQLite bytes and checkpoint digests differ. No other semantic normalization is allowed.
 
-Request current-lineage, no dispatch, lifecycle <= expiry.
+## 16. Deterministic fixture cases
 
-### `expired_before_dispatch`
-
-Request current-lineage, no dispatch, lifecycle > expiry. Terminal for admission; no longer outstanding.
-
-### `dispatch_admitted`
-
-Current-lineage dispatch exists, no response/terminal. Outstanding even after expiry; needs response or terminal reconciliation.
-
-### `proposal_queued`
-
-Current-lineage success response/proposal, no disposition. Outstanding until disposition, even if later expired.
-
-### `unavailable`
-
-Current-lineage unavailable response; terminal, no proposal/disposition.
-
-### `dispatch_terminal`
-
-Current-lineage terminal row; terminal, no response/proposal/disposition.
-
-### `disposed`
-
-Current-lineage disposition; terminal.
-
-Old-lineage rows are `historical_lineage` and never active/outstanding/budget-counting.
-
-No mutable caregiver-writable status flag is authoritative.
-
-## 15. Maintenance, checkpoint, rollback
-
-- no request on maintenance-entering garden wake
-- later garden wakes not blocked by request; state may diverge
-- dispatch requires sleeping/stable request checkpoint
-- ingress/terminal for already-admitted current-lineage dispatch may run sleeping/maintenance-required, with no pending checkpoint
-- disposition requires sleeping; never clears/bypasses maintenance
-- committed garden/disposition wakes checkpoint normally
-- dispatch/ingress/terminal admin transactions do not checkpoint
-- checkpoint validation covers exact schema2 objects/linkage
-- rollback may restore checkpoint before later consultation rows
-- rollback increments lineage; prior-lineage rows become historical
-- external package from abandoned lineage fails before mutation
-- existing one-completed-rollback limit/evidence retention unchanged
-
-## 16. Physical storage
-
-Consultation rows/indexes/triggers/sidecars/checkpoints/staging/rollback archives/candidates count toward inherited physical ceilings.
-
-Each dispatch/ingress/terminal transaction:
-
-1. predicts active DB/working set
-2. requires hard ceilings
-3. preserves 1 MiB next-wake reserve
-4. remeasures after writes before commit
-5. rolls back on violation
-
-Disposition uses same pre/post accounting as other wakes. Tests prove maximum disposition plus checkpoint fits reserve.
-
-## 17. Deterministic fixture cases
-
-Declared cases:
+The implementation provides declared fixture cases for:
 
 - valid action candidate
 - valid abstain
 - valid defer
 - unavailable
-- ambiguous evidence -> clarification requested
 - stale observation
-- expired before dispatch
 - expired before ingress
 - expired after ingress before disposition
 - unknown action
@@ -705,57 +440,25 @@ Declared cases:
 - process interruption after dispatch admission
 - abandoned-lineage package after rollback
 
-Case selection is declared input, never randomness/network.
+Case selection is a declared input, never randomness or network behavior.
 
-## 18. Canonical state concepts
+## 17. Explicit exclusions
 
-Implementation SQL is deferred, but schema2 must normalize immutable concepts:
+Protocol v1 accepts no:
 
-- requests
-- dispatch admissions
-- protected cost charges
-- measured-byte cost completions
-- responses
-- proposals
-- ingress receipts
-- dispositions
-- dispatch terminal outcomes
-
-All IDs/versions/digests/links/cardinalities/no-update/no-delete protections exact.
-
-Uniqueness:
-
-- one dispatch/request within lineage
-- one response or one terminal/dispatch
-- zero/one proposal/response by status
-- one receipt/accepted response package
-- one disposition/proposal
-
-No new column in original Phase 1 table. Extension uses new protected objects.
-
-## 19. Zero-caregiver projection
-
-For schema2 zero config:
-
-1. normalize only existing schema/budget config values
-2. compare every original Phase 1 row, column, event payload, original-table sequence exactly
-3. require operational consultation tables/sequences empty
-4. require no consultation event/source/dispatch/import/cost/effect
-5. compare status/behavior/checkpoints/rollback/authority
-
-Extra empty schema objects make SQLite bytes/checkpoint digests differ; no other semantic normalization allowed.
-
-## 20. Explicit exclusions
-
-No:
-
-- live model/human text
+- live model or human text
 - free-form rationale
-- memory/skill payload
-- source/test patch
-- arbitrary code/SQL/shell/tool/path/URL/credential
+- memory or skill payload
+- source or test patch
+- arbitrary code, SQL, shell, tool, path, URL, or credential
 - new action definition
-- caregiver-declared writer authority/cost
-- budget/permission/evaluator/checkpoint/migration/rollback/execution command
-- network/subprocess inside organism execution
-- continuous/always-on execution
+- caregiver-declared writer authority or authoritative cost
+- budget, permission, evaluator, checkpoint, migration, rollback, or execution command
+- network or subprocess capability inside organism execution
+- continuous or always-on execution
+
+## 18. Review and audit cadence
+
+Protocol v1 is accepted through ordinary repository review with ADR 0008 and the Phase 2 test matrix.
+
+There is no separate Codex design audit. One independent read-only Codex audit is run only after the complete Phase 2 implementation and protected matrix are finished and the exact candidate baseline is ready to be judged for freezing.
