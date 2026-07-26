@@ -63,7 +63,11 @@ def _rows(
     ]
 
 
-def _project_event_payload(row: dict[str, Any]) -> dict[str, Any]:
+def _project_event_payload(
+    row: dict[str, Any],
+    *,
+    artifacts: dict[tuple[int, int], dict[str, Any]],
+) -> dict[str, Any]:
     try:
         payload = json.loads(str(row["payload_json"]))
     except (TypeError, json.JSONDecodeError) as exc:
@@ -82,20 +86,40 @@ def _project_event_payload(row: dict[str, Any]) -> dict[str, Any]:
     event_type = str(row["event_type"])
     lineage_generation = int(row["lineage_generation"])
     if event_type == "checkpoint_stabilized":
-        if set(projected).issuperset({"checkpoint_id", "event_sequence"}):
-            projected["checkpoint_id"] = _checkpoint_token(
-                lineage_generation,
-                int(projected["event_sequence"]),
+        if not set(projected).issuperset({"checkpoint_id", "event_sequence"}):
+            raise ZeroCaregiverProjectionError(
+                "checkpoint_stabilized boundary is incomplete"
             )
+        boundary = (lineage_generation, int(projected["event_sequence"]))
+        artifact = artifacts.get(boundary)
+        if artifact is None:
+            raise ZeroCaregiverProjectionError(
+                f"checkpoint_stabilized boundary has no artifact: {boundary!r}"
+            )
+        if projected["checkpoint_id"] != artifact["checkpoint_id"]:
+            raise ZeroCaregiverProjectionError(
+                "checkpoint_stabilized identity does not match artifact"
+            )
+        projected["checkpoint_id"] = artifact["token"]
     elif event_type == "maintenance_entered" and "checkpoint_event_sequence" in projected:
         if "checkpoint_id" not in projected:
             raise ZeroCaregiverProjectionError(
                 "maintenance_entered checkpoint boundary lacks checkpoint_id"
             )
-        projected["checkpoint_id"] = _checkpoint_token(
+        boundary = (
             lineage_generation,
             int(projected["checkpoint_event_sequence"]),
         )
+        artifact = artifacts.get(boundary)
+        if artifact is None:
+            raise ZeroCaregiverProjectionError(
+                f"maintenance_entered boundary has no artifact: {boundary!r}"
+            )
+        if projected["checkpoint_id"] != artifact["checkpoint_id"]:
+            raise ZeroCaregiverProjectionError(
+                "maintenance_entered checkpoint identity does not match artifact"
+            )
+        projected["checkpoint_id"] = artifact["token"]
     return projected
 
 
@@ -139,6 +163,30 @@ def _validate_zero_caregiver_absence(
         raise ZeroCaregiverProjectionError(
             "zero-caregiver canonical consultation event or source exists"
         )
+
+
+def _project_checkpoint_database(database_path: Path) -> dict[str, Any]:
+    connection = connect_database(database_path, read_only=True)
+    try:
+        try:
+            validate_canonical_state(connection, expect_checkpoint_pending=True)
+        except SchemaValidationError as exc:
+            raise ZeroCaregiverProjectionError(str(exc)) from exc
+        tables = {
+            table: _project_table_rows(
+                connection,
+                table=table,
+                order_by=order_by,
+                artifacts={},
+            )
+            for table, order_by in _ORIGINAL_TABLE_ORDER
+        }
+        return {
+            "tables": tables,
+            "sqlite_sequence": _project_original_sequences(connection),
+        }
+    finally:
+        connection.close()
 
 
 def _validated_checkpoint_artifacts(
@@ -185,9 +233,13 @@ def _validated_checkpoint_artifacts(
             {
                 "checkpoint": token,
                 "manifest": projected_manifest,
+                "database_state": _project_checkpoint_database(database_path),
+                "_boundary": boundary,
             }
         )
-    projected.sort(key=lambda item: item["checkpoint"])
+    projected.sort(key=lambda item: item["_boundary"])
+    for item in projected:
+        del item["_boundary"]
     return projected, by_boundary
 
 
@@ -204,13 +256,26 @@ def _project_table_rows(
         if table == "organism":
             row["schema_version"] = _SCHEMA_SENTINEL
             if row["latest_stable_checkpoint_id"] is not None:
-                row["latest_stable_checkpoint_id"] = _checkpoint_token(
+                boundary = (
                     int(row["lineage_generation"]),
                     int(row["latest_stable_event_sequence"]),
                 )
+                artifact = artifacts.get(boundary)
+                if artifact is None:
+                    raise ZeroCaregiverProjectionError(
+                        f"organism latest checkpoint boundary has no artifact: {boundary!r}"
+                    )
+                if row["latest_stable_checkpoint_id"] != artifact["checkpoint_id"]:
+                    raise ZeroCaregiverProjectionError(
+                        "organism latest checkpoint identity does not match artifact"
+                    )
+                row["latest_stable_checkpoint_id"] = artifact["token"]
         elif table == "event":
             row["schema_version"] = _SCHEMA_SENTINEL
-            row["payload_json"] = _project_event_payload(row)
+            row["payload_json"] = _project_event_payload(
+                row,
+                artifacts=artifacts,
+            )
         elif table == "checkpoint_registry":
             boundary = (
                 int(row["lineage_generation"]),
@@ -258,8 +323,12 @@ def _project_original_sequences(connection: sqlite3.Connection) -> list[dict[str
     ]
 
 
-def project_zero_caregiver_state(paths: OrganismPaths) -> dict[str, Any]:
-    """Validate one run and return its closed phase1-projection-v2 core."""
+def _project_zero_caregiver_state(
+    paths: OrganismPaths,
+    *,
+    expected_schema_version: int | None = None,
+) -> dict[str, Any]:
+    """Validate and project one run, optionally requiring its schema side."""
 
     if not paths.database.is_file():
         raise ZeroCaregiverProjectionError("organism database is missing")
@@ -276,6 +345,14 @@ def project_zero_caregiver_state(paths: OrganismPaths) -> dict[str, Any]:
         if organism is None:
             raise ZeroCaregiverProjectionError("organism singleton is missing")
         schema_version = int(organism["schema_version"])
+        if (
+            expected_schema_version is not None
+            and schema_version != expected_schema_version
+        ):
+            side = "schema-v1" if expected_schema_version == 1 else "schema-v2-zero"
+            raise ZeroCaregiverProjectionError(
+                f"{side} control has schema version {schema_version}"
+            )
         _validate_zero_caregiver_absence(
             connection,
             schema_version=schema_version,
@@ -317,13 +394,25 @@ def project_zero_caregiver_state(paths: OrganismPaths) -> dict[str, Any]:
         connection.close()
 
 
+def project_zero_caregiver_state(paths: OrganismPaths) -> dict[str, Any]:
+    """Validate one run and return its closed phase1-projection-v2 core."""
+
+    return _project_zero_caregiver_state(paths)
+
+
 def assert_zero_caregiver_equivalent(
     schema_v1_paths: OrganismPaths,
     schema_v2_zero_paths: OrganismPaths,
 ) -> None:
     """Require exact equality after independent validation and closed projection."""
 
-    left = project_zero_caregiver_state(schema_v1_paths)
-    right = project_zero_caregiver_state(schema_v2_zero_paths)
+    left = _project_zero_caregiver_state(
+        schema_v1_paths,
+        expected_schema_version=1,
+    )
+    right = _project_zero_caregiver_state(
+        schema_v2_zero_paths,
+        expected_schema_version=PHASE2_SCHEMA_VERSION,
+    )
     if left != right:
         raise ZeroCaregiverProjectionError("projected canonical state differs")
