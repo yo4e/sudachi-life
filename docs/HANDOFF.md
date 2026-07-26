@@ -2,7 +2,7 @@
 
 Updated: **2026-07-26**
 
-Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a is implemented on draft PR #65; verify its current GitHub state before beginning Slice 36b.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a is merged; Slice 36b1 is implemented on PR #66 and is the current merge gate.
 
 No live caregiver integration is authorized.
 
@@ -42,16 +42,11 @@ A focused re-audit of ADR 0009 confirmed the zero-caregiver checkpoint/artifact 
 
 Those corrections are accepted. The original Phase 1 budget stays exactly `phase1-v1`; Phase 2 policy lives in an immutable `consultation_configuration`; and byte-derived checkpoint/repair/retention/rollback/export identities use the exact semantic projection in ADR 0009.
 
-## Current implementation: Slice 36a
+## Slice 36a — merged
 
-Issue #61 splits Slice 36 into:
+PR #65 merged as `75077220ecb52256857f2b234283d36e3c0f51d2`.
 
-- 36a: schema-v2 genesis and protected configuration
-- 36b: full `phase1-projection-v2` semantic artifact oracle
-
-PR #65 implements 36a for P2-A01–A05, P2-B01–B12, genesis/configuration P2-C06–C07, and P2-O15.
-
-Delivered behavior:
+It delivers:
 
 - schema-v1 remains the default API/CLI path
 - schema-v2 requires explicit schema version and one accepted consultation configuration
@@ -70,34 +65,53 @@ Exact protected schema-v2 SQL profile:
 - 27 triggers
 - normalized SHA-256 `41ee900df99b3c1b44700e2de628d3151e907c8d0069f87098eb9fd72a3f6fec`
 
+Durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`.
+
+## Slice 36b1 — current merge gate
+
+PR #66 implements the canonical active-database and genesis-checkpoint core of `phase1-projection-v2`.
+
 Test-first history:
 
-- run 409 failed at collection because `sudachi_life.phase2_schema` did not exist
-- implementation candidates preserve all 152 Phase 1 tests and add protected genesis/configuration/profile tests
-- durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`
+- tests-only head `3a784e6c3bebc8914569b347701aa8677e6215c7`
+- red run 426: missing `sudachi_life.phase2_projection`
+- implementation head before documentation synchronization `b48e20b2ea917fc4f6a0cbe85ee124b3d04c8a9e`
+- run 430: `175 passed in 13.85s`; install, compile, and schema-v1 genesis CLI smoke succeeded
 
-If PR #65 is still open, finish its exact-head CI and merge before any 36b work. If merged, treat 36a as complete.
+The 175 tests are the unchanged 152 Phase 1 tests, 13 Slice 36a tests, and 10 Slice 36b1 tests.
 
-## Next implementation: Slice 36b
+Implemented behavior:
 
-Slice 36b owns:
+- left control is required to be schema-v1
+- right control is required to be schema-v2 with exact `phase2-zero-caregiver-v1`
+- original Phase 1 canonical rows and original AUTOINCREMENT sequences compare in fixed order
+- only declared top-level schema-version locations are normalized
+- fixture configuration and every operational consultation row, sequence, event, or source are rejected
+- checkpoint manifest/database/registry/directory integrity is independently validated before byte-derived values are omitted
+- checkpoint identities must link through active organism state, registry, manifest, directory, and `checkpoint_stabilized` event before becoming `CP(g,e)`
+- checkpoint database Phase 1 semantic state is compared, so recomputing consistent digests cannot hide a canonical artifact difference
+- nested/unlisted keys and wrong locations remain exact
 
-- P2-C01–C05
-- P2-C08–C18
-- P2-O16–O22
+Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
 
-It must implement the closed typed `phase1-projection-v2` oracle across:
+PR #66 must remain limited to the genesis checkpoint core. Its final exact head requires a fresh green CI result after durable-note and continuity updates before ready/merge.
 
-- normal and maintenance checkpoints
+## Slice 36b2 — next implementation
+
+After PR #66 merges, create a new branch from updated `main` for the remaining accepted oracle:
+
 - checkpoint registration repair
 - retention prune/failure/reconciliation
 - rollback archive/source candidate/transformed candidate/completion
 - event export
+- exact `CP`, `RA`, `RC`, `TC`, and `STAGE` maps
 - per-side digest/size/linkage/integrity validation
-- exact no-wildcard location guards
-- paired and real near-ceiling physical evidence
+- no-wildcard location guards
+- checkpoint/archive/candidate overhead and real absolute-limit evidence
 
-Slice 37 remains blocked until both 36a and 36b are merged and no blocker/high/medium boundary defect remains.
+Remaining primary matrix scope is P2-C repair/retention/rollback/export closure plus P2-O16–O22 not completed by 36b1.
+
+Slice 37 remains blocked until 36b2 is merged and no blocker/high/medium boundary defect remains.
 
 ## Five operational boundaries
 
@@ -141,11 +155,11 @@ No live model/API/human caregiver, memory or skill generation, source/test gener
 
 ## Exact restart
 
-1. inspect Issue #61, PR #65, and `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`
-2. if PR #65 is open, verify exact-head CI and complete review/merge
-3. after PR #65 merges, create a new Slice 36b branch from updated `main`
-4. write failing protected tests for the exact semantic artifact projection
-5. implement only the declared 36b C/O matrix scope
+1. inspect Issue #61, PR #66, and `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`
+2. if PR #66 is open, verify its final exact-head CI and complete review/squash merge
+3. after PR #66 merges, create Slice 36b2 from updated `main`
+4. write failing tests for repair, retention, rollback, export, and remaining physical evidence
+5. extend the exact typed map without weakening the 36b1 checkpoint core
 6. keep all 152 Phase 1 tests unchanged and passing
 7. do not begin Slice 37 until all Slice 36 evidence is merged
 
