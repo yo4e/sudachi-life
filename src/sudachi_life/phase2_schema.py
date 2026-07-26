@@ -156,6 +156,7 @@ CREATE TABLE consultation_request (
     canonical_size_bytes INTEGER NOT NULL CHECK (canonical_size_bytes BETWEEN 0 AND 16384),
     UNIQUE (organism_id, lineage_generation, request_ordinal),
     CHECK (expiry_lifecycle_number = lifecycle_number + 2),
+    FOREIGN KEY (organism_id) REFERENCES organism(organism_id),
     FOREIGN KEY (event_sequence) REFERENCES event(event_sequence),
     FOREIGN KEY (configuration_version)
         REFERENCES consultation_configuration(configuration_version)
@@ -171,6 +172,7 @@ CREATE TABLE consultation_dispatch (
     configuration_version TEXT NOT NULL,
     envelope_json TEXT NOT NULL,
     canonical_size_bytes INTEGER NOT NULL CHECK (canonical_size_bytes >= 0),
+    FOREIGN KEY (organism_id) REFERENCES organism(organism_id),
     FOREIGN KEY (request_id) REFERENCES consultation_request(request_id),
     FOREIGN KEY (event_sequence) REFERENCES event(event_sequence),
     FOREIGN KEY (configuration_version)
@@ -200,7 +202,9 @@ CREATE TABLE consultation_cost_completion (
     terminal_id TEXT,
     measured_package_bytes INTEGER NOT NULL CHECK (measured_package_bytes >= 0),
     CHECK ((response_id IS NULL) != (terminal_id IS NULL)),
-    FOREIGN KEY (dispatch_id) REFERENCES consultation_dispatch(dispatch_id)
+    FOREIGN KEY (dispatch_id) REFERENCES consultation_dispatch(dispatch_id),
+    FOREIGN KEY (response_id) REFERENCES consultation_response(response_id),
+    FOREIGN KEY (terminal_id) REFERENCES consultation_dispatch_terminal(terminal_id)
 );
 
 CREATE TABLE consultation_response (
@@ -214,6 +218,7 @@ CREATE TABLE consultation_response (
     envelope_json TEXT NOT NULL,
     canonical_size_bytes INTEGER NOT NULL CHECK (canonical_size_bytes BETWEEN 0 AND 16384),
     package_digest TEXT NOT NULL,
+    FOREIGN KEY (organism_id) REFERENCES organism(organism_id),
     FOREIGN KEY (request_id) REFERENCES consultation_request(request_id),
     FOREIGN KEY (dispatch_id) REFERENCES consultation_dispatch(dispatch_id),
     FOREIGN KEY (event_sequence) REFERENCES event(event_sequence)
@@ -231,7 +236,8 @@ CREATE TABLE consultation_proposal (
     expiry_lifecycle_number INTEGER NOT NULL CHECK (expiry_lifecycle_number >= 0),
     content_digest TEXT NOT NULL,
     envelope_json TEXT NOT NULL,
-    canonical_size_bytes INTEGER NOT NULL CHECK (canonical_size_bytes >= 0),
+    canonical_size_bytes INTEGER NOT NULL CHECK (canonical_size_bytes BETWEEN 0 AND 16384),
+    FOREIGN KEY (organism_id) REFERENCES organism(organism_id),
     FOREIGN KEY (request_id) REFERENCES consultation_request(request_id),
     FOREIGN KEY (dispatch_id) REFERENCES consultation_dispatch(dispatch_id),
     FOREIGN KEY (response_id) REFERENCES consultation_response(response_id)
@@ -264,6 +270,7 @@ CREATE TABLE consultation_disposition (
     reason_code TEXT NOT NULL,
     event_sequence INTEGER NOT NULL UNIQUE,
     envelope_json TEXT NOT NULL,
+    FOREIGN KEY (organism_id) REFERENCES organism(organism_id),
     FOREIGN KEY (request_id) REFERENCES consultation_request(request_id),
     FOREIGN KEY (dispatch_id) REFERENCES consultation_dispatch(dispatch_id),
     FOREIGN KEY (response_id) REFERENCES consultation_response(response_id),
@@ -281,8 +288,57 @@ CREATE TABLE consultation_dispatch_terminal (
     rejected_package_digest TEXT,
     rejected_package_size_bytes INTEGER CHECK (rejected_package_size_bytes >= 0),
     event_sequence INTEGER NOT NULL UNIQUE,
+    CHECK ((rejected_package_digest IS NULL) = (rejected_package_size_bytes IS NULL)),
+    FOREIGN KEY (organism_id) REFERENCES organism(organism_id),
     FOREIGN KEY (request_id) REFERENCES consultation_request(request_id),
     FOREIGN KEY (dispatch_id) REFERENCES consultation_dispatch(dispatch_id),
     FOREIGN KEY (event_sequence) REFERENCES event(event_sequence)
 );
+""" + """
+CREATE TRIGGER consultation_response_no_terminal
+BEFORE INSERT ON consultation_response
+WHEN EXISTS (
+    SELECT 1 FROM consultation_dispatch_terminal
+    WHERE dispatch_id = NEW.dispatch_id
+)
+BEGIN SELECT RAISE(ABORT, 'response and terminal are mutually exclusive'); END;
+
+CREATE TRIGGER consultation_dispatch_terminal_no_response
+BEFORE INSERT ON consultation_dispatch_terminal
+WHEN EXISTS (
+    SELECT 1 FROM consultation_response
+    WHERE dispatch_id = NEW.dispatch_id
+)
+BEGIN SELECT RAISE(ABORT, 'response and terminal are mutually exclusive'); END;
+
+CREATE TRIGGER consultation_proposal_requires_success_response
+BEFORE INSERT ON consultation_proposal
+WHEN NOT EXISTS (
+    SELECT 1 FROM consultation_response
+    WHERE response_id = NEW.response_id
+      AND request_id = NEW.request_id
+      AND dispatch_id = NEW.dispatch_id
+      AND organism_id = NEW.organism_id
+      AND lineage_generation = NEW.lineage_generation
+      AND status = 'proposals_returned'
+)
+BEGIN SELECT RAISE(ABORT, 'proposal requires matching successful response'); END;
+
+CREATE TRIGGER consultation_cost_completion_matches_response
+BEFORE INSERT ON consultation_cost_completion
+WHEN NEW.response_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM consultation_response
+    WHERE response_id = NEW.response_id
+      AND dispatch_id = NEW.dispatch_id
+)
+BEGIN SELECT RAISE(ABORT, 'cost completion response linkage mismatch'); END;
+
+CREATE TRIGGER consultation_cost_completion_matches_terminal
+BEFORE INSERT ON consultation_cost_completion
+WHEN NEW.terminal_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM consultation_dispatch_terminal
+    WHERE terminal_id = NEW.terminal_id
+      AND dispatch_id = NEW.dispatch_id
+)
+BEGIN SELECT RAISE(ABORT, 'cost completion terminal linkage mismatch'); END;
 """ + "".join(_immutable_triggers(table) for table in IMMUTABLE_CONSULTATION_TABLES)
