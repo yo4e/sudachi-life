@@ -47,6 +47,13 @@ def _wake_clock(base: int) -> FakeClock:
     )
 
 
+def _rollback_clock(wall_time_utc_us: int, monotonic_ns: int) -> FakeClock:
+    return FakeClock.fixed(
+        wall_time_utc_us=wall_time_utc_us,
+        monotonic_ns=monotonic_ns,
+    )
+
+
 def _paired(tmp_path: Path) -> tuple[Path, OrganismPaths, Path, OrganismPaths]:
     v1_root = tmp_path / "v1"
     v2_root = tmp_path / "v2"
@@ -184,13 +191,13 @@ def test_paired_rollback_started_projects_exact_abandoned_chain(tmp_path: Path) 
         v1_root,
         "paired",
         archive1.archive_id,
-        clock=FakeClock.fixed(1_710_000_000_000_000, 11_000_000),
+        clock=_rollback_clock(1_710_000_000_000_000, 11_000_000),
     )
     begin_rollback(
         v2_root,
         "paired",
         archive2.archive_id,
-        clock=FakeClock.fixed(1_710_000_000_000_000, 11_000_000),
+        clock=_rollback_clock(1_710_000_000_000_000, 11_000_000),
     )
 
     left = capture_zero_caregiver_rollback_evidence(v1, previous=left)
@@ -234,13 +241,13 @@ def test_paired_source_and_transformed_candidates_project_rc_tc_and_event(
         v1_root,
         "paired",
         archive1.archive_id,
-        clock=FakeClock.fixed(1_710_000_000_000_000, 11_000_000),
+        clock=_rollback_clock(1_710_000_000_000_000, 11_000_000),
     )
     begin_rollback(
         v2_root,
         "paired",
         archive2.archive_id,
-        clock=FakeClock.fixed(1_710_000_000_000_000, 11_000_000),
+        clock=_rollback_clock(1_710_000_000_000_000, 11_000_000),
     )
     source1 = build_restore_candidate(v1_root, "paired")
     source2 = build_restore_candidate(v2_root, "paired")
@@ -249,14 +256,14 @@ def test_paired_source_and_transformed_candidates_project_rc_tc_and_event(
         "paired",
         source1.candidate_id,
         "paired rollback",
-        clock=FakeClock.fixed(1_720_000_000_000_000, 12_000_000),
+        clock=_rollback_clock(1_720_000_000_000_000, 12_000_000),
     )
     transform_restore_candidate(
         v2_root,
         "paired",
         source2.candidate_id,
         "paired rollback",
-        clock=FakeClock.fixed(1_720_000_000_000_000, 12_000_000),
+        clock=_rollback_clock(1_720_000_000_000_000, 12_000_000),
     )
 
     left = capture_zero_caregiver_rollback_evidence(v1, previous=left)
@@ -314,13 +321,13 @@ def test_paired_replacement_and_completion_preserve_abandoned_checkpoint_evidenc
         v1_root,
         "paired",
         archive1.archive_id,
-        clock=FakeClock.fixed(1_710_000_000_000_000, 11_000_000),
+        clock=_rollback_clock(1_710_000_000_000_000, 11_000_000),
     )
     begin_rollback(
         v2_root,
         "paired",
         archive2.archive_id,
-        clock=FakeClock.fixed(1_710_000_000_000_000, 11_000_000),
+        clock=_rollback_clock(1_710_000_000_000_000, 11_000_000),
     )
     source1 = build_restore_candidate(v1_root, "paired")
     source2 = build_restore_candidate(v2_root, "paired")
@@ -329,14 +336,14 @@ def test_paired_replacement_and_completion_preserve_abandoned_checkpoint_evidenc
         "paired",
         source1.candidate_id,
         "paired rollback",
-        clock=FakeClock.fixed(1_720_000_000_000_000, 12_000_000),
+        clock=_rollback_clock(1_720_000_000_000_000, 12_000_000),
     )
     transformed2 = transform_restore_candidate(
         v2_root,
         "paired",
         source2.candidate_id,
         "paired rollback",
-        clock=FakeClock.fixed(1_720_000_000_000_000, 12_000_000),
+        clock=_rollback_clock(1_720_000_000_000_000, 12_000_000),
     )
     replace_active_with_candidate(v1_root, "paired", transformed1.transformed_candidate_id)
     replace_active_with_candidate(v2_root, "paired", transformed2.transformed_candidate_id)
@@ -359,13 +366,13 @@ def test_paired_replacement_and_completion_preserve_abandoned_checkpoint_evidenc
         v1_root,
         "paired",
         transformed1.transformed_candidate_id,
-        clock=FakeClock.fixed(1_730_000_000_000_000, 13_000_000),
+        clock=_rollback_clock(1_730_000_000_000_000, 13_000_000),
     )
     complete_rollback(
         v2_root,
         "paired",
         transformed2.transformed_candidate_id,
-        clock=FakeClock.fixed(1_730_000_000_000_000, 13_000_000),
+        clock=_rollback_clock(1_730_000_000_000_000, 13_000_000),
     )
     left = capture_zero_caregiver_rollback_evidence(v1, previous=left)
     right = capture_zero_caregiver_rollback_evidence(v2, previous=right)
@@ -408,7 +415,7 @@ def test_rollback_started_digest_is_validated_before_projection(tmp_path: Path) 
         v1_root,
         "paired",
         archive.archive_id,
-        clock=FakeClock.fixed(1_710_000_000_000_000, 11_000_000),
+        clock=_rollback_clock(1_710_000_000_000_000, 11_000_000),
     )
     connection = connect_database(v1.database, read_only=True)
     try:
