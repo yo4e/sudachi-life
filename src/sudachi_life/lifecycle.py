@@ -61,6 +61,7 @@ _request_state: ContextVar[_State | None] = ContextVar(
     default=None,
 )
 _original_append_event_sql = _impl._append_event_sql
+_original_perform_garden_wake = _impl.perform_garden_wake
 
 
 def _append_event_sql(
@@ -141,7 +142,7 @@ def perform_garden_wake(
     }
     token = _request_state.set(state)
     try:
-        result = _impl.perform_garden_wake(
+        result = _original_perform_garden_wake(
             runtime_root,
             organism_id,
             seed=seed,
