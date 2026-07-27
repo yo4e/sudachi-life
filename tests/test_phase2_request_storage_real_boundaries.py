@@ -183,9 +183,10 @@ def test_request_projection_counts_real_wal_shm_checkpoint_and_working_set(
     try:
         mode = str(keeper.execute("PRAGMA journal_mode=WAL").fetchone()[0]).lower()
         assert mode == "wal"
+        keeper.execute("PRAGMA wal_autocheckpoint=0")
         keeper.execute("BEGIN IMMEDIATE")
         keeper.execute(
-            "UPDATE environment_state SET environment_step=environment_step "
+            "UPDATE environment_state SET environment_step=environment_step+1 "
             "WHERE singleton_id=1"
         )
         keeper.commit()
