@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a through Slice 36b2a6 are merged. Slice 36 is complete. Slice 37 request-envelope and storage-safe request-extension work is the next implementation boundary.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36 and Slice 37a1 are merged. Slice 37a2 request-extension storage safety is the next implementation boundary.
 
 No live caregiver integration is authorized.
 
@@ -27,6 +27,8 @@ The final Phase 1 audit checked `main` at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25
 Do not alter Phase 1 garden actions, selector, executor, evaluators, injected clocks, checkpoint rules, rollback transformation, authority categories, or protected tests for Phase 2 convenience.
 
 PR #73 temporarily reopened shared Phase 1 code only for explicit real-file absolute-limit defects. It merged as `c9004027a94b709802af7f590d46de862dd93d7d`. Pre-repair bodies remain in `*_impl.py` modules. The narrow shared physical boundaries are re-frozen; do not treat the wrappers as general redesign permission.
+
+The pre-request-extension garden wake body remains byte-identical in `lifecycle_impl.py` at blob `c971d77cc9beab22f5c50fb692b4f81210cbf3ed`. Slice 37 may add only the accepted schema-v2 optional request extension around that retained body; it is not permission to redesign Phase 1 wake semantics.
 
 ## Accepted Phase 2 design
 
@@ -126,6 +128,28 @@ Durable notes:
 
 Slice 36 is complete.
 
+## Implemented Slice 37 evidence
+
+### Slice 37a1 — merged
+
+PR #81 merged as `268fc5a8571f50cf19d7c8db15f975b40b1cd05c`.
+
+Final exact PR head `27d55d2853afb8f09530481dffa537f91b78640e` passed GitHub Actions run 520 with `236 passed in 33.52s`. Installation, compilation, and schema-v1 genesis CLI smoke succeeded. All original 152 Phase 1 tests remain unchanged and included. Codex was not used.
+
+Delivered evidence:
+
+- fixture-configured schema-v2 request consideration only after incomplete-objective `no_applicable_action`;
+- unchanged Phase 1 abstention failure and exactly one failure-streak increment;
+- no request for schema-v1, zero-caregiver, applicable action, objective completion, maintenance entry, request limit, or an outstanding request;
+- exact request identity, digest preimage, ID, final canonical envelope, event linkage, and event-sequence exclusion;
+- one immutable request row and one request event in a dedicated savepoint;
+- exact request preserved in the ordinary stable lifecycle checkpoint;
+- an outstanding request does not block a later caller-selected garden wake.
+
+Durable note: `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`.
+
+Still open in Slice 37: P2-D07/D08, P2-D11/D12, P2-D14/D15, and P2-E02–E10.
+
 ## Accepted boundaries and budgets
 
 - schema-v2 new organisms only; no migration/downgrade
@@ -151,9 +175,9 @@ No live model/API/human caregiver, memory or skill generation, source/test gener
 
 ## Exact restart
 
-1. inspect Issue #61, this handoff, and implemented Slice 36 notes
-2. create Slice 37 from updated `main` after this closeout documentation PR merges
-3. map the first Slice 37 sub-slice to request-envelope and storage-safe request-extension requirements
-4. write failing tests first
-5. keep all 152 Phase 1 tests unchanged and passing
-6. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit
+1. start Slice 37a2 from `main` at or after `268fc5a8571f50cf19d7c8db15f975b40b1cd05c` plus this closeout documentation merge;
+2. map the sub-slice to P2-E02–P2-E10 and the still-open request-core requirements it directly needs;
+3. write real-file failing tests first for extension preflight, post-write savepoint rollback, active DB/sidecars/checkpoint/working-set accounting, and the 1 MiB next-wake reserve;
+4. require the unchanged Phase 1 core outcome and ordinary checkpoint to commit when only the optional request extension is refused;
+5. keep all original 152 Phase 1 tests unchanged and passing;
+6. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit.

@@ -56,6 +56,8 @@ Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinte
 
 PR #73 temporarily reopened shared Phase 1 code only for explicitly authorized absolute-limit defects discovered by protected real-file tests. It was squash-merged as `c9004027a94b709802af7f590d46de862dd93d7d`. Pre-repair bodies remain in explicit `*_impl.py` modules and the narrow guards are documented in `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`. Those physical boundaries are now re-frozen; the wrappers are not permission for general Phase 1 redesign.
 
+The garden wake body before the accepted schema-v2 request extension remains byte-identical in `lifecycle_impl.py` at blob `c971d77cc9beab22f5c50fb692b4f81210cbf3ed`. Slice 37 may add only the accepted optional request extension around that retained body. It may not reinterpret or replace Phase 1 selector, evaluator, failure, clock, checkpoint, or maintenance behavior.
+
 ## Accepted Phase 2 consultation boundary
 
 ADRs 0008 and 0009, Consultation Protocol v1, and the Phase 2 matrix are the accepted design package. Issue #61 owns implementation.
@@ -171,6 +173,28 @@ Durable notes:
 
 Slice 36 is complete.
 
+## Slice 37 implementation state
+
+### Slice 37a1 — merged
+
+PR #81 merged as `268fc5a8571f50cf19d7c8db15f975b40b1cd05c`.
+
+Final exact PR head `27d55d2853afb8f09530481dffa537f91b78640e` passed run 520 with `236 passed in 33.52s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+
+It implements the bounded fixture-configured request-wake core:
+
+- request only after incomplete-objective `no_applicable_action`
+- exact Phase 1 failure truth and one failure increment
+- no request on schema-v1, zero-caregiver, applicable action, objective completion, maintenance entry, limit, or outstanding-request paths
+- exact request identity, digest preimage, ID, final canonical envelope, event linkage, and event-sequence exclusion
+- one immutable request row and one request event in a dedicated savepoint
+- exact request preservation in the ordinary stable lifecycle checkpoint
+- later caller-selected garden wakes remain allowed while a request is outstanding
+
+Durable note: `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`.
+
+Still open in Slice 37: P2-D07/D08, P2-D11/D12, P2-D14/D15, and P2-E02–E10.
+
 ## Accepted budgets and expiry
 
 - schema-v2 new organisms only; no migration/downgrade
@@ -201,16 +225,17 @@ Codex audits are high-cost gates, not per-slice or per-PR review.
 2. Focused zero-caregiver correction re-audit: completed in Issue #63.
 3. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
 
-No Codex audit was used for retention, rollback, event export, paired overhead, or absolute physical-limit closure.
+No Codex audit was used for retention, rollback, event export, paired overhead, absolute physical-limit closure, or Slice 37a1.
 
 ## Exact restart point
 
-1. inspect Issue #61, `docs/HANDOFF.md`, and all implemented Slice 36 notes
-2. create Slice 37 from updated `main` after the closeout documentation merge
-3. map the first Slice 37 sub-slice to request-envelope and storage-safe request-extension matrix requirements
-4. write failing tests first
-5. keep all 152 Phase 1 tests unchanged and passing
-6. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit
+1. inspect Issue #61, `docs/HANDOFF.md`, `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`, and the accepted request-extension requirements;
+2. create Slice 37a2 from updated `main` after this closeout documentation merge;
+3. map it to P2-E02–P2-E10 and any still-open request-core requirement directly required by the storage proof;
+4. write real-file failing tests first for extension preflight, post-write savepoint rollback, SQLite sidecars, resulting checkpoint, active 8 MiB ceiling, 64 MiB working set, and 1 MiB next-wake reserve;
+5. prove the unchanged Phase 1 core wake and ordinary checkpoint still commit when only the optional request extension is refused;
+6. keep all 152 Phase 1 tests unchanged and passing;
+7. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit.
 
 ## End-of-work protocol
 
