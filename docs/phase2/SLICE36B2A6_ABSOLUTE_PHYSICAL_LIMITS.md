@@ -1,6 +1,6 @@
 # Slice 36b2a6: Independent Absolute Physical Limits
 
-Status: implemented on PR #73; final documentation CI and merge pending.
+Status: implemented on PR #73; final review and merge pending.
 
 ## Scope
 
@@ -16,7 +16,7 @@ Accepted limits remain unchanged:
 
 ## Test-first defects and narrow Phase 1 repairs
 
-The absolute tests found four shared trusted-kernel defects. Each repair was explicitly authorized by the project owner. The final authorization also covered further same-turn repairs limited to missing physical checks, post-publication cleanup, and no-partial-mutation invariants without changing accepted limits, authority, idempotence, or semantics.
+The absolute tests found five shared trusted-kernel defects. Each repair was explicitly authorized by the project owner. The final authorization also covered further same-turn repairs limited to missing physical checks, post-publication cleanup, and no-partial-mutation invariants without changing accepted limits, authority, idempotence, or semantics.
 
 ### Issue #74: candidate manifest bytes omitted
 
@@ -69,11 +69,27 @@ Pre-repair bodies remain byte-identical in:
 
 Shared committed projection is isolated in `postwrite_storage.py`.
 
+### Pending repair omitted the independent active-database ceiling
+
+Final diff review added a real active-body test after run 491. Tests-only head `43f75db71e15aadcca76963c751009b2fe2bc842` produced run 492:
+
+- 216 tests passed
+- exact 8 MiB active repair succeeded
+- one-page-over active repair incorrectly succeeded
+
+The logical pending state and protected schema remained exact; only SQLite allocation changed through a temporary table that was dropped before repair.
+
+Repair head `bde72a4637849e34e28bd1b6de34c9634e7f28b0` adds early active admission before the repair clock or writes, and rechecks active allocation in the shared post-write guard before commit. The pre-repair validator remains byte-identical in `checkpoint_repair_validate_impl.py`.
+
+Run 494 passed with 217 tests.
+
 ## Protected physical evidence
 
 ### Active database and reserve
 
 A schema-v2-zero database is grown with valid canonical inbox and event rows near the 8 MiB ceiling. Enqueue proceeds while one page-rounded MiB remains, rejects before consuming the reserve, writes no rejected inbox/event row, and leaves a subsequent real garden wake and checkpoint possible.
+
+Pending repair independently accepts an active body at exactly 8 MiB and rejects one page over before reading the repair clock or writing canonical state.
 
 ### Checkpoint artifact
 
@@ -116,7 +132,7 @@ No operational consultation `sqlite_sequence` entry exists.
 ## Regression and audit state
 
 - all original 152 Phase 1 tests remain unchanged
-- latest code CI: run 488, 215 passed in 28.36 seconds
+- latest code CI: run 494, 217 passed in 26.15 seconds
 - installation, source/test compilation, and schema-v1 genesis CLI smoke passed
 - no test was skipped, weakened, conditioned, or reinterpreted
 - no Codex audit was used
@@ -126,3 +142,5 @@ The touched shared Phase 1 boundary is re-frozen after PR #73 final documentatio
 ## Next boundary
 
 After PR #73 merges, Slice 36 is complete. Slice 37 may begin from updated `main` with request-envelope and storage-safe request-extension requirements. Codex remains deferred until the single full Phase 2 implementation-completion candidate exists.
+
+See also `SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md` for the final active-repair red/green evidence.
