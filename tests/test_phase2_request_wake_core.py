@@ -87,6 +87,10 @@ def _set_objective_complete(paths: OrganismPaths) -> None:
     try:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute(
+            "UPDATE inventory SET harvested_fruit=1 WHERE singleton_id=1"
+        )
+        connection.execute("UPDATE garden_plot SET moisture=1, fruit=0")
+        connection.execute(
             "UPDATE environment_state SET objective_complete=1 WHERE singleton_id=1"
         )
         connection.commit()
