@@ -89,6 +89,12 @@ def _append_event_sql(
             checkpoint_payload=payload,
             budget_snapshot=state.get("budget_snapshot"),
             append_event=_original_append_event_sql,
+            protected_test_reject_before_write=state[
+                "protected_test_request_storage_reject_before_write"
+            ],
+            protected_test_reject_after_write=state[
+                "protected_test_request_storage_reject_after_write"
+            ],
         )
     return _original_append_event_sql(
         connection,
@@ -132,13 +138,28 @@ def perform_garden_wake(
     clock: Clock | None = None,
     protected_test_failure_after_plot_write: bool = False,
     protected_test_retention_failure_after_stage: bool = False,
+    protected_test_request_storage_reject_before_write: bool = False,
+    protected_test_request_storage_reject_after_write: bool = False,
 ) -> WakeResult:
     """Perform the frozen wake plus an eligible fixture request extension."""
 
+    if (
+        protected_test_request_storage_reject_before_write
+        and protected_test_request_storage_reject_after_write
+    ):
+        raise SchemaValidationError(
+            "request storage refusal probes are mutually exclusive"
+        )
     state: _State = {
         "runtime_root": Path(runtime_root),
         "budget_snapshot": None,
         "consultation_request": None,
+        "protected_test_request_storage_reject_before_write": (
+            protected_test_request_storage_reject_before_write
+        ),
+        "protected_test_request_storage_reject_after_write": (
+            protected_test_request_storage_reject_after_write
+        ),
     }
     token = _request_state.set(state)
     try:
