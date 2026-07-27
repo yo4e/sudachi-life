@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a through Slice 36b2a5 are merged. Slice 36b2a6 independent absolute physical limits is implemented on PR #73; final documentation CI, review, and merge are the current gate.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36a through Slice 36b2a6 are merged. Slice 36 is complete. Slice 37 request-envelope and storage-safe request-extension work is the next implementation boundary.
 
 No live caregiver integration is authorized.
 
@@ -26,7 +26,7 @@ The final Phase 1 audit checked `main` at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25
 
 Do not alter Phase 1 garden actions, selector, executor, evaluators, injected clocks, checkpoint rules, rollback transformation, authority categories, or protected tests for Phase 2 convenience.
 
-PR #73 reopened shared Phase 1 code only for explicit, real-file absolute-limit defects. Pre-repair bodies remain in `*_impl.py` modules. After PR #73 merges, these narrow boundaries are re-frozen; do not treat the wrappers as general redesign permission.
+PR #73 temporarily reopened shared Phase 1 code only for explicit real-file absolute-limit defects. It merged as `c9004027a94b709802af7f590d46de862dd93d7d`. Pre-repair bodies remain in `*_impl.py` modules. The narrow shared physical boundaries are re-frozen; do not treat the wrappers as general redesign permission.
 
 ## Accepted Phase 2 design
 
@@ -100,13 +100,11 @@ Final run 475 passed with `200 passed in 20.09s`. Real paired schema-v1/schema-v
 
 Durable note: `docs/phase2/SLICE36B2A5_PHYSICAL_OVERHEAD.md`.
 
-### Slice 36b2a6 — implemented on PR #73
+### Slice 36b2a6 — merged
 
-Branch: `slice36b2-absolute-physical-limits`.
+PR #73 merged as `c9004027a94b709802af7f590d46de862dd93d7d`.
 
-Base: merged PR #72 at `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
-
-Code head `09c8e52dde8f1f26e8bb149237591a62f55cdc1a` passed run 507 with `230 passed in 35.28s`. Installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
+Final exact PR head `e1ef85e71ddefef06c9940145e6d27db0c22d39b` passed GitHub Actions run 512 with `230 passed in 32.41s`. Installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
 
 Protected real-file evidence closes P2-O18, P2-O19, P2-O21, and P2-O22:
 
@@ -119,24 +117,14 @@ Protected real-file evidence closes P2-O18, P2-O19, P2-O21, and P2-O22:
 - no retained new artifact, deleted existing artifact, inadmissible authority transfer, or rejected canonical registration
 - raw immutable zero-caregiver configuration and empty operational consultation state inside active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
 
-Test-first work found and closed:
-
-- Issue #74: source/transformed candidate manifest bytes omitted from admission
-- Issue #75: shared checkpoint validator omitted the independent 8 MiB artifact ceiling
-- Issue #76: rollback archive remained published after post-publication rejection
-- Issue #77: pending repair omitted the independent active-database ceiling
-- Issue #78: idempotent rollback and retention no-op bypassed full working-set admission
-- Issue #79: rollback replacement and completion bypassed active/working-set admission
-- one same-turn checkpoint/repair post-write registration-growth defect
-
-Each shared repair was explicitly owner-authorized and limited to physical admission, cleanup, or transaction rollback. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed.
+Issues #74–#79 are closed as completed. Each shared repair was explicitly owner-authorized and limited to physical admission, cleanup, or transaction rollback. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed.
 
 Durable notes:
 
 - `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
 - `docs/phase2/SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md`
 
-PR #73 final documentation head is the current gate. Run final CI, review the complete diff, mark ready, and merge only if green.
+Slice 36 is complete.
 
 ## Accepted boundaries and budgets
 
@@ -163,10 +151,9 @@ No live model/API/human caregiver, memory or skill generation, source/test gener
 
 ## Exact restart
 
-1. inspect Issue #61, PR #73, this handoff, and `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
-2. verify the final PR #73 documentation head and CI
-3. review and merge PR #73; close Issues #74–#79 and re-freeze the narrow shared boundaries
-4. confirm the unchanged 152 Phase 1 tests remain included and passing
-5. create Slice 37 from updated `main`
-6. implement the request-envelope and storage-safe request-extension boundary test-first
-7. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit
+1. inspect Issue #61, this handoff, and implemented Slice 36 notes
+2. create Slice 37 from updated `main` after this closeout documentation PR merges
+3. map the first Slice 37 sub-slice to request-envelope and storage-safe request-extension requirements
+4. write failing tests first
+5. keep all 152 Phase 1 tests unchanged and passing
+6. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit
