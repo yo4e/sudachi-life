@@ -10,15 +10,15 @@ Protected evidence closes:
 
 - P2-H05: exact proposal-content identity, `proposal-content` digest, and proposal ID;
 - P2-H06: proposal identity excludes response ID, preventing a proposal/response digest cycle;
-- P2-I02: action candidates reference one request-allowed registered action and exact current seed-garden parameters;
-- P2-I03: action candidates cannot define a new action, code, tool, path, SQL, permission, or budget field;
-- P2-I04: abstain carries only `no_supported_action` and no command;
-- P2-I05: defer carries only `await_state_change` and no schedule, retry, wake, or state effect;
-- P2-I06: unknown actions and invalid parameter objects reject;
-- P2-I07: extra fields and free text reject;
-- P2-I08: proposal expiry equals the linked request expiry;
-- P2-I09: required evaluator IDs equal the protected type-specific set;
-- proposal-side P2-I11: confidence basis, fixture case, expiry, and evaluator sets are exact for every proposal type.
+- P2-I02: exact proposal common field set;
+- P2-I03: proposal expiry equals the linked request expiry;
+- P2-I04: confidence basis exactly links the protected fixture case;
+- P2-I05: required evaluator IDs equal the protected type-specific set;
+- P2-I06: exact action-candidate subject, parameters, rationale, action allowlist, and registered schema;
+- P2-I07: exact abstain objective subject and `no_supported_action` value/rationale;
+- P2-I08: exact defer objective subject and `await_state_change` value/rationale;
+- P2-I09: defer has no schedule, retry, wake, or state effect;
+- proposal-side P2-I11: free text, commands, unknown actions, invalid parameters, wrong expiry, confidence, and evaluator sets reject.
 
 This sub-slice does not construct a dispatch identity, response identity, external provenance, response envelope, package, ingress, or disposition.
 
@@ -95,17 +95,17 @@ Final exact PR head `3a0affde5e2bbd28491a02f442cd48cb82df66cf`, run 552:
 
 All original 152 Phase 1 tests remain unchanged and included.
 
-## Deferred design dependencies
+## Accepted follow-on definitions
 
-- Issue #88: exact dispatch identity configuration-version contradiction;
-- Issue #89: exact external provenance schema;
-- Issue #92: versioned protected current-state projection for disposition;
-- Issue #93: exact maximum request envelope and optional context.
+Issues #88, #89, #92, and #93 were resolved by explicit project-owner adoption and ADR 0010. ADR 0010 now defines:
 
-No proposal in this sub-slice is canonical ingress state and no fixture is invoked. This is a pure protected schema/digest library for later fixture and ingress boundaries.
+- dispatch identity with `configuration_version`;
+- the exact three-field deterministic-fixture provenance object;
+- exact response and package cardinality;
+- `sudachi.consultation.current_state/v1` and disposition identity;
+- no optional request context in Protocol v1;
+- the largest structural request interpretation for P2-E10.
 
-## Human design gate
-
-All independent exact Slice 38 work currently available without choosing a private interpretation is complete. Dispatch, response/package, disposition identity, and maximum request evidence require decisions in Issues #88, #89, #92, and #93 before implementation proceeds honestly.
+The exact restart is Slice 38c dispatch/response/package protocol validation, followed by real P2-E10 evidence and Slice 39 administrative dispatch.
 
 No Codex audit was used. Codex remains deferred until the complete Phase 2 implementation candidate is ready for the single implementation-completion audit.
