@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008–0012 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, and Slice 39a are merged.
+Phase 1 is frozen. ADRs 0008–0012 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, and Slice 40 are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -79,13 +79,11 @@ PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exac
 - PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`; run 551: `275 passed in 29.84s`.
 - PR #95 merged as `d5cbe115caaada4b71d58bb81527fb6179e0c913`; final run 559: `294 passed in 37.06s`.
 
-These close the request/dispatch/proposal/response/package identity graph and exact proposal/provenance/package schemas.
-
 ### Accepted clarifications
 
 - ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 completed.
 - ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 completed.
-- ADR 0012: project-owner acceptance of Issue #101 fixes typed receipt/completion/terminal IDs, success-ingress event and receipt evidence, rejected raw-byte digest, terminal event/envelope, direct parents, measured-byte rules, and branch atomicity/idempotence. Documentation merge remains the adoption closeout gate.
+- ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 completed.
 
 ### Slice 39a — dispatch admission and deterministic fixture
 
@@ -93,35 +91,49 @@ PR #99 merged as `b7c434aed249ed0bc52160db66e594824186890e`.
 
 Final exact PR head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569: `316 passed in 56.74s` plus installation, compilation, and schema-v1 genesis CLI smoke.
 
-It implements:
-
-- fresh fail-fast administrative ownership;
-- sleeping/stable/current-lineage/lifecycle-expiry admission;
-- one exact atomic ADR 0011 event/dispatch/charge write set;
-- conservative precharge and request-byte equality;
-- commit and lock release before fixture execution;
-- byte-identical idempotent reentry without clock, charge, event, or fixture retry;
-- ordinary success and real reserve-refusal physical evidence;
-- capability-minimal deterministic fixture bytes;
-- no checkpoint, lifecycle, garden, action, response, proposal, receipt, terminal, or disposition effect.
+It implements exact admission, conservative precharge, no-retry idempotence, commit-before-fixture lock release, real reserve refusal, and a capability-minimal deterministic fixture.
 
 Durable note: `docs/phase2/SLICE39A_DISPATCH_ADMISSION_FIXTURE.md`.
 
+### Slice 40 — exact ingress and terminalization
+
+PR #103 merged as `f0238f108b2eb05a6774ca68a0b056eb12772dd1`.
+
+Final exact PR head `e6221bb42ad5e94ddd4d0c2e576975d64693464c`, run 580: `338 passed in 73.21s` plus installation, compilation, and schema-v1 genesis CLI smoke.
+
+It implements:
+
+- raw-size-before-parse and exact canonical package acceptance;
+- atomic response/optional proposal/receipt/completion/event ingress;
+- exact `unavailable` zero-proposal final state;
+- exact invalid, expired, and interrupted terminal branches;
+- success/terminal duplicate idempotence and conflict rejection;
+- busy rejection and explicit same-byte resubmission;
+- logical payload accounting without metadata double count;
+- real active/reserve refusal;
+- spawned process exit after admission, retained charge, and explicit interruption reconciliation without fixture recall;
+- no checkpoint, lifecycle, garden, action, maintenance, retry, refund, memory, or skill effect.
+
+Durable note: `docs/phase2/SLICE40_INGRESS_TERMINALIZATION.md`.
+
 ## Remaining boundaries
 
-- P2-F06 still needs spawned process-crash evidence; fixture exception/interruption already retains the conservative charge.
-- P2-F08 and request P2-D07/D08/E10 require legitimate terminalization/disposition cycles. Do not create private rows or manufacture ordinals/charges.
-- Fixture output remains noncanonical until Slice 40.
+- Exact four-request/four-charge and mixed 64 KiB boundaries require legitimate repeated disposition/terminal cycles.
+- Rollback must prove new-lineage epoch reset and old-lineage late-package rejection.
+- Maximum-envelope and complete request→dispatch→response→proposal→receipt→disposition reconstruction require the explicit disposition wake.
+- Do not create private canonical rows or manufacture ordinals, charges, lineage, or disposition state.
 
 ## Exact restart
 
-1. Merge the ADR 0012 documentation PR and close Issue #101.
-2. Begin Slice 40 test-first against the applicable P2-J/K/N/O requirements and ADR 0012 amendment.
-3. Check raw package size before parsing and accept only byte equality with independently reconstructed canonical package bytes.
-4. Successful ingress atomically writes response, optional proposal, receipt, cost completion, and one `consultation_response_ingressed` event.
-5. Invalid, expired, or interrupted admitted work atomically writes terminal, cost completion, and one `consultation_dispatch_terminalized` event.
-6. Preserve exact typed aliases, two direct parents, reason-specific rejected-byte fields, measured sizes, duplicate idempotence, and same-byte resubmission after busy/pending-only rejection.
-7. Reconciliation may create only `dispatch_interrupted`; no ingress, terminal, duplicate, or reconciliation path invokes the fixture.
-8. Do not checkpoint, increment lifecycle, clear maintenance, execute an action, create memory/skills, retry, or refund.
-9. Keep all 152 Phase 1 tests unchanged and passing.
-10. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+1. Audit the accepted disposition specification before implementation:
+   - disposition ID digest preimage;
+   - exact envelope and current-state reference;
+   - exact protected reason-code set;
+   - event type, source, payload, direct parents, and outcome shape;
+   - lifecycle/checkpoint atomic ordering and failure behavior.
+2. If any immutable value is missing, open one focused design-clarification Issue and stop before code.
+3. Otherwise implement the separate caller-selected disposition wake test-first against P2-L01–L14 and applicable M/N/O requirements.
+4. Consider at most one proposal, use current state over fixture assumptions, increment lifecycle, preserve garden failure streak, and checkpoint.
+5. Never claim garden input, execute an action, create memory/skills, retry consultation, or expand authority.
+6. Keep all 152 Phase 1 tests unchanged and passing.
+7. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
