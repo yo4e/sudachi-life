@@ -26,7 +26,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 16. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 17. `docs/HANDOFF.md`
 18. current Issues and PRs
-19. for Phase 2: accepted ADRs 0008 and 0009, Consultation Protocol v1, the Phase 2 matrix, and Issue #59/#63 audit reports
+19. for Phase 2: ADRs 0008 and 0009, Consultation Protocol v1, the Phase 2 matrix, and Issue #59/#63 audit reports
 
 ## Core question
 
@@ -50,36 +50,29 @@ Normative precedence:
 2. accepted ADRs 0001–0007
 3. protected Phase 1 tests and `docs/PHASE1_TEST_MATRIX.md`
 
-Phase 1 passed final independent audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`: all six findings resolved, no new blocker/high/medium defect, and 152 tests passed.
+Phase 1 passed final independent audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`. All 152 protected tests remain unchanged and form the schema-v1 control.
 
-Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinterpret Phase 1 tests, alter garden actions, selector, executor, evaluators, clocks, checkpoints, rollback, or authority, or add hidden network, subprocess, workspace, arbitrary-code, or continuous-execution routes.
+Phase 2 must not reinterpret or change Phase 1 garden actions, selector, executor, evaluators, clocks, checkpoint rules, rollback transformation, writer categories, or protected tests.
 
-PR #73 temporarily reopened shared Phase 1 code only for explicitly authorized absolute-limit defects discovered by protected real-file tests. It was squash-merged as `c9004027a94b709802af7f590d46de862dd93d7d`. Pre-repair bodies remain in explicit `*_impl.py` modules and the narrow guards are documented in `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`. Those physical boundaries are now re-frozen; the wrappers are not permission for general Phase 1 redesign.
+PR #73 temporarily reopened shared code only for explicitly authorized physical-limit defects and merged as `c9004027a94b709802af7f590d46de862dd93d7d`. Those physical boundaries are re-frozen. Pre-repair bodies remain in explicit `*_impl.py` modules.
 
-The garden wake body before the accepted schema-v2 request extension remains byte-identical in `lifecycle_impl.py` at blob `c971d77cc9beab22f5c50fb692b4f81210cbf3ed`. Slice 37 may add only the accepted optional request extension around that retained body. It may not reinterpret or replace Phase 1 selector, evaluator, failure, clock, checkpoint, or maintenance behavior.
+The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.py`, blob `c971d77cc9beab22f5c50fb692b4f81210cbf3ed`.
 
 ## Accepted Phase 2 consultation boundary
 
-ADRs 0008 and 0009, Consultation Protocol v1, and the Phase 2 matrix are the accepted design package. Issue #61 owns implementation.
+ADRs 0008 and 0009, Consultation Protocol v1, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
 
-Accepted invariants include:
+Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
-- original Phase 1 `budget_config` and every original budget-version location remain exactly `phase1-v1`
-- Phase 2 policy lives only in one protected immutable `consultation_configuration` singleton
-- checkpoint, repair, retention, rollback, and export byte-derived identities use exact ADR 0009 locations and typed tokens
-- projected-away SHA, size, and path values are independently recomputed and physically bounded on each side
-- no wildcard, recursive key walk, suffix/prefix match, regex-by-key, or global key-name normalization
-- schema-v2 overhead caps do not replace absolute 8/40/64 MiB and 1 MiB reserve limits
+Original Phase 1 budget locations remain exactly `phase1-v1`. Phase 2 policy lives only in immutable `consultation_configuration`.
 
-Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are provenance only.
+Operational boundaries remain explicit:
 
-## Operational boundaries
-
-1. Garden request wake preserves exact Phase 1 outcome and failure truth and uses only an optional storage-safe request extension.
-2. Administrative dispatch admission commits and charges before external fixture work and releases SQLite ownership first.
-3. The deterministic fixture receives only the final request envelope and declared case, with no authority or runtime capability handles.
-4. Administrative ingress or terminalization validates exact schemas, identities, sizes, lineage, and physical budgets and never automatically retries fixture work.
-5. Explicit disposition wake considers at most one proposal, checkpoints, and has no selector, action, memory, or skill effect in the first implementation.
+1. Garden request wake preserves the frozen Phase 1 outcome and uses only an optional storage-safe request extension.
+2. Administrative dispatch commits and charges before fixture execution and releases SQLite ownership first.
+3. The deterministic fixture receives only the final request envelope and declared case, with no runtime authority handles.
+4. Administrative ingress or terminalization validates exact typed bytes and never automatically retries fixture work.
+5. Explicit disposition considers at most one proposal, checkpoints, and does not execute an action or create memory/skills.
 
 Proposal types: `action_candidate`, `abstain`, `defer`.
 
@@ -87,100 +80,37 @@ Dispositions: `accepted`, `rejected`, `deferred`, `clarification_requested`.
 
 Clarification rounds: zero.
 
-## Slice 36 implementation state
+## Accepted limits
 
-### Slice 36a — merged
+- request envelope: 16 KiB
+- complete external package: 16 KiB
+- provenance: 8 KiB within package
+- four requests and four charged fixture invocations per current lineage
+- one outstanding current-lineage request
+- 64 KiB logical consultation payload per lineage
+- zero human/model/money/declared fixture latency
+- active database and individual database artifact: 8 MiB
+- checkpoint store: 40 MiB
+- runtime working set: 64 MiB
+- next-wake reserve: 1 MiB
 
-PR #65 merged as `75077220ecb52256857f2b234283d36e3c0f51d2`.
+## Implementation state
 
-It implements schema-v2 genesis, exact protected zero/fixture configuration, unchanged Phase 1 tables and budget locations, immutable consultation objects, stable schema-v2 checkpoint validation, no migration/downgrade path, zero-caregiver absence, and the genesis active-database overhead bound.
+### Slice 36 — complete
 
-Durable note: `docs/phase2/SLICE36A_SCHEMA_V2_GENESIS.md`.
+PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exact zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and independent absolute physical limits.
 
-### Slice 36b1 — merged
+Final Slice 36 head `e1ef85e71ddefef06c9940145e6d27db0c22d39b`, run 512: `230 passed in 32.41s` plus install, compile, and schema-v1 CLI smoke.
 
-PR #66 merged as `700dca34a70eca24ee024f07067f0f6fcb1f3f11`.
-
-It implements the active-database and genesis-checkpoint core of `phase1-projection-v2`: exact side roles, fixed-order original Phase 1 rows, declared schema-version normalization, strict zero-caregiver absence, independent checkpoint integrity, raw checkpoint linkage before `CP(g,e)`, checkpoint semantic comparison, and exact nested/unlisted/wrong-location behavior.
-
-Durable note: `docs/phase2/SLICE36B1_ZERO_CAREGIVER_CHECKPOINT_CORE.md`.
-
-### Slice 36b2a1 — merged
-
-PR #67 merged as `ccc2178a15e10ef3c93966cd2b5bbd3ec5d89f35`.
-
-It extends cumulative immutable evidence through exact checkpoint-repair identity, digest, size, previous-boundary, and checkpoint-store projection paths.
-
-Durable note: `docs/phase2/SLICE36B2A1_PENDING_REPAIR_EVIDENCE.md`.
-
-### Slice 36b2a2 — merged
-
-PR #69 merged as `64ea9eb094a687c056a571d362c1914aaf7911f2`.
-
-It closes normal retention prune, restored pre-commit failure, committed staging failure, exact `STAGE(CP)`, pending reconciliation, interruption after deletion, retry, and completion. Deleted or staged identity and bytes must match prior immutable evidence before projection.
-
-Durable note: `docs/phase2/SLICE36B2A2_RETENTION_PROJECTION.md`.
-
-### Slice 36b2a3 — merged
-
-PR #70 merged as `054382a1ea57fa3e3c87d70d725b5a4a5415334b`.
-
-Final head `4a0f82432e780245b3258983735c4f224a2f89fc` passed run 461 with `191 passed in 19.74s`. It validates exact `CP`, `RA`, `RC`, and `TC` linkage, cross-lineage checkpoint references, abandoned-future preservation, and lineage-aware event-sequence reuse.
-
-Durable note: `docs/phase2/SLICE36B2A3_ROLLBACK_PROJECTION.md`.
-
-### Slice 36b2a4 — merged
-
-PR #71 merged as `d7ce1703eaaf9aca1a33f72add4a9dfa707e7abe`.
-
-Final head `31736c45ff1879002991a6249c86ffa86c0f07b8` passed run 468 with `196 passed in 19.01s` plus successful installation, compilation, and schema-v1 genesis CLI smoke.
-
-It independently validates canonical JSONL, exact export manifest/event schemas, event range/count/order, source checkpoint, reconstructed bytes, raw size, and raw SHA before semantic projection.
-
-Durable note: `docs/phase2/SLICE36B2A4_EVENT_EXPORT_PROJECTION.md`.
-
-### Slice 36b2a5 — merged
-
-PR #72 merged as `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
-
-Final run 475 passed with `200 passed in 20.09s`. It measures paired schema-v1/schema-v2-zero active and `CP`/`RA`/`RC`/`TC` database overhead at at most 256 KiB and aggregate additional non-database metadata at at most 1 MiB.
-
-Durable note: `docs/phase2/SLICE36B2A5_PHYSICAL_OVERHEAD.md`.
-
-### Slice 36b2a6 — merged
-
-PR #73 merged as `c9004027a94b709802af7f590d46de862dd93d7d`.
-
-Final exact PR head `e1ef85e71ddefef06c9940145e6d27db0c22d39b` passed run 512 with `230 passed in 32.41s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
-
-It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files across active/artifact 8 MiB, checkpoint-store 40 MiB, working-set 64 MiB, exact 1 MiB next-wake reserve, checkpoint/repair/retention/rollback publication and reentry, active replacement, and rollback completion.
-
-Issues #74–#79 are closed as completed. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed. The narrow shared physical boundaries are re-frozen.
-
-Durable notes:
-
-- `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
-- `docs/phase2/SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md`
-
-Slice 36 is complete.
-
-## Slice 37 implementation state
+Read the `docs/phase2/SLICE36*.md` notes for exact evidence. Issues #74–#79 are closed.
 
 ### Slice 37a1 — merged
 
 PR #81 merged as `268fc5a8571f50cf19d7c8db15f975b40b1cd05c`.
 
-Final exact PR head `27d55d2853afb8f09530481dffa537f91b78640e` passed run 520 with `236 passed in 33.52s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+Final head `27d55d2853afb8f09530481dffa537f91b78640e`, run 520: `236 passed in 33.52s`.
 
-It implements the bounded fixture-configured request-wake core:
-
-- request only after incomplete-objective `no_applicable_action`
-- exact Phase 1 failure truth and one failure increment
-- no request on schema-v1, zero-caregiver, applicable action, objective completion, maintenance entry, limit, or outstanding-request paths
-- exact request identity, digest preimage, ID, final canonical envelope, event linkage, and event-sequence exclusion
-- one immutable request row and one request event in a dedicated savepoint
-- exact request preservation in the ordinary stable lifecycle checkpoint
-- later caller-selected garden wakes remain allowed while a request is outstanding
+It implements the bounded fixture request-wake core and exact request identity/envelope/checkpoint evidence.
 
 Durable note: `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`.
 
@@ -188,73 +118,38 @@ Durable note: `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`.
 
 PR #83 merged as `208956c40bffc0eff94307e6d326a071ee386d94`.
 
-Final exact PR head `41def40ffee3369194eae45734accccae1ce180c` passed run 533 with `242 passed in 31.65s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+Final head `41def40ffee3369194eae45734accccae1ce180c`, run 533: `242 passed in 31.65s`.
 
-It closes P2-E01–P2-E09 and P2-D12:
-
-- pre-write projection includes active allocation, real journal/WAL/SHM, request row/event bytes, checkpoint tail, resulting checkpoint/manifest, checkpoint store, working set, and exact 1 MiB reserve
-- post-write actual page allocation is checked before savepoint release
-- request-only refusal leaves no consultation row/event/source/sequence/cost and returns exact noncanonical reason
-- refusal preserves the exact retained Phase 1 outcome and ordinary checkpoint
-- a real 7 MiB active body preserves the reserve and completes two queued garden wakes
-- real WAL/SHM bytes are independently reconciled
-- a core body over 8 MiB raises the unchanged Phase 1 error and rolls back
-- normal request/checkpoint success remains within all inherited physical limits
+It closes P2-E01–P2-E09 and P2-D12 with real sidecar/checkpoint/working-set/reserve accounting and exact extension-only rollback.
 
 Durable note: `docs/phase2/SLICE37A2_REQUEST_STORAGE_SAFETY.md`.
 
-Still open in the request boundary:
+### Slice 37a3 — merged
 
-- P2-D07/D08: request epoch and ordinal across expiry and rollback
-- P2-D11: exact-field and forbidden-free-text adversarial corpus
-- P2-D14: backward wall-time independence
-- P2-D15: competing and nested wake fail-fast evidence
-- P2-E10: maximum-size request evidence
+PR #85 merged as `82e17c6ccba65323315b399ea6fad345a52db5f4`.
 
-The accepted protocol permits optional bounded typed request context but does not enumerate its exact field set. Do not invent private context fields merely to inflate an envelope to 16 KiB. P2-E10 needs a reviewed exact maximum-envelope interpretation.
+Final head `2d147d8acc1a4bd4f8750c499e5f94209b05ff55`, run 538: 245 tests passed; install, compile, and schema-v1 CLI smoke succeeded.
 
-## Accepted budgets and expiry
+It closes P2-D14 backward-wall-time independence and P2-D15 nested/competing wake fail-fast evidence. No production source changed.
 
-- schema-v2 new organisms only; no migration/downgrade
-- base contract remains `0.2`
-- request envelope ≤16 KiB
-- complete external package ≤16 KiB
-- provenance ≤8 KiB within package
-- four requests and four charged fixture invocations per current lineage
-- one outstanding current-lineage request
-- 64 KiB exact logical payload per lineage
-- zero human/model/money/declared fixture latency
-- active database/artifact 8 MiB
-- checkpoint store 40 MiB
-- working set 64 MiB
-- next-wake reserve 1 MiB
+Durable note: `docs/phase2/SLICE37A3_REQUEST_TIME_CONCURRENCY.md`.
 
-## Implementation discipline
+## Open request requirements
 
-Every slice maps to accepted matrix IDs. The unchanged 152-test Phase 1 suite is always the first regression layer.
-
-If implementation reveals a contradiction, return to reviewed ADR work. Code must not choose a private interpretation.
-
-## Codex audit cadence
-
-Codex audits are high-cost gates, not per-slice or per-PR review.
-
-1. Phase 2 design audit: completed in Issue #59.
-2. Focused zero-caregiver correction re-audit: completed in Issue #63.
-3. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
-
-No Codex audit was used for retention, rollback, event export, paired overhead, absolute physical-limit closure, Slice 37a1, or Slice 37a2.
+- P2-D07/D08 require later terminalization or disposition cycles to make four requests reachable without bypassing the frozen maintenance threshold.
+- P2-D11 belongs with exact typed-envelope validation because request creation accepts no untrusted fields.
+- P2-E10 remains blocked because optional typed request context is permitted but its exact field set is not enumerated. Do not invent private context fields merely to fill 16 KiB.
 
 ## Exact restart point
 
-1. inspect Issue #61, `docs/HANDOFF.md`, `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`, `docs/phase2/SLICE37A2_REQUEST_STORAGE_SAFETY.md`, and the accepted request requirements;
-2. start the next request-core sub-slice from updated `main` after this closeout documentation merge;
-3. map it to P2-D07/D08, P2-D11, P2-D14, and P2-D15 without changing the accepted request identity/envelope;
-4. prove four current-lineage requests and exact ordinal behavior through lifecycle expiry and rollback epoch changes;
-5. add exact-field/forbidden-free-text validation, backward-wall-time evidence, and competing/nested wake fail-fast evidence;
-6. leave P2-E10 blocked unless an exact reviewed maximum-envelope interpretation is available;
-7. keep all 152 Phase 1 tests unchanged and passing;
-8. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit.
+1. Start Slice 38 from updated `main` after the Slice 37a3 closeout documentation merge.
+2. Follow Issue #61 order: Slice 38 digest graph/typed external schemas before Slice 39 dispatch.
+3. Map work to P2-H01–P2-H11 and P2-I01–P2-I11.
+4. Begin test-first with shared canonical JSON and domain-separated digest vectors, then exact request, dispatch, proposal, response, package, and disposition schemas.
+5. Close P2-D11 through the exact-field/forbidden-content validator evidence.
+6. If the accepted documents leave an exact field set contradictory or incomplete, stop and return to reviewed design work. Code must not choose a private interpretation.
+7. Keep all original 152 Phase 1 tests unchanged and passing.
+8. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
 
 ## End-of-work protocol
 
