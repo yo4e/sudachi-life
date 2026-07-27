@@ -179,7 +179,7 @@ def _largest_case(request: dict[str, object]) -> tuple[str, dict[str, int]]:
         for case in VALID_PACKAGE_CASES
     }
     largest = max(sizes, key=lambda case: (sizes[case], case))
-    assert largest == "valid-action-candidate"
+    assert largest == "valid-abstain"
     return largest, sizes
 
 
@@ -234,8 +234,8 @@ def _request_cycle(
         clock=_disposition_clock(2_550_000_000_000_000 + ordinal * 100),
     )
     assert disposition.proposal_id == ingress.proposal_id
-    assert disposition.disposition == "rejected"
-    assert disposition.reason_code == "action_not_applicable_current_state"
+    assert disposition.disposition == "accepted"
+    assert disposition.reason_code == "no_supported_action_confirmed"
     return request, int(request_row["canonical_size_bytes"]), len(dispatched.fixture_output)
 
 
