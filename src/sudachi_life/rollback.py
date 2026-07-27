@@ -1,8 +1,8 @@
-"""Audited rollback archive publication boundary.
+"""Audited rollback archive admission and publication boundary.
 
 The pre-repair shared rollback implementation is retained byte-for-byte in
 ``rollback_impl``. This module preserves that surface and adds only the
-owner-authorized cleanup invariant for a newly published pre-rollback archive.
+authorized full working-set admission and failed-new-publication cleanup.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import shutil
 from typing import Any
 
 from . import rollback_impl as _impl
+from .runtime_storage import ensure_runtime_working_set_within_limit
 
 
 _PublicationState = dict[str, Any]
@@ -45,17 +46,20 @@ class _ScopedOsProxy:
             state["published_final"] = destination_path
 
 
-# Limit the interception to rollback_impl's own module reference. The process-wide
-# os module and unrelated publication paths remain unchanged.
 _impl.os = _ScopedOsProxy()
 
-# Preserve the complete existing public and private module surface for callers
-# that import shared validation helpers from sudachi_life.rollback.
 for _name, _value in vars(_impl).items():
     if not _name.startswith("__"):
         globals()[_name] = _value
 
 _original_prepare_rollback_archive = _impl.prepare_rollback_archive
+
+
+def _working_set_error(paths: Any, *, context: str) -> None:
+    try:
+        ensure_runtime_working_set_within_limit(paths, context=context)
+    except _impl.SchemaValidationError as exc:
+        raise _impl.RollbackArchiveError(str(exc)) from exc
 
 
 def prepare_rollback_archive(
@@ -65,12 +69,11 @@ def prepare_rollback_archive(
     *,
     protected_test_fail_after_snapshot: bool = False,
 ):
-    """Run the frozen implementation and remove only a failed new publication."""
+    """Create or reuse an archive only within the protected working set."""
 
-    archive_root = _impl.OrganismPaths.build(
-        runtime_root,
-        organism_id,
-    ).rollback_archives
+    paths = _impl.OrganismPaths.build(runtime_root, organism_id)
+    _working_set_error(paths, context="rollback archive admission")
+    archive_root = paths.rollback_archives
     state: _PublicationState = {
         "archive_root": archive_root,
         "published_final": None,
@@ -103,6 +106,4 @@ def prepare_rollback_archive(
                 _impl._fsync_dir(archive_root)
 
 
-# Ensure introspection and direct implementation-module users see the repaired
-# shared function rather than bypassing the cleanup boundary.
 _impl.prepare_rollback_archive = prepare_rollback_archive

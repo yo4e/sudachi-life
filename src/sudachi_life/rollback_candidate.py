@@ -2,7 +2,7 @@
 
 The pre-repair implementation remains byte-identical in
 ``rollback_candidate_impl``. This public module preserves that surface and
-adds one exact guard around its durable directory rename.
+adds exact admission and publication guards around its durable directory rename.
 """
 
 from __future__ import annotations
@@ -40,8 +40,6 @@ class _GuardedOs:
 if not isinstance(_impl.os, _GuardedOs):
     _impl.os = _GuardedOs(_impl.os)
 
-# Preserve the original module surface, including private helpers consumed by
-# rollback transformation and protected tests.
 for _name, _value in vars(_impl).items():
     if not _name.startswith("__"):
         globals()[_name] = _value
@@ -70,8 +68,6 @@ def _guarded_candidate_replace(paths: OrganismPaths) -> _ReplaceGuard:
         source: Path | str,
         destination: Path | str,
     ) -> None:
-        # The complete temporary directory is already beneath the protected
-        # candidate root, so this measures real database plus manifest bytes.
         try:
             _working_set_error(paths, context="restore candidate pre-publication")
         except RestoreCandidateError:
@@ -100,9 +96,10 @@ def build_restore_candidate(
     *,
     protected_test_fail_before_publish: bool = False,
 ) -> RestoreCandidateResult:
-    """Construct a candidate without ever retaining an over-limit artifact."""
+    """Construct or reuse a candidate only within the protected working set."""
 
     paths = OrganismPaths.build(runtime_root, organism_id)
+    _working_set_error(paths, context="restore candidate admission")
     token = _replace_guard.set(_guarded_candidate_replace(paths))
     try:
         return _impl.build_restore_candidate(
