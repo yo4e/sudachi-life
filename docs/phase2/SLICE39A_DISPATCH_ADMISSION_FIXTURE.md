@@ -1,6 +1,6 @@
 # Slice 39a: Dispatch Admission, Conservative Precharge, and Fixture Boundary
 
-Status: implementation-complete on PR #99; final documentation CI and merge pending.
+Status: merged through PR #99 as `b7c434aed249ed0bc52160db66e594824186890e`.
 
 ## Scope
 
@@ -52,9 +52,7 @@ consultation-cost-charge:<dispatch digest>
 
 The exact charge ledger records one attempt, one fixture invocation, one work unit, exact request bytes, and zero human/model/money/declared latency. Request bytes equal both the stored request size and independently recomputed canonical request bytes.
 
-Fault injection after the event, dispatch row, charge row, and immediately before commit proves no partial state remains.
-
-Preflight and post-write physical checks both run before commit.
+Fault injection after the event, dispatch row, charge row, and immediately before commit proves no partial state remains. Preflight and post-write physical checks both run before commit.
 
 ## Idempotence and interruption
 
@@ -105,6 +103,13 @@ Extended admission-matrix head `39e67ab69a2670de425a977ee6c38b514fd94de4`, run 5
 - pending, unstable, missing-checkpoint, and legitimately expired requests rejected without consultation mutation;
 - valid fixture bytes validated against the actual committed dispatch.
 
+Final exact PR head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569:
+
+- 316 passed in 56.74 seconds;
+- dependency installation succeeded;
+- source/test compilation succeeded;
+- schema-v1 genesis CLI smoke succeeded.
+
 All original 152 Phase 1 tests remain unchanged and included.
 
 ## Matrix status
@@ -119,13 +124,7 @@ Closed in this slice:
 - P2-F07;
 - ordinary and refusal portions of P2-F09;
 - P2-F10;
-- P2-G01;
-- P2-G02;
-- P2-G03;
-- P2-G04;
-- P2-G05;
-- P2-G06;
-- P2-G07.
+- P2-G01–P2-G07.
 
 Partially closed:
 
@@ -136,5 +135,9 @@ Deferred without private canonical mutation:
 - P2-F08 four-charge epoch boundary requires legitimate response/terminal/disposition cycles;
 - exact current-lineage/abandoned-lineage package scenarios close with rollback and ingress slices;
 - full raw-package parsing, measured completion, terminalization, and same-byte resubmission belong to Slice 40.
+
+## Exact continuation
+
+Slice 40 must first confirm that every immutable ingress/terminal ID, event type, and event payload is normatively closed. It then implements raw-size-before-parse validation, exact package ingress, response/proposal/receipt/cost-completion atomicity, duplicate and same-byte resubmission behavior, invalid-package terminalization, and explicit interrupted-dispatch reconciliation. It must not invoke the fixture again.
 
 No Codex audit was used. Codex remains deferred until the complete Phase 2 implementation candidate is ready for the single implementation-completion audit.

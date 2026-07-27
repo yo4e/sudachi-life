@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008–0011 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, and Slice 38a–c are merged.
+Phase 1 is frozen. ADRs 0008–0011 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, and Slice 39a are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -72,63 +72,55 @@ PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exac
 - PR #83 merged as `208956c40bffc0eff94307e6d326a071ee386d94`; run 533: `242 passed in 31.65s`.
 - PR #85 merged as `82e17c6ccba65323315b399ea6fad345a52db5f4`; run 538: 245 tests passed.
 
-### Slice 38a — canonical request graph
+### Slice 38 — exact protocol graph
 
-PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`; run 545: `261 passed in 34.10s`.
+- PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`; run 545: `261 passed in 34.10s`.
+- PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`; run 551: `275 passed in 29.84s`.
+- PR #95 merged as `d5cbe115caaada4b71d58bb81527fb6179e0c913`; final run 559: `294 passed in 37.06s`.
 
-### Slice 38b — proposal graph
+These close the request/dispatch/proposal/response/package identity graph and exact proposal/provenance/package schemas.
 
-PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`; run 551: `275 passed in 29.84s`.
+### ADRs 0010 and 0011
 
-### ADR 0010
+- PR #94 merged ADR 0010 as `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 are completed.
+- PR #98 merged ADR 0011 as `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 is completed.
 
-PR #94 merged as `b98bfdbd3de52e192f18328d6a294c8a683fa998`. Issues #88/#89/#92/#93 are completed.
+ADR 0010 fixes dispatch identity, provenance, response/package cardinality, current-state projection, disposition identity, and no optional request context. ADR 0011 fixes charge identity, ledger, and the single dispatch-admission event.
 
-It closes exact dispatch identity, external provenance, response/package cardinality, current-state projection, disposition identity, and Protocol-v1 request-context absence.
+### Slice 39a — dispatch admission and deterministic fixture
 
-### Slice 38c — dispatch/response/package protocol graph
+PR #99 merged as `b7c434aed249ed0bc52160db66e594824186890e`.
 
-PR #95 merged as `d5cbe115caaada4b71d58bb81527fb6179e0c913`.
+Final exact PR head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569: `316 passed in 56.74s` plus installation, compilation, and schema-v1 genesis CLI smoke.
 
-Final exact PR head `c420c6153281b08d125666c1efd4a56b642282d8`, run 559: `294 passed in 37.06s` plus installation, compilation, and schema-v1 genesis CLI smoke.
+It implements:
 
-It closes P2-H04, H07–H09, the pure graph portion of H11, P2-I01, I10, and response/package-side I11 without SQLite mutation or fixture execution.
+- fresh fail-fast administrative ownership;
+- sleeping/stable/current-lineage/lifecycle-expiry admission;
+- one exact atomic ADR 0011 event/dispatch/charge write set;
+- conservative precharge and request-byte equality;
+- commit and lock release before fixture execution;
+- byte-identical idempotent reentry without clock, charge, event, or fixture retry;
+- ordinary success and real reserve-refusal physical evidence;
+- capability-minimal deterministic fixture bytes;
+- no checkpoint, lifecycle, garden, action, response, proposal, receipt, terminal, or disposition effect.
 
-Durable note: `docs/phase2/SLICE38C_DISPATCH_RESPONSE_PACKAGE.md`.
+Durable note: `docs/phase2/SLICE39A_DISPATCH_ADMISSION_FIXTURE.md`.
 
-### ADR 0011 — dispatch admission identity
+## Remaining boundaries
 
-The project owner formally accepted Issue #96's recommendation on 2026-07-27.
-
-Exact canonical rules:
-
-- `charge_id = "consultation-cost-charge:" + <linked dispatch digest>`;
-- one exact conservative charge ledger with one attempt, invocation, and work unit, zero human/model/money/latency, and measured request bytes;
-- request bytes equal both the stored request size and independently recomputed canonical bytes;
-- event type `consultation_dispatch_admitted`;
-- source `administration:consultation.dispatch`;
-- event payload has exactly `charge` and `dispatch`;
-- event, dispatch row, charge row, and final dispatch envelope share one event sequence;
-- no separate cost event, refund, retry, checkpoint, action, or authority expansion.
-
-Durable records:
-
-- `docs/decisions/0011-fix-dispatch-admission-charge-and-event.md`
-- `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
-- `docs/phase2/ADR0011_ADOPTION_RECORD.md`
-
-## Remaining request requirements
-
-P2-D07/D08 and P2-E10 require later legitimate terminalization/disposition cycles. Do not bypass the frozen maintenance threshold or manufacture request ordinal four.
+- P2-F06 still needs spawned process-crash evidence; fixture exception/interruption already retains the conservative charge.
+- P2-F08 and request P2-D07/D08/E10 require legitimate terminalization/disposition cycles. Do not create private rows or manufacture ordinals/charges.
+- Fixture output remains noncanonical until Slice 40.
 
 ## Exact restart
 
-1. Merge the ADR 0011 documentation PR and close Issue #96.
-2. Begin Slice 39 test-first against P2-F01–F10 and P2-G01–G07.
-3. Require one fresh fail-fast administrative transaction, schema-v2 fixture configuration, sleeping status, no pending checkpoint/rollback/quarantine, stable current-lineage request checkpoint, lifecycle-based unexpired request, no prior dispatch/response/terminal, exact budgets, and physical reserve.
-4. Atomically write one final dispatch row, one ADR 0011 charge row, and one `consultation_dispatch_admitted` event.
-5. Commit and release SQLite ownership before deterministic fixture execution.
-6. Give the fixture exactly the final request envelope and declared case ID; no DB, path, workspace, repository, evaluator, executor, checkpoint, rollback, network, subprocess, credential, tool, or randomness capability.
-7. Never automatically retry or refund. Fixture output remains noncanonical until Slice 40 ingress.
+1. Before Slice 40 code, inspect every immutable response, proposal, ingress-receipt, cost-completion, terminal ID, event type, and event payload in ADRs 0008–0011, Consultation Protocol v1, the matrix, and schema.
+2. If any exact canonical identifier or event payload is absent, open one focused design clarification and stop before choosing a private value.
+3. Otherwise implement raw-size-before-parse validation and exact package ingress in one fresh fail-fast administrative transaction.
+4. Successful ingress atomically writes response, optional proposal, ingress receipt, cost completion, and one administrative event; it adds the measured package bytes exactly once to lineage logical payload.
+5. Implement byte-identical duplicate idempotence and explicit identical-byte resubmission after busy/pending-only rejection without fixture recall or another charge.
+6. Implement invalid/expired/interrupted admitted work as one explicit terminal outcome and reconciliation without fixture retry.
+7. Do not checkpoint, clear maintenance, execute an action, create memory/skills, or invoke the fixture during Slice 40.
 8. Keep all 152 Phase 1 tests unchanged and passing.
 9. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
