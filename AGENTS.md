@@ -61,7 +61,7 @@ The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0013, Consultation Protocol v1, the ADR 0010–0013 matrix amendments, and the Phase 2 matrix form one accepted design package after the ADR 0013 documentation PR merges. Issue #61 owns implementation.
+ADRs 0008–0013, Consultation Protocol v1, the ADR 0010–0013 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -128,15 +128,13 @@ The prior request constructor remains byte-identical in `phase2_request_impl.py`
 - ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 closed.
 - ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 closed.
 - ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 closed.
-- ADR 0013: project-owner adoption of Issue #105 fixes final disposition envelope, exact reason mapping, event/outcome, direct parents, fixed ledger, lifecycle/checkpoint ordering, and crash/idempotence behavior. Documentation merge is the adoption closeout gate.
+- ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 closed. It fixes the exact disposition envelope, six reason branches, event/outcome, direct parents, fixed ledger, lifecycle/checkpoint ordering, and crash/idempotence behavior.
 
 ### Slice 39a — dispatch admission and fixture boundary
 
 PR #99 merged as `b7c434aed249ed0bc52160db66e594824186890e`.
 
 Final exact PR head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569: `316 passed in 56.74s` plus install, compile, and schema-v1 CLI smoke.
-
-It implements fresh fail-fast administrative admission, exact stable/current-lineage/expiry checks, atomic ADR 0011 event/dispatch/charge, conservative precharge, idempotent no-retry reentry, real reserve refusal, commit-before-fixture lock release, and a capability-minimal deterministic fixture.
 
 Durable note: `docs/phase2/SLICE39A_DISPATCH_ADMISSION_FIXTURE.md`.
 
@@ -146,25 +144,33 @@ PR #103 merged as `f0238f108b2eb05a6774ca68a0b056eb12772dd1`.
 
 Final exact PR head `e6221bb42ad5e94ddd4d0c2e576975d64693464c`, run 580: `338 passed in 73.21s` plus install, compile, and schema-v1 CLI smoke.
 
-It implements exact raw-size-before-parse and canonical package acceptance; atomic response/optional proposal/receipt/completion/event ingress; exact invalid/expired/interrupted terminal branches; duplicate idempotence; busy resubmission; logical payload accounting; real reserve refusal; and spawned process-crash reconciliation without fixture recall.
-
 Durable note: `docs/phase2/SLICE40_INGRESS_TERMINALIZATION.md`.
+
+### Slice 41 — explicit disposition wake
+
+PR #107 merged as `a1176a3afa55931b409696e8d5b50ab6992f129f`.
+
+Final exact PR head `d6cb713aae5df2ed3e12740bbc474a89cbbb2df8`, run 593: `358 passed in 42.65s` plus install, compile, and schema-v1 CLI smoke.
+
+It implements exact current-state/disposition identities and envelope, all six protected outcomes, oldest eligible proposal selection, the exact four-event organism transaction and fixed ledger, lifecycle increment with failure-streak/garden/input invariants, ordinary checkpoint publication and repair, precommit rollback, finality, same-process/spawned fail-fast ownership, and real active/reserve/checkpoint-store/working-set refusal.
+
+Durable note: `docs/phase2/SLICE41_DISPOSITION_WAKE.md`.
 
 ## Open boundaries
 
-- P2-D07/D08, P2-E10, P2-F08, exact mixed 64 KiB boundaries, and lineage reset require legitimate repeated disposition/rollback cycles. Do not manufacture ordinals, charges, or lineage state through private canonical mutation.
-- Slice 41 implementation begins only after the ADR 0013 documentation PR merges and Issue #105 closes.
+- P2-D07/D08, P2-E10, P2-F08, the exact mixed 64 KiB boundary, and full four-request/four-charge reconstruction require legitimate repeated terminal/disposition cycles.
+- Rollback must prove a fresh lineage budget epoch and fail-closed old-lineage late packages/proposals without private canonical mutation.
+- Complete event/export/authority/physical/absence closure remains before the one implementation-completion audit.
 
 ## Exact restart point
 
-1. Merge ADR 0013 documentation and close Issue #105.
-2. Implement Slice 41 test-first against P2-L01–L14 and applicable P2-M/P2-N/P2-O requirements.
-3. Use the exact ADR 0010 current-state projection and ADR 0013 final envelope, mapping, four-event order, budget ledger, lifecycle, and checkpoint behavior.
-4. Consider at most one oldest eligible current-lineage proposal, preserve the garden failure streak, claim no garden input, and publish the ordinary checkpoint.
-5. Prove precommit rollback, postcommit pending-checkpoint repair, idempotent finality, real physical refusal, and no action/fixture/memory/skill effect.
-6. Keep all 152 Phase 1 tests unchanged and passing.
-7. Use the routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
-8. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
+1. Audit the remaining unchecked Phase 2 matrix rows against merged Slices 36–41.
+2. Implement Slice 42 test-first using only legitimate repeated request→dispatch→ingress/terminal→disposition cycles and the accepted rollback path.
+3. Close the exact fourth-request/fourth-charge boundary, fifth refusal, largest structural request, mixed 64 KiB formula/one-over, new-lineage reset, old-lineage rejection, complete event reconstruction, and remaining physical/absence evidence.
+4. Do not manufacture ordinals, charges, dispositions, or lineage rows through private canonical mutation.
+5. Keep all 152 Phase 1 tests unchanged and passing.
+6. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
+7. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
 
 ## End-of-work protocol
 
