@@ -13,7 +13,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 3. `docs/AI_COLLABORATION_OPERATIONS.md`
 4. `docs/ORIGIN.md`
 5. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-6. accepted `docs/decisions/` files in numeric order, including ADR 0010
+6. accepted `docs/decisions/` files in numeric order, including ADRs 0010 and 0011
 7. `docs/ARCHITECTURE.md`
 8. `docs/ROADMAP.md`
 9. `docs/IMPLEMENTATION_DISCIPLINE.md`
@@ -26,7 +26,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 16. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 17. `docs/HANDOFF.md`
 18. Issue #61 and current Issues/PRs
-19. Consultation Protocol v1, `docs/phase2/ADR0010_TEST_MATRIX_AMENDMENT.md`, the Phase 2 matrix, and Issue #59/#63 audit reports
+19. Consultation Protocol v1, ADR 0010/0011 matrix amendments, the Phase 2 matrix, and Issue #59/#63 audit reports
 
 ## Core question
 
@@ -60,7 +60,7 @@ The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008, 0009, and 0010, Consultation Protocol v1, the ADR 0010 matrix amendment, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
+ADRs 0008–0011, Consultation Protocol v1, the ADR 0010/0011 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -69,7 +69,7 @@ Original Phase 1 budget locations remain exactly `phase1-v1`. Phase 2 policy liv
 Operational boundaries remain explicit:
 
 1. Garden request wake preserves the frozen Phase 1 outcome and uses only an optional storage-safe request extension.
-2. Administrative dispatch commits and charges before fixture execution and releases SQLite ownership first.
+2. Administrative dispatch commits one dispatch, one conservative charge, and one admission event before fixture execution and releases SQLite ownership first.
 3. The deterministic fixture receives only the final request envelope and declared case, with no runtime authority handles.
 4. Administrative ingress or terminalization validates exact typed bytes and never automatically retries fixture work.
 5. Explicit disposition considers at most one proposal, checkpoints, and does not execute an action or create memory/skills.
@@ -136,20 +136,35 @@ It closes P2-H04, H07–H09, the pure graph portion of H11, P2-I01, I10, and res
 
 Durable note: `docs/phase2/SLICE38C_DISPATCH_RESPONSE_PACKAGE.md`.
 
+### ADR 0011 — accepted dispatch-admission identity
+
+The project owner formally accepted Issue #96's recommendation on 2026-07-27.
+
+ADR 0011 fixes:
+
+- `charge_id` as `consultation-cost-charge:` plus the linked dispatch digest;
+- exact conservative charge fields and request-byte equality;
+- the single event type `consultation_dispatch_admitted`;
+- source `administration:consultation.dispatch`;
+- one event sequence shared by the event, dispatch row, charge row, and final dispatch envelope;
+- event payload exactly `{"charge": <ledger>, "dispatch": <final envelope>}`;
+- no separate cost event, refund, retry, checkpoint, action, or authority expansion.
+
 ## Open boundaries
 
 - P2-D07/D08 and P2-E10 require a legitimate terminalization/disposition cycle. Do not manufacture request ordinal four by private canonical mutation.
-- Slice 39 canonical dispatch code is blocked because exact `consultation_cost_charge.charge_id` and the single dispatch-admission event type/payload are not defined by ADRs 0008–0010 or Protocol v1.
-- Do not invent those canonical identities in code. Record and resolve the design clarification first.
+- Slice 39 now has accepted canonical identities and may implement administrative dispatch admission, conservative precharge, and the deterministic fixture boundary.
 
 ## Exact restart point
 
-1. Merge the Slice 38c closeout documentation PR.
-2. Resolve the exact dispatch charge ID and dispatch-admission event schema.
-3. Implement Slice 39 administrative dispatch admission/precharge and deterministic fixture boundary.
-4. Keep dispatch/charge/event atomic, commit before fixture execution, release SQLite ownership, and never authorize retry.
-5. Keep all 152 Phase 1 tests unchanged and passing.
-6. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
+1. Merge the ADR 0011 documentation PR and close Issue #96.
+2. Implement Slice 39 test-first against P2-F01–F10 and P2-G01–G07.
+3. Use a fresh fail-fast administrative transaction and require sleeping, stable request checkpoint, current lineage, lifecycle-based expiry, no terminal/response/prior dispatch, exact configuration, and fitting logical/physical budgets.
+4. Atomically write one dispatch row, one charge row, and one `consultation_dispatch_admitted` event.
+5. Commit and release SQLite ownership before fixture execution; never retry or refund.
+6. Keep fixture capabilities limited to the final request envelope and declared case ID.
+7. Keep all 152 Phase 1 tests unchanged and passing.
+8. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
 
 ## End-of-work protocol
 
