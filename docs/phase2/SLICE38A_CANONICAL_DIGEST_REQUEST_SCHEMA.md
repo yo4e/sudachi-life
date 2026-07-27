@@ -1,6 +1,6 @@
 # Slice 38a: Canonical Digest and Request Schema
 
-Status: implemented on PR #87; final documentation CI and merge pending.
+Status: merged through PR #87 as `16af01a84aae3d802a112228c85ec4b1849c19ee`.
 
 ## Scope
 
@@ -52,14 +52,15 @@ The pre-validator request constructor remains byte-identical in `phase2_request_
 
 ## Test-first evidence
 
-Tests-only head `06f4a51cd083e71a569b06eb76563119e4bf440b`, GitHub Actions run 542:
-
-- the existing 245 tests passed through collection prerequisites;
-- the new protocol tests failed because `sudachi_life.phase2_protocol` did not exist.
+Tests-only head `06f4a51cd083e71a569b06eb76563119e4bf440b`, GitHub Actions run 542 failed because `sudachi_life.phase2_protocol` did not exist.
 
 Implementation and production-validation head `a3637c723da9696ebe618ed6d2ca5e7f3f467da9`, run 545:
 
-- 261 passed in 34.10 seconds;
+- 261 passed in 34.10 seconds.
+
+Final exact PR head `a571b769834fa223ed4afc5ef1d84e41cdbbee9a`, run 546:
+
+- protected suite passed;
 - dependency installation succeeded;
 - source and test compilation succeeded;
 - schema-v1 genesis CLI smoke succeeded.
@@ -68,12 +69,14 @@ All original 152 Phase 1 tests remain unchanged and included.
 
 ## Deferred exact-design points
 
-P2-H04 is not implemented here. Consultation Protocol v1 section 3.2 says dispatch identity contains exactly schema/protocol, organism/current lineage, request ID, ordinal 1, adapter version, fixture case, and work class. Section 4.1 separately requires `consultation_configuration.configuration_version` in every dispatch identity. An exact validator must not silently choose between these statements.
+Issue #88 records the P2-H04 contradiction. Consultation Protocol v1 section 3.2 gives an exact dispatch-identity list that omits consultation configuration version, while section 4.1 requires that version in every dispatch identity. Code must not choose privately.
+
+Issue #89 records the missing exact external-provenance schema required by P2-I01 and P2-H07–H09.
 
 P2-H10 also remains dependent on the required versioned protected current-state projection. P2-E10 remains dependent on an exact reviewed maximum request-envelope interpretation.
 
 ## Next boundary
 
-Independent Slice 38 work may continue with proposal, response, and package schemas/digests that are exactly enumerated. Dispatch identity and disposition current-state identity require reviewed clarification before their validators are accepted.
+Independent Slice 38 work may continue with proposal identity and type-specific proposal validators that do not construct a dispatch identity or response provenance. Dispatch identity, response/package identity, and disposition current-state identity require reviewed clarification before acceptance.
 
 No Codex audit was used. Codex remains deferred until the complete Phase 2 implementation candidate is ready for the single implementation-completion audit.
