@@ -30,20 +30,37 @@ def _lineage_limit_refusal_if_exactly_eligible(
     budget_snapshot: dict[str, Any] | None,
 ):
     configuration_version, limits = _impl._configuration_limits(connection)
-    if configuration_version != _impl.FIXTURE_CONFIGURATION_VERSION:
+    if (
+        configuration_version != _impl.FIXTURE_CONFIGURATION_VERSION
+        or limits is None
+    ):
         return None
     if checkpoint_payload.get("final_status") == "maintenance_required":
         return None
     if budget_snapshot is None:
         return None
 
-    decision, observation, _observation_event_sequence = _impl._current_lifecycle_payload(
+    decision_event = _impl._current_lifecycle_payload(
         connection,
         lineage_generation=lineage_generation,
         lifecycle_number=lifecycle_number,
+        event_type="action_abstained",
     )
+    if decision_event is None:
+        return None
+    _decision_sequence, decision = decision_event
     if decision.get("reason") != "no_applicable_action":
         return None
+
+    observation_event = _impl._current_lifecycle_payload(
+        connection,
+        lineage_generation=lineage_generation,
+        lifecycle_number=lifecycle_number,
+        event_type="observation_created",
+    )
+    if observation_event is None:
+        return None
+    _observation_sequence, observation = observation_event
     if observation.get("objective_complete") is not False:
         return None
 
