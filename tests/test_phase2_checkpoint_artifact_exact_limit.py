@@ -77,7 +77,8 @@ def test_pending_repair_accepts_checkpoint_database_at_exact_artifact_limit(
 
     snapshot = connect_database(orphan / "organism.sqlite3", read_only=True)
     try:
-        assert snapshot.execute("PRAGMA integrity_check").fetchall() == [("ok",)]
+        integrity = snapshot.execute("PRAGMA integrity_check").fetchall()
+        assert len(integrity) == 1 and integrity[0][0] == "ok"
         validate_canonical_state(snapshot, expect_checkpoint_pending=True)
     finally:
         snapshot.close()
