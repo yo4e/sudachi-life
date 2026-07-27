@@ -14,7 +14,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 4. `docs/phase2/CLARIFICATION_DELEGATION.md`
 5. `docs/ORIGIN.md`
 6. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-7. accepted `docs/decisions/` files in numeric order, including ADRs 0010–0014
+7. accepted `docs/decisions/` files in numeric order, including ADRs 0010–0016
 8. `docs/ARCHITECTURE.md`
 9. `docs/ROADMAP.md`
 10. `docs/IMPLEMENTATION_DISCIPLINE.md`
@@ -27,7 +27,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 17. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 18. `docs/HANDOFF.md`
 19. Issue #61 and current Issues/PRs
-20. Consultation Protocol v1, ADR 0010–0014 matrix amendments, the Phase 2 matrix, and Issue #59/#63 audit reports
+20. Consultation Protocol v1, ADR 0010–0016 matrix amendments, the Phase 2 matrix, and Issue #59/#63 audit reports
 
 ## Core question
 
@@ -61,7 +61,7 @@ The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0014, Consultation Protocol v1, the ADR 0010–0014 matrix amendments, and the Phase 2 matrix form one accepted design package after the ADR 0014 documentation PR merges. Issue #61 owns implementation.
+ADRs 0008–0016, Consultation Protocol v1, the ADR 0010–0016 matrix amendments, and the Phase 2 matrix form one accepted design package after the ADR 0015/0016 documentation PR merges. Issue #61 owns implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -129,7 +129,9 @@ The prior request constructor remains byte-identical in `phase2_request_impl.py`
 - ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 closed.
 - ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 closed.
 - ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 closed.
-- ADR 0014: delegated adoption of Issue #109 replaces P2-E10's impossible sixteen-parent example with the exact eight-parent eligible `no_applicable_action` path. The documentation merge is the adoption closeout gate.
+- ADR 0014: PR #110, merge `b5d1ae3ae9ed46855f285c8539e4c2ed7891dbc3`; Issue #109 closed. It fixes P2-E10 to the exact eight-parent eligible request path.
+- ADR 0015: delegated adoption of Issue #111 fixes the exact noncanonical fifth-request reason `consultation_request_not_created_lineage_request_limit`. Documentation merge is pending.
+- ADR 0016: delegated adoption of Issue #112 separates the exact pure 64 KiB/one-over arithmetic guard from the smaller legal closed-v1 four-cycle maximum. Documentation merge is pending.
 
 ### Slice 39a — dispatch admission and fixture boundary
 
@@ -157,22 +159,31 @@ It implements exact current-state/disposition identities and envelope, all six p
 
 Durable note: `docs/phase2/SLICE41_DISPOSITION_WAKE.md`.
 
+## Finite-boundary clarifications for Slice 42
+
+- The legal largest ordinal-four request uses exactly the eight ADR 0014 current-lifecycle parents.
+- An otherwise eligible fifth request returns the exact ADR 0015 typed result and creates no consultation mutation.
+- The 64 KiB hard limit and 65537 rejection are proven in ADR 0016's pure accounting function.
+- The separate legal maximum fixture reaches four complete public cycles, measures the largest closed-v1 packages, and proves the real current-lineage sum remains below 64 KiB without filler or direct mutation.
+- Accepted rollback starts fresh request, charge, and logical-payload epochs for the new current lineage; old rows remain immutable history.
+
 ## Open boundaries
 
-- P2-D07/D08, P2-E10, P2-F08, the exact mixed 64 KiB boundary, and full four-request/four-charge reconstruction require legitimate repeated terminal/disposition cycles.
-- P2-E10's legal ordinal-four request has exactly eight eligible current-lifecycle core parents; no test may manufacture the superseded sixteen-parent shape.
-- Rollback must prove a fresh lineage budget epoch and fail-closed old-lineage late packages/proposals without private canonical mutation.
+- P2-D07/D08, P2-E10, P2-F08, P2-J09/J10, and full four-request/four-charge reconstruction require legitimate repeated cycles.
+- Rollback must prove fresh current-lineage epochs and fail-closed old-lineage late packages/proposals.
 - Complete event/export/authority/physical/absence closure remains before the one implementation-completion audit.
 
 ## Exact restart point
 
-1. Merge ADR 0014 documentation and close Issue #109.
+1. Merge ADR 0015/0016 documentation and close Issues #111/#112.
 2. Implement Slice 42 test-first using only legitimate repeated request→dispatch→ingress/terminal→disposition cycles and the accepted rollback path.
-3. Close the exact fourth-request/fourth-charge boundary, fifth refusal, legal largest structural request with eight parents, mixed 64 KiB formula/one-over, new-lineage reset, old-lineage rejection, complete event reconstruction, and remaining physical/absence evidence.
-4. Do not manufacture ordinals, charges, dispositions, lineage rows, events, parents, or payload size through private canonical mutation.
-5. Keep all 152 Phase 1 tests unchanged and passing.
-6. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
-7. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+3. Add the exact fifth-request typed result without changing the retained constructor body.
+4. Add and use the pure logical-payload accounting function; prove 65536/65537 and the legal four-cycle maximum.
+5. Close ordinal/charge limits, ADR 0014 largest request, rollback lineage reset, old-lineage rejection, complete reconstruction, and remaining physical/absence evidence.
+6. Do not manufacture ordinals, charges, dispositions, lineage rows, events, parents, packages, or payload size through private canonical mutation.
+7. Keep all 152 Phase 1 tests unchanged and passing.
+8. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
+9. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
 
 ## End-of-work protocol
 
