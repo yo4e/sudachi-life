@@ -1,6 +1,6 @@
 # Slice 38b: Exact Proposal Identities and Types
 
-Status: implemented on PR #91; final documentation CI and merge pending.
+Status: merged through PR #91 as `068b3d30b91bd0bec89344a0d27b4685b3764a65`.
 
 ## Scope
 
@@ -84,7 +84,11 @@ Tests-only head `53988a7a3969610a1d494d330b8aa7a0554b4021`, GitHub Actions run 5
 
 Implementation head `208d5e96290701a36841bb767ddd9fac50071d33`, run 551:
 
-- 275 passed in 29.84 seconds;
+- 275 passed in 29.84 seconds.
+
+Final exact PR head `3a0affde5e2bbd28491a02f442cd48cb82df66cf`, run 552:
+
+- protected suite passed;
 - dependency installation succeeded;
 - source and test compilation succeeded;
 - schema-v1 genesis CLI smoke succeeded.
@@ -93,15 +97,15 @@ All original 152 Phase 1 tests remain unchanged and included.
 
 ## Deferred design dependencies
 
-- Issue #88 blocks exact dispatch identity P2-H04;
-- Issue #89 blocks response exact fields, provenance, and P2-H07–H09/I01;
-- P2-H10 requires the versioned protected current-state projection;
-- P2-E10 requires an exact reviewed maximum request-envelope interpretation.
+- Issue #88: exact dispatch identity configuration-version contradiction;
+- Issue #89: exact external provenance schema;
+- Issue #92: versioned protected current-state projection for disposition;
+- Issue #93: exact maximum request envelope and optional context.
 
 No proposal in this sub-slice is canonical ingress state and no fixture is invoked. This is a pure protected schema/digest library for later fixture and ingress boundaries.
 
-## Next boundary
+## Human design gate
 
-Further response/package/dispatch/disposition implementation requires the relevant reviewed design clarifications. Do not construct opaque provenance, silently choose the dispatch identity, or invent the current-state projection.
+All independent exact Slice 38 work currently available without choosing a private interpretation is complete. Dispatch, response/package, disposition identity, and maximum request evidence require decisions in Issues #88, #89, #92, and #93 before implementation proceeds honestly.
 
 No Codex audit was used. Codex remains deferred until the complete Phase 2 implementation candidate is ready for the single implementation-completion audit.
