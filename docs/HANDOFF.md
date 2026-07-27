@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008, 0009, and 0010 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, and Slice 38a–c are merged.
+Phase 1 is frozen. ADRs 0008–0011 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, and Slice 38a–c are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -13,15 +13,16 @@ Read, in order:
 1. `AGENTS.md`
 2. `docs/AI_COLLABORATION_OPERATIONS.md`
 3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-4. accepted ADRs 0001–0010
+4. accepted ADRs 0001–0011
 5. `docs/PHASE1_TEST_MATRIX.md`
 6. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 7. this handoff
 8. `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
 9. `docs/phase2/ADR0010_TEST_MATRIX_AMENDMENT.md`
-10. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-11. implemented `docs/phase2/` notes
-12. Issue #61 and current PRs/issues
+10. `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
+11. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+12. implemented `docs/phase2/` notes
+13. Issue #61 and current PRs/issues
 
 Repository and GitHub state outrank conversation history.
 
@@ -49,7 +50,7 @@ The garden wake before the schema-v2 request extension remains byte-identical in
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008, 0009, and 0010, Consultation Protocol v1, the ADR 0010 matrix amendment, and the Phase 2 matrix form one accepted package.
+ADRs 0008–0011, Consultation Protocol v1, the ADR 0010/0011 matrix amendments, and the Phase 2 matrix form one accepted package.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -95,32 +96,39 @@ It closes P2-H04, H07–H09, the pure graph portion of H11, P2-I01, I10, and res
 
 Durable note: `docs/phase2/SLICE38C_DISPATCH_RESPONSE_PACKAGE.md`.
 
-## Current design gate
+### ADR 0011 — dispatch admission identity
 
-Slice 39 requires one canonical dispatch row, one conservative cost-charge row, and one administrative event to commit atomically before fixture execution.
+The project owner formally accepted Issue #96's recommendation on 2026-07-27.
 
-The accepted documents do **not** define:
+Exact canonical rules:
 
-- the exact `consultation_cost_charge.charge_id` value;
-- the exact dispatch-admission `event.event_type`;
-- the exact event payload field set and whether it embeds the final dispatch envelope, the charge ledger, or typed links only.
+- `charge_id = "consultation-cost-charge:" + <linked dispatch digest>`;
+- one exact conservative charge ledger with one attempt, invocation, and work unit, zero human/model/money/latency, and measured request bytes;
+- request bytes equal both the stored request size and independently recomputed canonical bytes;
+- event type `consultation_dispatch_admitted`;
+- source `administration:consultation.dispatch`;
+- event payload has exactly `charge` and `dispatch`;
+- event, dispatch row, charge row, and final dispatch envelope share one event sequence;
+- no separate cost event, refund, retry, checkpoint, action, or authority expansion.
 
-These are protected immutable canonical identities, not presentation details. Code must not invent them privately.
+Durable records:
 
-P2-D07/D08 and P2-E10 remain dependent on later legitimate terminalization/disposition cycles. Do not manufacture request ordinal four.
+- `docs/decisions/0011-fix-dispatch-admission-charge-and-event.md`
+- `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
+- `docs/phase2/ADR0011_ADOPTION_RECORD.md`
+
+## Remaining request requirements
+
+P2-D07/D08 and P2-E10 require later legitimate terminalization/disposition cycles. Do not bypass the frozen maintenance threshold or manufacture request ordinal four.
 
 ## Exact restart
 
-1. Merge the Slice 38c closeout documentation PR.
-2. Resolve the exact charge ID and dispatch-admission event schema through reviewed design clarification.
-3. Implement Slice 39 administrative dispatch admission/precharge:
-   - fresh fail-fast transaction;
-   - exact sleeping/stable/current-lineage/unexpired/nonterminal/no-prior-dispatch checks;
-   - atomic dispatch, charge, and event;
-   - physical reserve checks;
-   - commit and release SQLite before fixture execution;
-   - no checkpoint or action effect;
-   - no hidden retry.
-4. Implement the deterministic fixture boundary outside SQLite ownership.
-5. Keep all 152 Phase 1 tests unchanged and passing.
-6. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
+1. Merge the ADR 0011 documentation PR and close Issue #96.
+2. Begin Slice 39 test-first against P2-F01–F10 and P2-G01–G07.
+3. Require one fresh fail-fast administrative transaction, schema-v2 fixture configuration, sleeping status, no pending checkpoint/rollback/quarantine, stable current-lineage request checkpoint, lifecycle-based unexpired request, no prior dispatch/response/terminal, exact budgets, and physical reserve.
+4. Atomically write one final dispatch row, one ADR 0011 charge row, and one `consultation_dispatch_admitted` event.
+5. Commit and release SQLite ownership before deterministic fixture execution.
+6. Give the fixture exactly the final request envelope and declared case ID; no DB, path, workspace, repository, evaluator, executor, checkpoint, rollback, network, subprocess, credential, tool, or randomness capability.
+7. Never automatically retry or refund. Fixture output remains noncanonical until Slice 40 ingress.
+8. Keep all 152 Phase 1 tests unchanged and passing.
+9. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
