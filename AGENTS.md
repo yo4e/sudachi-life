@@ -54,7 +54,7 @@ Phase 1 passed final independent audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25
 
 Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinterpret Phase 1 tests, alter garden actions, selector, executor, evaluators, clocks, checkpoints, rollback, or authority, or add hidden network, subprocess, workspace, arbitrary-code, or continuous-execution routes.
 
-PR #73 reopened the shared kernel only for explicitly authorized absolute-limit defects discovered by protected real-file tests. The pre-repair bodies are retained in explicit `*_impl.py` modules and the narrow guards are documented in `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`. After PR #73 merges, those boundaries are re-frozen; the wrappers are not permission for general Phase 1 redesign.
+PR #73 temporarily reopened shared Phase 1 code only for explicitly authorized absolute-limit defects discovered by protected real-file tests. It was squash-merged as `c9004027a94b709802af7f590d46de862dd93d7d`. Pre-repair bodies remain in explicit `*_impl.py` modules and the narrow guards are documented in `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`. Those physical boundaries are now re-frozen; the wrappers are not permission for general Phase 1 redesign.
 
 ## Accepted Phase 2 consultation boundary
 
@@ -145,13 +145,11 @@ Final run 475 passed with `200 passed in 20.09s`. It measures paired schema-v1/s
 
 Durable note: `docs/phase2/SLICE36B2A5_PHYSICAL_OVERHEAD.md`.
 
-### Slice 36b2a6 — implemented on PR #73
+### Slice 36b2a6 — merged
 
-Branch: `slice36b2-absolute-physical-limits`.
+PR #73 merged as `c9004027a94b709802af7f590d46de862dd93d7d`.
 
-Base: merged PR #72 at `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
-
-Code head `09c8e52dde8f1f26e8bb149237591a62f55cdc1a` passed run 507 with `230 passed in 35.28s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+Final exact PR head `e1ef85e71ddefef06c9940145e6d27db0c22d39b` passed run 512 with `230 passed in 32.41s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
 
 It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
 
@@ -164,14 +162,14 @@ It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
 - no retained newly published artifact, deleted existing artifact, inadmissible authority transfer, or rejected canonical registration
 - raw zero-caregiver configuration and empty operational tables in active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
 
-Protected tests found and closed Issues #74–#79 plus the same-turn post-write registration-growth defect under explicit project-owner authorization. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed.
+Issues #74–#79 are closed as completed. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed. The narrow shared physical boundaries are re-frozen.
 
 Durable notes:
 
 - `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
 - `docs/phase2/SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md`
 
-PR #73 remains the merge gate until final documentation CI is green, review is complete, and the PR is merged.
+Slice 36 is complete.
 
 ## Accepted budgets and expiry
 
@@ -207,13 +205,12 @@ No Codex audit was used for retention, rollback, event export, paired overhead, 
 
 ## Exact restart point
 
-1. inspect Issue #61, PR #73, `docs/HANDOFF.md`, and all implemented Slice 36 notes
-2. verify PR #73 final documentation head and CI
-3. review and merge PR #73; close Issues #74–#79 as completed and re-freeze the narrow Phase 1 boundaries
-4. create Slice 37 from updated `main`
-5. implement request-envelope/storage-safe extension requirements test-first
-6. keep all 152 Phase 1 tests unchanged and passing
-7. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit
+1. inspect Issue #61, `docs/HANDOFF.md`, and all implemented Slice 36 notes
+2. create Slice 37 from updated `main` after the closeout documentation merge
+3. map the first Slice 37 sub-slice to request-envelope and storage-safe request-extension matrix requirements
+4. write failing tests first
+5. keep all 152 Phase 1 tests unchanged and passing
+6. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit
 
 ## End-of-work protocol
 
