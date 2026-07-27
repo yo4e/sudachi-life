@@ -98,9 +98,7 @@ Clarification rounds: zero.
 
 ### Slice 36 — complete
 
-PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits.
-
-Final Slice 36 run 512: `230 passed in 32.41s` plus install, compile, and schema-v1 CLI smoke.
+PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits. Final run 512: `230 passed in 32.41s`.
 
 ### Slice 37 — request boundary
 
@@ -110,7 +108,7 @@ Final Slice 36 run 512: `230 passed in 32.41s` plus install, compile, and schema
 
 ### Slice 38a — canonical digest and request schema
 
-PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`. Code/test run 545: `261 passed in 34.10s`.
+PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`. Run 545: `261 passed in 34.10s`.
 
 It closes P2-H01, H02 core, H03, and request-side D11. Shared `phase2_protocol.py` owns canonical bytes, exact digest labels, request identity/ID, and final request validation.
 
@@ -118,27 +116,40 @@ The prior request constructor remains byte-identical in `phase2_request_impl.py`
 
 ### Slice 38b — proposal schema
 
-PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`. Implementation run 551: `275 passed in 29.84s`; final run 552 passed all steps.
+PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`. Run 551: `275 passed in 29.84s`; final run 552 passed all steps.
 
 It closes P2-H05/H06, P2-I02–I09, and proposal-side I11.
 
-## ADR 0010 clarification boundary
+### ADR 0010 — accepted clarification
 
-The project owner formally accepted the resolutions of Issues #88, #89, #92, and #93.
+PR #94 merged as `b98bfdbd3de52e192f18328d6a294c8a683fa998`. Issues #88, #89, #92, and #93 are closed.
 
-ADR 0010 fixes exact dispatch identity, external provenance, response/package cardinality, current-state projection, disposition identity, and the absence of optional request context in Protocol v1.
+ADR 0010 fixes exact dispatch identity, external provenance, response/package cardinality, current-state projection, disposition identity, and no optional request context in Protocol v1.
 
-Do not add an undeclared request field, provenance field, adapter/case, current-state field, or authority route. Any future addition requires a later protocol version or ADR.
+### Slice 38c — dispatch/response/package graph
+
+PR #95 merged as `d5cbe115caaada4b71d58bb81527fb6179e0c913`.
+
+Final exact PR head `c420c6153281b08d125666c1efd4a56b642282d8`, run 559: `294 passed in 37.06s` plus install, compile, and schema-v1 CLI smoke.
+
+It closes P2-H04, H07–H09, the pure graph portion of H11, P2-I01, I10, and response/package-side I11. It adds no canonical mutation or fixture execution.
+
+Durable note: `docs/phase2/SLICE38C_DISPATCH_RESPONSE_PACKAGE.md`.
+
+## Open boundaries
+
+- P2-D07/D08 and P2-E10 require a legitimate terminalization/disposition cycle. Do not manufacture request ordinal four by private canonical mutation.
+- Slice 39 canonical dispatch code is blocked because exact `consultation_cost_charge.charge_id` and the single dispatch-admission event type/payload are not defined by ADRs 0008–0010 or Protocol v1.
+- Do not invent those canonical identities in code. Record and resolve the design clarification first.
 
 ## Exact restart point
 
-1. Merge the Slice 38b closeout/ADR 0010 documentation PR.
-2. Close Issues #88, #89, #92, and #93 as completed.
-3. Implement Slice 38c dispatch identity, response/provenance, proposal-response graph, and package validators.
-4. Implement P2-E10 using the largest structural closed-v1 request; do not add context or filler.
-5. Then implement Slice 39 administrative dispatch/precharge/fixture boundary.
-6. Keep all 152 Phase 1 tests unchanged and passing.
-7. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
+1. Merge the Slice 38c closeout documentation PR.
+2. Resolve the exact dispatch charge ID and dispatch-admission event schema.
+3. Implement Slice 39 administrative dispatch admission/precharge and deterministic fixture boundary.
+4. Keep dispatch/charge/event atomic, commit before fixture execution, release SQLite ownership, and never authorize retry.
+5. Keep all 152 Phase 1 tests unchanged and passing.
+6. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
 
 ## End-of-work protocol
 
