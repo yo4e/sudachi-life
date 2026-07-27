@@ -54,6 +54,8 @@ Phase 1 passed final independent audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25
 
 Phase 1 body and trusted kernel are frozen. Phase 2 must not condition or reinterpret Phase 1 tests, alter garden actions, selector, executor, evaluators, clocks, checkpoints, rollback, or authority, or add hidden network, subprocess, workspace, arbitrary-code, or continuous-execution routes.
 
+PR #73 reopened the shared kernel only for explicitly authorized absolute-limit defects discovered by protected real-file tests. The pre-repair bodies are retained in explicit `*_impl.py` modules and the narrow guards are documented in `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`. After PR #73 merges, those boundaries are re-frozen; the wrappers are not permission for general Phase 1 redesign.
+
 ## Accepted Phase 2 consultation boundary
 
 ADRs 0008 and 0009, Consultation Protocol v1, and the Phase 2 matrix are the accepted design package. Issue #61 owns implementation.
@@ -129,52 +131,47 @@ Durable note: `docs/phase2/SLICE36B2A3_ROLLBACK_PROJECTION.md`.
 
 PR #71 merged as `d7ce1703eaaf9aca1a33f72add4a9dfa707e7abe`.
 
-Tests-only head `9430b314f925ed09c1e8b9a49b7b21961bcd1e70` produced red run 463. Final head `31736c45ff1879002991a6249c86ffa86c0f07b8` passed run 468 with `196 passed in 19.01s` plus successful installation, compilation, and schema-v1 genesis CLI smoke.
+Final head `31736c45ff1879002991a6249c86ffa86c0f07b8` passed run 468 with `196 passed in 19.01s` plus successful installation, compilation, and schema-v1 genesis CLI smoke.
 
-It independently validates canonical JSONL, exact export manifest/event schemas, event range/count/order, source checkpoint, reconstructed bytes, raw size, and raw SHA before semantic projection. Changed, noncanonical, incomplete, and post-capture-modified files reject.
+It independently validates canonical JSONL, exact export manifest/event schemas, event range/count/order, source checkpoint, reconstructed bytes, raw size, and raw SHA before semantic projection.
 
 Durable note: `docs/phase2/SLICE36B2A4_EVENT_EXPORT_PROJECTION.md`.
 
-### Slice 36b2a5 — implemented on PR #72
+### Slice 36b2a5 — merged
 
-Branch: `slice36b2-physical-overhead`.
+PR #72 merged as `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
 
-Base: merged PR #71 at `d7ce1703eaaf9aca1a33f72add4a9dfa707e7abe`.
-
-Tests-only head `32aae47219da80d56baa6a65bcf87d29b59987d8` produced red run 470 before implementation.
-
-Implementation and active-cap enforcement head `2464ba1eb6fe95520efcf1c6fa20e3664d6351ee` passed run 472 with `200 passed in 22.14s` plus successful installation, compilation, and schema-v1 genesis CLI smoke. The unchanged 152 Phase 1 tests remain included.
-
-The measurement layer first recaptures the full semantic artifact graph and requires exact paired token sets before comparing bytes.
-
-It enforces:
-
-- active schema-v2-zero database overhead: `0..256 KiB`
-- each paired `CP`, `RA`, `RC`, and `TC` database overhead: `0..256 KiB`
-- aggregate additional non-database artifact bytes: `0..1 MiB`
-
-Real paired scenarios cover one stable water wake and one complete retained rollback working set. Each cap rejects when lowered below the measured real value.
+Final run 475 passed with `200 passed in 20.09s`. It measures paired schema-v1/schema-v2-zero active and `CP`/`RA`/`RC`/`TC` database overhead at at most 256 KiB and aggregate additional non-database metadata at at most 1 MiB.
 
 Durable note: `docs/phase2/SLICE36B2A5_PHYSICAL_OVERHEAD.md`.
 
-### Exact next boundary — independent absolute physical limits
+### Slice 36b2a6 — implemented on PR #73
 
-After PR #72 is reviewed and merged, create a test-first branch from updated `main`.
+Branch: `slice36b2-absolute-physical-limits`.
 
-Close remaining ADR 0009 section 9 and P2-O18/P2-O19/P2-O21/P2-O22 evidence:
+Base: merged PR #72 at `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
 
-- independent absolute 8 MiB active-database limit
-- independent absolute 8 MiB checkpoint/archive/candidate artifact limit
-- absolute 40 MiB checkpoint-store limit
-- absolute 64 MiB runtime working-set limit
+Code head `09c8e52dde8f1f26e8bb149237591a62f55cdc1a` passed run 507 with `230 passed in 35.28s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+
+It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
+
+- active and artifact 8 MiB boundaries
+- checkpoint-store 40 MiB boundary
+- runtime working-set 64 MiB boundary
 - exact 1 MiB next-wake reserve
-- real one-below, at, and one-over cases using physical files
-- near-ceiling checkpoint, repair, retention, rollback, and reserve paths without partial canonical mutation
-- exact immutable consultation configuration and zero-caregiver operational absence inside schema-v2 checkpoint/repair/retention/rollback artifacts
+- exact and one-over checkpoint publication, pending repair, retention, rollback archive, source candidate, transformed candidate, active replacement, and rollback completion paths
+- idempotent RA/RC/TC, already-replaced, and completed-rollback reentry admission at the same absolute limits
+- no retained newly published artifact, deleted existing artifact, inadmissible authority transfer, or rejected canonical registration
+- raw zero-caregiver configuration and empty operational tables in active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
 
-Do not require paired byte-threshold equality near a ceiling. Each side independently obeys the same absolute rule.
+Protected tests found and closed Issues #74–#79 plus the same-turn post-write registration-growth defect under explicit project-owner authorization. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed.
 
-Slice 37 remains blocked until all Slice 36 evidence is merged and no blocker/high/medium boundary defect remains.
+Durable notes:
+
+- `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
+- `docs/phase2/SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md`
+
+PR #73 remains the merge gate until final documentation CI is green, review is complete, and the PR is merged.
 
 ## Accepted budgets and expiry
 
@@ -206,17 +203,17 @@ Codex audits are high-cost gates, not per-slice or per-PR review.
 2. Focused zero-caregiver correction re-audit: completed in Issue #63.
 3. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
 
-No Codex audit was used for retention, rollback, event-export, or paired-overhead projection.
+No Codex audit was used for retention, rollback, event export, paired overhead, or absolute physical-limit closure.
 
 ## Exact restart point
 
-1. verify Phase 1 closure and accepted ADRs 0008–0009
-2. inspect Issue #61, PR #72, `docs/HANDOFF.md`, and all implemented Slice 36 notes
-3. verify PR #72 final head and CI, then review and merge it before dependent work
-4. create an absolute-physical-limits branch from updated `main`
-5. implement real independent near-ceiling evidence test-first
+1. inspect Issue #61, PR #73, `docs/HANDOFF.md`, and all implemented Slice 36 notes
+2. verify PR #73 final documentation head and CI
+3. review and merge PR #73; close Issues #74–#79 as completed and re-freeze the narrow Phase 1 boundaries
+4. create Slice 37 from updated `main`
+5. implement request-envelope/storage-safe extension requirements test-first
 6. keep all 152 Phase 1 tests unchanged and passing
-7. request the Codex implementation audit only when the complete Phase 2 candidate is ready to freeze
+7. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit
 
 ## End-of-work protocol
 
