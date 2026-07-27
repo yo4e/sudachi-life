@@ -17,7 +17,7 @@ from sudachi_life.storage import connect_database, read_status
 
 from phase1_audit_helpers import _wake_clock
 from test_phase2_absolute_active_and_repair_limits import _initialize_v2
-from test_phase2_absolute_checkpoint_exact import _published_pending_orphan
+from test_phase2_checkpoint_artifact_exact_limit import _published_pending_orphan
 from test_phase2_projection_rollback import _rollback_clock
 
 
