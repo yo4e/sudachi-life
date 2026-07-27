@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008–0013 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, Slice 40, and Slice 41 are merged.
+Phase 1 is frozen. ADRs 0008–0014 are accepted after the ADR 0014 documentation PR merges. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, Slice 40, and Slice 41 are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -14,7 +14,7 @@ Read, in order:
 2. `docs/AI_COLLABORATION_OPERATIONS.md`
 3. `docs/phase2/CLARIFICATION_DELEGATION.md`
 4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-5. accepted ADRs 0001–0013
+5. accepted ADRs 0001–0014
 6. `docs/PHASE1_TEST_MATRIX.md`
 7. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 8. this handoff
@@ -23,9 +23,10 @@ Read, in order:
 11. `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
 12. `docs/phase2/ADR0012_TEST_MATRIX_AMENDMENT.md`
 13. `docs/phase2/ADR0013_TEST_MATRIX_AMENDMENT.md`
-14. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-15. implemented `docs/phase2/` notes
-16. Issue #61 and current PRs/issues
+14. `docs/phase2/ADR0014_TEST_MATRIX_AMENDMENT.md`
+15. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+16. implemented `docs/phase2/` notes
+17. Issue #61 and current PRs/issues
 
 Repository and GitHub state outrank conversation history.
 
@@ -53,7 +54,7 @@ The garden wake before the schema-v2 request extension remains byte-identical in
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0013, Consultation Protocol v1, the ADR 0010–0013 matrix amendments, and the Phase 2 matrix form one accepted package.
+ADRs 0008–0014, Consultation Protocol v1, the ADR 0010–0014 matrix amendments, and the Phase 2 matrix form one accepted package after ADR 0014 documentation merges.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -95,6 +96,7 @@ PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exac
 - ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 completed.
 - ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 completed.
 - ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 completed.
+- ADR 0014: delegated adoption of Issue #109 replaces only P2-E10's unreachable sixteen-parent example with the exact eight-parent eligible request path. Documentation merge remains the adoption closeout gate.
 
 ### Slice 39a — dispatch admission and deterministic fixture
 
@@ -118,34 +120,40 @@ PR #107 merged as `a1176a3afa55931b409696e8d5b50ab6992f129f`.
 
 Final exact PR head `d6cb713aae5df2ed3e12740bbc474a89cbbb2df8`, run 593: `358 passed in 42.65s` plus installation, compilation, and schema-v1 genesis CLI smoke.
 
-It implements:
-
-- exact current-state and disposition preimages, IDs, final envelope, authority, and parents;
-- all six disposition/reason branches;
-- oldest eligible current-lineage proposal selection and immutable finality;
-- exact four-event organism transaction, five-field outcome, and fixed ledger;
-- lifecycle increment while preserving garden failure streak, input, environment, inventory, and plots;
-- ordinary checkpoint publication and existing pending registration repair;
-- precommit rollback and restored proposal eligibility;
-- same-process and spawned fail-fast ownership without queueing;
-- real active/reserve, checkpoint-store, and working-set refusal;
-- no fixture, action execution, network, subprocess, memory, or skill effect.
+It implements exact current-state/disposition preimages, IDs, envelope, all six protected outcomes, oldest eligible proposal selection, four-event transaction and ledger, lifecycle/failure/input/garden invariants, checkpoint publication and repair, precommit rollback, finality, concurrency, real physical refusal, and no action/fixture/adaptive-state effect.
 
 Durable note: `docs/phase2/SLICE41_DISPOSITION_WAKE.md`.
+
+## ADR 0014 exact request-parent clarification
+
+The only eligible request path is incomplete-objective `no_applicable_action`. Immediately before `consultation_request_created`, the exact existing current-lifecycle parents are:
+
+1. `wake_accepted`;
+2. `input_claimed`;
+3. `observation_created`;
+4. `action_abstained`;
+5. `evaluation_completed`;
+6. `failure_streak_updated`;
+7. `lifecycle_completed`;
+8. `budget_ledger`.
+
+The request event cannot parent itself. The later `checkpoint_pending` event does not yet exist. The superseded sixteen-parent example must not be manufactured.
+
+Every other largest-request requirement remains: maximum legal organism ID, ordinal four, all fixed action/permission/proposal arrays, closed field set, no filler/context, exact ID/bytes, ordinary checkpoint, and inherited physical limits/reserve.
 
 ## Remaining boundaries
 
 - Exact four-request/four-charge and mixed 64 KiB boundaries require legitimate repeated terminal/disposition cycles.
-- The largest structural request must be produced by legal protocol-v1 state, not filler.
+- The legal largest structural request must use exactly the eight ADR 0014 parents and public operations only.
 - Rollback must prove the fresh current-lineage epoch and fail-closed old-lineage packages/proposals.
 - Complete event ancestry, export, authority, physical, and explicit-absence closure remains before the implementation audit.
-- Do not create private rows or manufacture ordinals, charges, dispositions, lineage, or payload size.
+- Do not create private rows or manufacture ordinals, charges, dispositions, lineage, events, parents, or payload size.
 
 ## Exact restart
 
-1. Audit every remaining unchecked Phase 2 matrix row against merged Slices 36–41.
+1. Merge the ADR 0014 documentation PR and close Issue #109.
 2. Begin Slice 42 test-first using only legitimate repeated request→dispatch→ingress/terminal→disposition cycles and the accepted rollback path.
-3. Close the fourth request/charge success, fifth refusal, largest structural request, mixed 64 KiB boundary/one-over, new-lineage reset, old-lineage rejection, complete event reconstruction, and remaining physical/absence evidence.
+3. Close the fourth request/charge success, fifth refusal, legal ordinal-four largest request with eight parents, mixed 64 KiB boundary/one-over, new-lineage reset, old-lineage rejection, complete event reconstruction, and remaining physical/absence evidence.
 4. Do not modify frozen Phase 1 semantics or manufacture canonical state.
 5. Keep all 152 Phase 1 tests unchanged and passing.
 6. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
