@@ -208,24 +208,22 @@ def test_lineage_logical_payload_is_request_plus_successful_package_only(tmp_pat
     )
     connection = connect_database(paths.database, read_only=True)
     try:
-        request_bytes = int(
-            connection.execute(
-                "SELECT SUM(canonical_size_bytes) FROM consultation_request WHERE lineage_generation=0"
-            ).fetchone()[0]
-        )
-        package_bytes = int(
-            connection.execute(
-                "SELECT SUM(measured_package_bytes) FROM consultation_ingress_receipt"
-            ).fetchone()[0]
-        )
+        request_row = connection.execute(
+            "SELECT envelope_json, canonical_size_bytes FROM consultation_request "
+            "WHERE lineage_generation=0"
+        ).fetchone()
+        receipt_row = connection.execute(
+            "SELECT measured_package_bytes FROM consultation_ingress_receipt"
+        ).fetchone()
+        assert request_row is not None and receipt_row is not None
+        expected_request_bytes = len(request_row["envelope_json"].encode("utf-8"))
+        expected_package_bytes = len(dispatched.fixture_output)
+        request_bytes = int(request_row["canonical_size_bytes"])
+        package_bytes = int(receipt_row["measured_package_bytes"])
         logical = request_bytes + package_bytes
-        assert logical == len(dispatched.admission.request_envelope_json) if False else logical
-        assert request_bytes == len(
-            connection.execute(
-                "SELECT envelope_json FROM consultation_request"
-            ).fetchone()[0].encode("utf-8")
-        )
-        assert package_bytes == len(dispatched.fixture_output)
+        assert request_bytes == expected_request_bytes
+        assert package_bytes == expected_package_bytes
+        assert logical == expected_request_bytes + expected_package_bytes
         metadata_bytes = int(
             connection.execute(
                 "SELECT canonical_size_bytes FROM consultation_response"
