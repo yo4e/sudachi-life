@@ -13,7 +13,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 3. `docs/AI_COLLABORATION_OPERATIONS.md`
 4. `docs/ORIGIN.md`
 5. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-6. accepted `docs/decisions/` files in numeric order
+6. accepted `docs/decisions/` files in numeric order, including ADR 0010
 7. `docs/ARCHITECTURE.md`
 8. `docs/ROADMAP.md`
 9. `docs/IMPLEMENTATION_DISCIPLINE.md`
@@ -25,8 +25,8 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 15. preliminary `docs/research/` notes
 16. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 17. `docs/HANDOFF.md`
-18. Issue #61, Issues #88/#89, and current PRs
-19. for Phase 2: ADRs 0008 and 0009, Consultation Protocol v1, the Phase 2 matrix, and Issue #59/#63 audit reports
+18. Issue #61 and current Issues/PRs
+19. Consultation Protocol v1, `docs/phase2/ADR0010_TEST_MATRIX_AMENDMENT.md`, the Phase 2 matrix, and Issue #59/#63 audit reports
 
 ## Core question
 
@@ -60,7 +60,7 @@ The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008 and 0009, Consultation Protocol v1, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
+ADRs 0008, 0009, and 0010, Consultation Protocol v1, the ADR 0010 matrix amendment, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -94,57 +94,49 @@ Clarification rounds: zero.
 - runtime working set: 64 MiB
 - next-wake reserve: 1 MiB
 
-## Implementation state
+## Implemented state
 
 ### Slice 36 — complete
 
-PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute limits.
+PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits.
 
-Final Slice 36 head `e1ef85e71ddefef06c9940145e6d27db0c22d39b`, run 512: `230 passed in 32.41s` plus install, compile, and schema-v1 CLI smoke.
+Final Slice 36 run 512: `230 passed in 32.41s` plus install, compile, and schema-v1 CLI smoke.
 
-Read `docs/phase2/SLICE36*.md`. Issues #74–#79 are closed.
+### Slice 37 — request boundary
 
-### Slice 37 — request boundary implemented so far
+- PR #81 merged as `268fc5a8571f50cf19d7c8db15f975b40b1cd05c`; run 520: `236 passed in 33.52s`.
+- PR #83 merged as `208956c40bffc0eff94307e6d326a071ee386d94`; run 533: `242 passed in 31.65s`.
+- PR #85 merged as `82e17c6ccba65323315b399ea6fad345a52db5f4`; run 538: 245 tests passed.
 
-- PR #81 / Slice 37a1 merged as `268fc5a8571f50cf19d7c8db15f975b40b1cd05c`; run 520: `236 passed in 33.52s`.
-- PR #83 / Slice 37a2 merged as `208956c40bffc0eff94307e6d326a071ee386d94`; run 533: `242 passed in 31.65s`.
-- PR #85 / Slice 37a3 merged as `82e17c6ccba65323315b399ea6fad345a52db5f4`; run 538: 245 tests passed.
+### Slice 38a — canonical digest and request schema
 
-These slices implement exact request creation, storage-safe optional rollback, real physical accounting, backward-wall-time independence, and nested/competing wake fail-fast evidence.
+PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`. Code/test run 545: `261 passed in 34.10s`.
 
-Read:
+It closes P2-H01, H02 core, H03, and request-side D11. Shared `phase2_protocol.py` owns canonical bytes, exact digest labels, request identity/ID, and final request validation.
 
-- `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`
-- `docs/phase2/SLICE37A2_REQUEST_STORAGE_SAFETY.md`
-- `docs/phase2/SLICE37A3_REQUEST_TIME_CONCURRENCY.md`
+The prior request constructor remains byte-identical in `phase2_request_impl.py`, blob `46881e023d990f5c7ce393cac7060958419383c0`.
 
-### Slice 38a — merged
+### Slice 38b — proposal schema
 
-PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`.
+PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`. Implementation run 551: `275 passed in 29.84s`; final run 552 passed all steps.
 
-Final PR head `a571b769834fa223ed4afc5ef1d84e41cdbbee9a`, run 546 passed all steps. Code/test head `a3637c723da9696ebe618ed6d2ca5e7f3f467da9`, run 545: `261 passed in 34.10s`.
+It closes P2-H05/H06, P2-I02–I09, and proposal-side I11.
 
-It closes P2-H01, the core of P2-H02, P2-H03, and request-side P2-D11. Shared `phase2_protocol.py` defines canonical bytes, exact digest labels, request identity/ID, and final request validation.
+## ADR 0010 clarification boundary
 
-The prior request constructor remains byte-identical in `phase2_request_impl.py`, blob `46881e023d990f5c7ce393cac7060958419383c0`. Public validation occurs immediately before event write inside the request savepoint.
+The project owner formally accepted the resolutions of Issues #88, #89, #92, and #93.
 
-Durable note: `docs/phase2/SLICE38A_CANONICAL_DIGEST_REQUEST_SCHEMA.md`.
+ADR 0010 fixes exact dispatch identity, external provenance, response/package cardinality, current-state projection, disposition identity, and the absence of optional request context in Protocol v1.
 
-## Open requirements and design clarifications
-
-- P2-D07/D08 require later terminalization/disposition cycles; do not bypass the frozen maintenance threshold with private state mutation.
-- P2-E10 needs an exact reviewed maximum request-envelope interpretation; do not invent optional context fields.
-- Issue #88 blocks P2-H04 and Slice 39 dispatch identity: protocol section 3.2 omits `configuration_version` from its exact list while section 4.1 requires it.
-- Issue #89 blocks P2-I01 and P2-H07–H09: exact external-provenance fields are not enumerated.
-- P2-H10 needs the versioned protected current-state projection before disposition identity code.
+Do not add an undeclared request field, provenance field, adapter/case, current-state field, or authority route. Any future addition requires a later protocol version or ADR.
 
 ## Exact restart point
 
-1. Continue Slice 38 with proposal identity and type-specific proposal validators only.
-2. Map work to P2-H05/H06 and P2-I02–P2-I09.
-3. Use `phase2_protocol.py`; do not duplicate canonical or digest logic.
-4. Reject extra/missing fields, free text, unknown action, invalid parameters, wrong evaluator set, expiry mismatch, and any authority/cost/budget/permission/execution command.
-5. Do not construct dispatch identity, response provenance/package, or disposition identity until the relevant design clarification is accepted.
+1. Merge the Slice 38b closeout/ADR 0010 documentation PR.
+2. Close Issues #88, #89, #92, and #93 as completed.
+3. Implement Slice 38c dispatch identity, response/provenance, proposal-response graph, and package validators.
+4. Implement P2-E10 using the largest structural closed-v1 request; do not add context or filler.
+5. Then implement Slice 39 administrative dispatch/precharge/fixture boundary.
 6. Keep all 152 Phase 1 tests unchanged and passing.
 7. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
 
