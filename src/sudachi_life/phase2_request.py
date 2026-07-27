@@ -11,6 +11,10 @@ from typing import Any, Callable
 
 from .constants import BUDGET_CONFIG_VERSION
 from .errors import SchemaValidationError
+from .phase2_request_storage import (
+    project_request_storage_after_write,
+    project_request_storage_before_write,
+)
 from .phase2_schema import (
     CONSULTATION_PROTOCOL_VERSION,
     FIXTURE_CONFIGURATION_VERSION,
@@ -181,7 +185,6 @@ def maybe_create_fixture_request(
 ) -> ConsultationRequestResult | None:
     """Create one request after the unchanged Phase 1 core, or create nothing."""
 
-    del runtime_root  # Used by real storage accounting later in Slice 37a2.
     if protected_test_reject_before_write and protected_test_reject_after_write:
         raise SchemaValidationError("request storage refusal probes overlap")
     configuration_version, limits = _configuration_limits(connection)
@@ -328,7 +331,19 @@ def maybe_create_fixture_request(
     canonical_size_bytes = len(envelope_bytes)
     if canonical_size_bytes > int(limits["request_envelope_bytes"]):
         return _storage_refusal_result()
-    if protected_test_reject_before_write:
+
+    request_event_payload = {
+        "canonical_size_bytes": canonical_size_bytes,
+        "request": envelope,
+    }
+    preflight = project_request_storage_before_write(
+        connection,
+        runtime_root=runtime_root,
+        organism_id=organism_id,
+        request_row_bytes=canonical_size_bytes,
+        request_event_bytes=len(_canonical_bytes(request_event_payload)),
+    )
+    if not preflight.admissible or protected_test_reject_before_write:
         return _storage_refusal_result()
 
     connection.execute("SAVEPOINT consultation_request_extension")
@@ -341,10 +356,7 @@ def maybe_create_fixture_request(
             wall_time_utc_us=wall_time_utc_us,
             event_type="consultation_request_created",
             source=REQUEST_SOURCE,
-            payload={
-                "canonical_size_bytes": canonical_size_bytes,
-                "request": envelope,
-            },
+            payload=request_event_payload,
         )
         if inserted_event_sequence != event_sequence:
             raise SchemaValidationError(
@@ -371,7 +383,12 @@ def maybe_create_fixture_request(
                 canonical_size_bytes,
             ),
         )
-        if protected_test_reject_after_write:
+        postwrite = project_request_storage_after_write(
+            connection,
+            runtime_root=runtime_root,
+            organism_id=organism_id,
+        )
+        if not postwrite.admissible or protected_test_reject_after_write:
             connection.execute("ROLLBACK TO SAVEPOINT consultation_request_extension")
             connection.execute("RELEASE SAVEPOINT consultation_request_extension")
             return _storage_refusal_result()
