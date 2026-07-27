@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008, 0009, and 0010 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, and Slice 38a–b are merged.
+Phase 1 is frozen. ADRs 0008, 0009, and 0010 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, and Slice 38a–c are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -63,9 +63,7 @@ Consultation limits include 16 KiB request, 16 KiB package, 8 KiB provenance ins
 
 ### Slice 36 — complete
 
-PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exact zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits.
-
-Final Slice 36 head `e1ef85e71ddefef06c9940145e6d27db0c22d39b`, run 512: `230 passed in 32.41s` plus install, compile, and schema-v1 CLI smoke.
+PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exact zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits. Final run 512: `230 passed in 32.41s`.
 
 ### Slice 37 — request boundary
 
@@ -73,57 +71,56 @@ Final Slice 36 head `e1ef85e71ddefef06c9940145e6d27db0c22d39b`, run 512: `230 pa
 - PR #83 merged as `208956c40bffc0eff94307e6d326a071ee386d94`; run 533: `242 passed in 31.65s`.
 - PR #85 merged as `82e17c6ccba65323315b399ea6fad345a52db5f4`; run 538: 245 tests passed.
 
-These implement exact request creation, storage-safe extension rollback, real physical accounting, backward-wall-time independence, and nested/competing wake fail-fast behavior.
+### Slice 38a — canonical request graph
 
-### Slice 38a — canonical digest and request schema
+PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`; run 545: `261 passed in 34.10s`.
 
-PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`.
+### Slice 38b — proposal graph
 
-Final PR head `a571b769834fa223ed4afc5ef1d84e41cdbbee9a`; code/test run 545: `261 passed in 34.10s`.
+PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`; run 551: `275 passed in 29.84s`.
 
-It closes P2-H01, H02 core, H03, and request-side D11. Shared `phase2_protocol.py` owns canonical bytes, digest labels, request identity/ID, and final request validation.
+### ADR 0010
 
-The prior request constructor remains byte-identical in `phase2_request_impl.py`, blob `46881e023d990f5c7ce393cac7060958419383c0`.
+PR #94 merged as `b98bfdbd3de52e192f18328d6a294c8a683fa998`. Issues #88/#89/#92/#93 are completed.
 
-### Slice 38b — proposal identity and exact types
+It closes exact dispatch identity, external provenance, response/package cardinality, current-state projection, disposition identity, and Protocol-v1 request-context absence.
 
-PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`.
+### Slice 38c — dispatch/response/package protocol graph
 
-Final PR head `3a0affde5e2bbd28491a02f442cd48cb82df66cf`; run 552 passed all steps. Implementation run 551: `275 passed in 29.84s`.
+PR #95 merged as `d5cbe115caaada4b71d58bb81527fb6179e0c913`.
 
-It closes P2-H05/H06, P2-I02–I09, and proposal-side I11 for exact action-candidate, abstain, and defer identities and rejection corpus.
+Final exact PR head `c420c6153281b08d125666c1efd4a56b642282d8`, run 559: `294 passed in 37.06s` plus installation, compilation, and schema-v1 genesis CLI smoke.
 
-Durable note: `docs/phase2/SLICE38B_PROPOSAL_SCHEMA.md`.
+It closes P2-H04, H07–H09, the pure graph portion of H11, P2-I01, I10, and response/package-side I11 without SQLite mutation or fixture execution.
 
-## ADR 0010 accepted clarifications
+Durable note: `docs/phase2/SLICE38C_DISPATCH_RESPONSE_PACKAGE.md`.
 
-The project owner formally accepted the recommended resolutions of Issues #88, #89, #92, and #93.
+## Current design gate
 
-ADR 0010 fixes:
+Slice 39 requires one canonical dispatch row, one conservative cost-charge row, and one administrative event to commit atomically before fixture execution.
 
-- dispatch identity includes `configuration_version`;
-- external provenance is exactly a three-field deterministic-fixture object;
-- response identity, final response, and package cardinality are closed;
-- `sudachi.consultation.current_state/v1` is the exact disposition projection;
-- disposition identity is closed;
-- Protocol v1 has no optional request context;
-- P2-E10 tests the largest structural closed-v1 request, not artificial filler toward 16 KiB.
+The accepted documents do **not** define:
 
-No database migration or Phase 1 change is authorized by the clarification.
+- the exact `consultation_cost_charge.charge_id` value;
+- the exact dispatch-admission `event.event_type`;
+- the exact event payload field set and whether it embeds the final dispatch envelope, the charge ledger, or typed links only.
 
-## Remaining request requirements
+These are protected immutable canonical identities, not presentation details. Code must not invent them privately.
 
-P2-D07/D08 require later terminalization/disposition cycles. Do not bypass the frozen maintenance threshold with private state mutation.
-
-P2-E10 is now defined by ADR 0010 and may be implemented with a real schema-v2 request/checkpoint fixture.
+P2-D07/D08 and P2-E10 remain dependent on later legitimate terminalization/disposition cycles. Do not manufacture request ordinal four.
 
 ## Exact restart
 
-1. Merge the Slice 38b closeout and ADR 0010 documentation PR.
-2. Close Issues #88, #89, #92, and #93 as completed by ADR 0010.
-3. Implement Slice 38c exact dispatch identity, response/provenance, proposal-response graph, and package validators using the shared canonical/digest core.
-4. Map Slice 38c to P2-H04, H07–H09, H11, P2-I01, I10, response-side I11, and the ADR 0010 matrix amendment.
-5. Implement the real P2-E10 largest structural request/checkpoint evidence without adding context fields.
-6. Then begin Slice 39 administrative dispatch/precharge/fixture boundary.
-7. Keep all 152 Phase 1 tests unchanged and passing.
-8. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+1. Merge the Slice 38c closeout documentation PR.
+2. Resolve the exact charge ID and dispatch-admission event schema through reviewed design clarification.
+3. Implement Slice 39 administrative dispatch admission/precharge:
+   - fresh fail-fast transaction;
+   - exact sleeping/stable/current-lineage/unexpired/nonterminal/no-prior-dispatch checks;
+   - atomic dispatch, charge, and event;
+   - physical reserve checks;
+   - commit and release SQLite before fixture execution;
+   - no checkpoint or action effect;
+   - no hidden retry.
+4. Implement the deterministic fixture boundary outside SQLite ownership.
+5. Keep all 152 Phase 1 tests unchanged and passing.
+6. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
