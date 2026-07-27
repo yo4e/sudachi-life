@@ -153,16 +153,7 @@ PR #73 merged as `c9004027a94b709802af7f590d46de862dd93d7d`.
 
 Final exact PR head `e1ef85e71ddefef06c9940145e6d27db0c22d39b` passed run 512 with `230 passed in 32.41s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
 
-It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
-
-- active and artifact 8 MiB boundaries
-- checkpoint-store 40 MiB boundary
-- runtime working-set 64 MiB boundary
-- exact 1 MiB next-wake reserve
-- exact and one-over checkpoint publication, pending repair, retention, rollback archive, source candidate, transformed candidate, active replacement, and rollback completion paths
-- idempotent RA/RC/TC, already-replaced, and completed-rollback reentry admission at the same absolute limits
-- no retained newly published artifact, deleted existing artifact, inadmissible authority transfer, or rejected canonical registration
-- raw zero-caregiver configuration and empty operational tables in active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
+It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files across active/artifact 8 MiB, checkpoint-store 40 MiB, working-set 64 MiB, exact 1 MiB next-wake reserve, checkpoint/repair/retention/rollback publication and reentry, active replacement, and rollback completion.
 
 Issues #74–#79 are closed as completed. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed. The narrow shared physical boundaries are re-frozen.
 
@@ -193,7 +184,34 @@ It implements the bounded fixture-configured request-wake core:
 
 Durable note: `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`.
 
-Still open in Slice 37: P2-D07/D08, P2-D11/D12, P2-D14/D15, and P2-E02–E10.
+### Slice 37a2 — merged
+
+PR #83 merged as `208956c40bffc0eff94307e6d326a071ee386d94`.
+
+Final exact PR head `41def40ffee3369194eae45734accccae1ce180c` passed run 533 with `242 passed in 31.65s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+
+It closes P2-E01–P2-E09 and P2-D12:
+
+- pre-write projection includes active allocation, real journal/WAL/SHM, request row/event bytes, checkpoint tail, resulting checkpoint/manifest, checkpoint store, working set, and exact 1 MiB reserve
+- post-write actual page allocation is checked before savepoint release
+- request-only refusal leaves no consultation row/event/source/sequence/cost and returns exact noncanonical reason
+- refusal preserves the exact retained Phase 1 outcome and ordinary checkpoint
+- a real 7 MiB active body preserves the reserve and completes two queued garden wakes
+- real WAL/SHM bytes are independently reconciled
+- a core body over 8 MiB raises the unchanged Phase 1 error and rolls back
+- normal request/checkpoint success remains within all inherited physical limits
+
+Durable note: `docs/phase2/SLICE37A2_REQUEST_STORAGE_SAFETY.md`.
+
+Still open in the request boundary:
+
+- P2-D07/D08: request epoch and ordinal across expiry and rollback
+- P2-D11: exact-field and forbidden-free-text adversarial corpus
+- P2-D14: backward wall-time independence
+- P2-D15: competing and nested wake fail-fast evidence
+- P2-E10: maximum-size request evidence
+
+The accepted protocol permits optional bounded typed request context but does not enumerate its exact field set. Do not invent private context fields merely to inflate an envelope to 16 KiB. P2-E10 needs a reviewed exact maximum-envelope interpretation.
 
 ## Accepted budgets and expiry
 
@@ -225,17 +243,18 @@ Codex audits are high-cost gates, not per-slice or per-PR review.
 2. Focused zero-caregiver correction re-audit: completed in Issue #63.
 3. Phase 2 implementation audit: run once after every accepted matrix requirement has protected evidence, the unchanged Phase 1 suite passes, and one exact CI-green implementation candidate is ready to freeze.
 
-No Codex audit was used for retention, rollback, event export, paired overhead, absolute physical-limit closure, or Slice 37a1.
+No Codex audit was used for retention, rollback, event export, paired overhead, absolute physical-limit closure, Slice 37a1, or Slice 37a2.
 
 ## Exact restart point
 
-1. inspect Issue #61, `docs/HANDOFF.md`, `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`, and the accepted request-extension requirements;
-2. create Slice 37a2 from updated `main` after this closeout documentation merge;
-3. map it to P2-E02–P2-E10 and any still-open request-core requirement directly required by the storage proof;
-4. write real-file failing tests first for extension preflight, post-write savepoint rollback, SQLite sidecars, resulting checkpoint, active 8 MiB ceiling, 64 MiB working set, and 1 MiB next-wake reserve;
-5. prove the unchanged Phase 1 core wake and ordinary checkpoint still commit when only the optional request extension is refused;
-6. keep all 152 Phase 1 tests unchanged and passing;
-7. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit.
+1. inspect Issue #61, `docs/HANDOFF.md`, `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`, `docs/phase2/SLICE37A2_REQUEST_STORAGE_SAFETY.md`, and the accepted request requirements;
+2. start the next request-core sub-slice from updated `main` after this closeout documentation merge;
+3. map it to P2-D07/D08, P2-D11, P2-D14, and P2-D15 without changing the accepted request identity/envelope;
+4. prove four current-lineage requests and exact ordinal behavior through lifecycle expiry and rollback epoch changes;
+5. add exact-field/forbidden-free-text validation, backward-wall-time evidence, and competing/nested wake fail-fast evidence;
+6. leave P2-E10 blocked unless an exact reviewed maximum-envelope interpretation is available;
+7. keep all 152 Phase 1 tests unchanged and passing;
+8. request Codex only when the complete Phase 2 implementation candidate is ready for the single completion audit.
 
 ## End-of-work protocol
 

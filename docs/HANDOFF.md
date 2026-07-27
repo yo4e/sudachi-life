@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36 and Slice 37a1 are merged. Slice 37a2 request-extension storage safety is the next implementation boundary.
+Phase 1 is frozen. ADRs 0008 and 0009 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1, and Slice 37a2 are merged. Remaining request-core evidence is the next implementation boundary.
 
 No live caregiver integration is authorized.
 
@@ -94,11 +94,7 @@ Durable note: `docs/phase2/SLICE36B2A4_EVENT_EXPORT_PROJECTION.md`.
 
 PR #72 merged as `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
 
-Final run 475 passed with `200 passed in 20.09s`. Real paired schema-v1/schema-v2-zero scenarios enforce:
-
-- active database overhead at most 256 KiB
-- each `CP`, `RA`, `RC`, and `TC` database overhead at most 256 KiB
-- aggregate additional non-database artifact bytes at most 1 MiB
+Final run 475 passed with `200 passed in 20.09s`. Real paired schema-v1/schema-v2-zero scenarios enforce active and each `CP`/`RA`/`RC`/`TC` database overhead at at most 256 KiB and aggregate additional non-database artifact bytes at at most 1 MiB.
 
 Durable note: `docs/phase2/SLICE36B2A5_PHYSICAL_OVERHEAD.md`.
 
@@ -108,16 +104,7 @@ PR #73 merged as `c9004027a94b709802af7f590d46de862dd93d7d`.
 
 Final exact PR head `e1ef85e71ddefef06c9940145e6d27db0c22d39b` passed GitHub Actions run 512 with `230 passed in 32.41s`. Installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
 
-Protected real-file evidence closes P2-O18, P2-O19, P2-O21, and P2-O22:
-
-- valid schema-v2-zero active database near 8 MiB
-- exact 1 MiB next-wake reserve and subsequent real wake
-- checkpoint database exact 8 MiB acceptance and one-page-over rejection
-- checkpoint store exact 40 MiB acceptance and one-byte-over cleanup
-- runtime working set exact 64 MiB acceptance and one-byte-over rejection for checkpoint registration, pending repair, retention, rollback archive, source candidate, transformed candidate, active replacement, and rollback completion
-- idempotent RA/RC/TC, already-replaced, and completed-rollback reentry obeys the same full physical admission
-- no retained new artifact, deleted existing artifact, inadmissible authority transfer, or rejected canonical registration
-- raw immutable zero-caregiver configuration and empty operational consultation state inside active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
+Protected real-file evidence closes P2-O18, P2-O19, P2-O21, and P2-O22 across active/artifact 8 MiB, checkpoint-store 40 MiB, working-set 64 MiB, exact 1 MiB next-wake reserve, and all checkpoint/repair/retention/rollback publication, reentry, replacement, and completion paths.
 
 Issues #74–#79 are closed as completed. Each shared repair was explicitly owner-authorized and limited to physical admission, cleanup, or transaction rollback. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed.
 
@@ -138,7 +125,7 @@ Final exact PR head `27d55d2853afb8f09530481dffa537f91b78640e` passed GitHub Act
 
 Delivered evidence:
 
-- fixture-configured schema-v2 request consideration only after incomplete-objective `no_applicable_action`;
+- request only after fixture-configured schema-v2 incomplete-objective `no_applicable_action`;
 - unchanged Phase 1 abstention failure and exactly one failure-streak increment;
 - no request for schema-v1, zero-caregiver, applicable action, objective completion, maintenance entry, request limit, or an outstanding request;
 - exact request identity, digest preimage, ID, final canonical envelope, event linkage, and event-sequence exclusion;
@@ -148,7 +135,32 @@ Delivered evidence:
 
 Durable note: `docs/phase2/SLICE37A1_REQUEST_WAKE_CORE.md`.
 
-Still open in Slice 37: P2-D07/D08, P2-D11/D12, P2-D14/D15, and P2-E02–E10.
+### Slice 37a2 — merged
+
+PR #83 merged as `208956c40bffc0eff94307e6d326a071ee386d94`.
+
+Final exact PR head `41def40ffee3369194eae45734accccae1ce180c` passed GitHub Actions run 533 with `242 passed in 31.65s`. Installation, compilation, and schema-v1 genesis CLI smoke succeeded. All original 152 Phase 1 tests remain unchanged and included. Codex was not used.
+
+Delivered evidence closes P2-E01–P2-E09 and P2-D12:
+
+- conservative pre-write projection includes active allocation, real journal/WAL/SHM, request row/event bytes, checkpoint tail, resulting checkpoint/manifest, checkpoint store, working set, and 1 MiB reserve;
+- post-write page allocation is remeasured before savepoint release;
+- request-only refusal leaves no consultation row/event/source/sequence/cost and returns exact noncanonical reason;
+- refusal commits exact retained Phase 1 state and ordinary checkpoint;
+- a real 7 MiB active body preserves the 1 MiB reserve and completes two queued wakes;
+- real WAL/SHM bytes are independently reconciled into the projection;
+- a core body above 8 MiB raises the unchanged Phase 1 error and rolls back instead of becoming optional refusal;
+- normal request/checkpoint success remains under all inherited physical limits.
+
+Durable note: `docs/phase2/SLICE37A2_REQUEST_STORAGE_SAFETY.md`.
+
+Still open in the request boundary:
+
+- P2-D07/D08: request epoch and ordinal across expiry and rollback;
+- P2-D11: exact-field and forbidden free-text adversarial corpus;
+- P2-D14: backward wall-time independence;
+- P2-D15: competing and nested wake fail-fast evidence;
+- P2-E10: maximum-size request evidence. The optional typed context field set is not enumerated by the accepted protocol, so no private context fields may be invented to fill 16 KiB.
 
 ## Accepted boundaries and budgets
 
@@ -175,9 +187,11 @@ No live model/API/human caregiver, memory or skill generation, source/test gener
 
 ## Exact restart
 
-1. start Slice 37a2 from `main` at or after `268fc5a8571f50cf19d7c8db15f975b40b1cd05c` plus this closeout documentation merge;
-2. map the sub-slice to P2-E02–P2-E10 and the still-open request-core requirements it directly needs;
-3. write real-file failing tests first for extension preflight, post-write savepoint rollback, active DB/sidecars/checkpoint/working-set accounting, and the 1 MiB next-wake reserve;
-4. require the unchanged Phase 1 core outcome and ordinary checkpoint to commit when only the optional request extension is refused;
-5. keep all original 152 Phase 1 tests unchanged and passing;
-6. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit.
+1. start the next request-core sub-slice from `main` at or after `208956c40bffc0eff94307e6d326a071ee386d94` plus this closeout documentation merge;
+2. map it to P2-D07/D08, P2-D11, P2-D14, and P2-D15 without changing the accepted request identity/envelope;
+3. prove four current-lineage requests and exact ordinal behavior through lifecycle expiry and rollback epoch changes;
+4. add exact-field/forbidden-free-text validation and backward-wall-time evidence;
+5. add competing and nested wake fail-fast evidence without hidden retry or queueing;
+6. leave P2-E10 blocked unless an exact reviewed maximum-envelope interpretation is available;
+7. keep all original 152 Phase 1 tests unchanged and passing;
+8. keep Codex deferred until the complete Phase 2 implementation candidate is ready for the single completion audit.
