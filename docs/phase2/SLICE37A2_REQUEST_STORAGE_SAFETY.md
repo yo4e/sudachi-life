@@ -1,6 +1,6 @@
 # Slice 37a2: Request-Extension Storage Safety
 
-Status: implemented on PR #83; final documentation CI and merge pending.
+Status: merged through PR #83 as `208956c40bffc0eff94307e6d326a071ee386d94`.
 
 ## Scope
 
@@ -50,7 +50,11 @@ Core-failure comparison head `193a610d499fc0c970cf8ab2b8c8f15ab3373122`, run 531
 
 Final code/test head `d6b8e2b27f888fdc56f83b9f56cdb8708cbfeadb`, run 532:
 
-- 242 passed in 35.51 seconds;
+- 242 passed in 35.51 seconds.
+
+Final exact PR head `41def40ffee3369194eae45734accccae1ce180c`, run 533:
+
+- 242 passed in 31.65 seconds;
 - dependency installation succeeded;
 - source and test compilation succeeded;
 - schema-v1 genesis CLI smoke succeeded.
