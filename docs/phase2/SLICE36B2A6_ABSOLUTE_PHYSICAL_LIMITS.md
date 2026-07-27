@@ -16,7 +16,7 @@ Accepted limits remain unchanged:
 
 ## Test-first defects and narrow Phase 1 repairs
 
-Protected real-file tests and final diff review found seven shared trusted-kernel defect groups. Each repair was explicitly authorized by the project owner. The final authorization covered further same-turn repairs only when they closed a missing physical check, post-publication cleanup, or no-partial-mutation invariant without changing accepted limits, authority, idempotence, or semantics.
+Protected real-file tests and final diff review found eight shared trusted-kernel defect groups. Each repair was explicitly authorized by the project owner. The final authorization covered further same-turn repairs only when they closed a missing physical check, post-publication cleanup, or no-partial-mutation invariant without changing accepted limits, authority, idempotence, or semantics.
 
 ### Issue #74: candidate manifest bytes omitted
 
@@ -83,13 +83,27 @@ Tests-only head `08426feb176a75ff4161b066c52a4487ff0a40e4`, run 501:
 
 Repair `409b82962cee00f59e573b6bf5c90d0d9d426cb6` checks the complete current working set at the public retention enforcement entry. The over-limit case rejects before staging, registry mutation, or event insertion. Reconciliation remains unchanged as the explicit interrupted-staging recovery API. Run 502 passed with 222 tests.
 
+### Issue #79: replacement and completion bypassed physical limits
+
+Tests-only head `799fa43b5801f34f06501aec9b463e60c54a7c16`, run 506:
+
+- 226 tests passed
+- replacement staging exact 64 MiB and one-byte-over rejection were already correct
+- completion exact final 64 MiB and active exact 8 MiB were already correct
+- already-replaced reentry accepted a current working set above 64 MiB
+- completion committed a final working set one byte above 64 MiB
+- completed-rollback reentry accepted a current working set above 64 MiB
+- completion accepted an active database one SQLite page above 8 MiB
+
+Repair `09c8e52dde8f1f26e8bb149237591a62f55cdc1a` adds current active and working-set admission to replacement and completion reentry, and projected committed active/working-set checks after completion writes and before commit. Rejected completion writes roll back without changing the active body, event history, or artifacts. The pre-repair bodies remain byte-identical in `rollback_replace_impl.py` and `rollback_complete_impl.py`. Run 507 passed with 230 tests.
+
 ## Protected physical evidence
 
 ### Active database and reserve
 
 A schema-v2-zero database is grown with valid canonical inbox and event rows near the 8 MiB ceiling. Enqueue proceeds while one page-rounded MiB remains, rejects before consuming the reserve, writes no rejected inbox/event row, and leaves a subsequent real garden wake and checkpoint possible.
 
-Pending repair independently accepts an active body at exactly 8 MiB and rejects one page over before reading the repair clock or writing canonical state.
+Pending repair and rollback completion independently accept an active body at exactly 8 MiB and reject one page over before committing canonical state.
 
 ### Checkpoint artifact
 
@@ -115,8 +129,10 @@ Independent exact and one-over cases cover:
 - pre-rollback archive publication and existing-archive reentry
 - source restore candidate publication and existing-candidate reentry
 - transformed restore candidate publication and existing-candidate reentry
+- active-replacement staging and already-replaced reentry
+- rollback completion post-write admission and completed reentry
 
-Exact 64 MiB succeeds. One byte over rejects without retaining a new artifact, deleting an existing artifact, or committing rejected canonical state.
+Exact 64 MiB succeeds. One byte over rejects without retaining a new artifact, deleting an existing artifact, replacing an inadmissible body, or committing rejected canonical state.
 
 ### Raw zero-caregiver preservation
 
@@ -133,7 +149,7 @@ No operational consultation `sqlite_sequence` entry exists.
 ## Regression and audit state
 
 - all original 152 Phase 1 tests remain unchanged
-- latest code CI: run 502, 222 passed in 32.16 seconds
+- latest code CI: run 507, 230 passed in 35.28 seconds
 - installation, source/test compilation, and schema-v1 genesis CLI smoke passed
 - no test was skipped, weakened, conditioned, or reinterpreted
 - no Codex audit was used
@@ -144,4 +160,4 @@ The touched shared Phase 1 boundary is re-frozen after PR #73 final documentatio
 
 After PR #73 merges, Slice 36 is complete. Slice 37 may begin from updated `main` with request-envelope and storage-safe request-extension requirements. Codex remains deferred until the single full Phase 2 implementation-completion candidate exists.
 
-See `SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md` for the final active-repair red/green evidence.
+See `SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md` for the focused active-repair red/green evidence.
