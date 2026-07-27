@@ -1,6 +1,6 @@
 # Slice 37a1: Fixture Request-Wake Core
 
-Status: implemented on PR #81; final documentation CI and merge pending.
+Status: merged through PR #81 as `268fc5a8571f50cf19d7c8db15f975b40b1cd05c`.
 
 ## Scope
 
@@ -19,7 +19,7 @@ Protected evidence in this sub-slice covers:
 - P2-D16: an outstanding request does not block a later caller-selected garden wake;
 - the structural core of P2-E01: request metadata is inserted through a dedicated savepoint extension after the frozen Phase 1 budget ledger and before `checkpoint_pending`.
 
-The following accepted requirements remain open and are not claimed complete by this PR:
+The following accepted requirements remain open and are not claimed complete by this sub-slice:
 
 - P2-D07 and P2-D08: four-request/current-lineage epoch and ordinal evidence across expiry and rollback;
 - P2-D11: adversarial exact-field and forbidden free-text corpus;
@@ -44,7 +44,11 @@ The fixture was corrected to use the real complete garden state: at least one ha
 
 Final code/test head `33248776ce3746e1a651e367dd49eb26566e4e57`, run 519:
 
-- 236 passed in 82.36 seconds;
+- 236 passed in 82.36 seconds.
+
+Final exact PR head `27d55d2853afb8f09530481dffa537f91b78640e`, run 520:
+
+- 236 passed in 33.52 seconds;
 - dependency installation succeeded;
 - source and test compilation succeeded;
 - schema-v1 genesis CLI smoke succeeded.
