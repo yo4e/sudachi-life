@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008–0014 are accepted after the ADR 0014 documentation PR merges. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, Slice 40, and Slice 41 are merged.
+Phase 1 is frozen. ADRs 0008–0016 are accepted after the ADR 0015/0016 documentation PR merges. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, Slice 40, and Slice 41 are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -14,19 +14,15 @@ Read, in order:
 2. `docs/AI_COLLABORATION_OPERATIONS.md`
 3. `docs/phase2/CLARIFICATION_DELEGATION.md`
 4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-5. accepted ADRs 0001–0014
+5. accepted ADRs 0001–0016
 6. `docs/PHASE1_TEST_MATRIX.md`
 7. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 8. this handoff
 9. `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
-10. `docs/phase2/ADR0010_TEST_MATRIX_AMENDMENT.md`
-11. `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
-12. `docs/phase2/ADR0012_TEST_MATRIX_AMENDMENT.md`
-13. `docs/phase2/ADR0013_TEST_MATRIX_AMENDMENT.md`
-14. `docs/phase2/ADR0014_TEST_MATRIX_AMENDMENT.md`
-15. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-16. implemented `docs/phase2/` notes
-17. Issue #61 and current PRs/issues
+10. ADR 0010–0016 matrix amendments
+11. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+12. implemented `docs/phase2/` notes
+13. Issue #61 and current PRs/issues
 
 Repository and GitHub state outrank conversation history.
 
@@ -54,7 +50,7 @@ The garden wake before the schema-v2 request extension remains byte-identical in
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0014, Consultation Protocol v1, the ADR 0010–0014 matrix amendments, and the Phase 2 matrix form one accepted package after ADR 0014 documentation merges.
+ADRs 0008–0016, Consultation Protocol v1, the ADR 0010–0016 matrix amendments, and the Phase 2 matrix form one accepted package after ADR 0015/0016 documentation merges.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -66,95 +62,92 @@ Consultation limits include 16 KiB request, 16 KiB package, 8 KiB provenance ins
 
 ## Routine clarification delegation
 
-The project owner explicitly authorizes routine recommended clarifications to be formally adopted without another human confirmation under `docs/phase2/CLARIFICATION_DELEGATION.md`.
+The project owner authorizes routine recommended clarifications to be formally adopted without separate confirmation under `docs/phase2/CLARIFICATION_DELEGATION.md`.
 
-This delegation applies only to the smallest deterministic closure of an implementation ambiguity inside already accepted scope. Every adoption still requires a focused Issue, normative ADR/document update, protected CI, and durable handoff record before implementation.
-
-Human confirmation remains required for material changes to the research question, contract/ADR intent, frozen Phase 1, authority/security boundaries, live external capabilities, destructive migration, protected evidence, autonomy/resource scope, or unresolved contradictions between equally authoritative requirements.
+Every delegated adoption still requires a focused Issue, normative ADR/document change, protected CI, and durable handoff. Material changes to research purpose, contract/ADR intent, frozen Phase 1, authority/security, live external capabilities, destructive migration, protected evidence, autonomy/resources, or unresolved normative contradictions require explicit human confirmation.
 
 ## Implemented evidence
 
-### Slice 36 — complete
+### Slice 36
 
-PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exact zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits. Final run 512: `230 passed in 32.41s`.
+PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits. Final run 512: `230 passed in 32.41s`.
 
-### Slice 37 — request boundary
+### Slice 37
 
-- PR #81 merged as `268fc5a8571f50cf19d7c8db15f975b40b1cd05c`; run 520: `236 passed in 33.52s`.
-- PR #83 merged as `208956c40bffc0eff94307e6d326a071ee386d94`; run 533: `242 passed in 31.65s`.
-- PR #85 merged as `82e17c6ccba65323315b399ea6fad345a52db5f4`; run 538: 245 tests passed.
+- PR #81: request wake core, run 520 `236 passed in 33.52s`.
+- PR #83: storage-safe request extension, run 533 `242 passed in 31.65s`.
+- PR #85: wall-time and concurrency evidence, run 538 245 tests passed.
 
-### Slice 38 — exact protocol graph
+### Slice 38
 
-- PR #87 merged as `16af01a84aae3d802a112228c85ec4b1849c19ee`; run 545: `261 passed in 34.10s`.
-- PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`; run 551: `275 passed in 29.84s`.
-- PR #95 merged as `d5cbe115caaada4b71d58bb81527fb6179e0c913`; final run 559: `294 passed in 37.06s`.
+- PR #87: exact digest/request schema, run 545 `261 passed in 34.10s`.
+- PR #91: exact proposal schema, run 551 `275 passed in 29.84s`.
+- PR #95: exact dispatch/response/package graph, run 559 `294 passed in 37.06s`.
 
 ### Accepted clarifications
 
-- ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 completed.
-- ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 completed.
-- ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 completed.
-- ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 completed.
-- ADR 0014: delegated adoption of Issue #109 replaces only P2-E10's unreachable sixteen-parent example with the exact eight-parent eligible request path. Documentation merge remains the adoption closeout gate.
+- ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 closed.
+- ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 closed.
+- ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 closed.
+- ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 closed.
+- ADR 0014: PR #110, merge `b5d1ae3ae9ed46855f285c8539e4c2ed7891dbc3`; Issue #109 closed. The legal largest request has exactly eight eligible parent events.
+- ADR 0015: delegated adoption of Issue #111 fixes exact fifth-request result reason `consultation_request_not_created_lineage_request_limit`; docs merge pending.
+- ADR 0016: delegated adoption of Issue #112 fixes exact pure 64 KiB/one-over evidence plus the legal four-cycle maximum; docs merge pending.
 
-### Slice 39a — dispatch admission and deterministic fixture
+### Slice 39
 
-PR #99 merged as `b7c434aed249ed0bc52160db66e594824186890e`.
+PR #99 merged as `b7c434aed249ed0bc52160db66e594824186890e`. Final head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569: `316 passed in 56.74s` plus install, compile, and schema-v1 smoke.
 
-Final exact PR head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569: `316 passed in 56.74s` plus installation, compilation, and schema-v1 genesis CLI smoke.
+### Slice 40
 
-Durable note: `docs/phase2/SLICE39A_DISPATCH_ADMISSION_FIXTURE.md`.
+PR #103 merged as `f0238f108b2eb05a6774ca68a0b056eb12772dd1`. Final head `e6221bb42ad5e94ddd4d0c2e576975d64693464c`, run 580: `338 passed in 73.21s` plus install, compile, and schema-v1 smoke.
 
-### Slice 40 — exact ingress and terminalization
+### Slice 41
 
-PR #103 merged as `f0238f108b2eb05a6774ca68a0b056eb12772dd1`.
+PR #107 merged as `a1176a3afa55931b409696e8d5b50ab6992f129f`. Final head `d6cb713aae5df2ed3e12740bbc474a89cbbb2df8`, run 593: `358 passed in 42.65s` plus install, compile, and schema-v1 smoke.
 
-Final exact PR head `e6221bb42ad5e94ddd4d0c2e576975d64693464c`, run 580: `338 passed in 73.21s` plus installation, compilation, and schema-v1 genesis CLI smoke.
+It implements exact disposition identity/envelope/mapping, oldest proposal selection, four-event organism transaction, fixed ledger, lifecycle/failure/input/garden invariants, checkpoint publication/repair, rollback-before-commit, finality, concurrency, physical refusal, and capability absence.
 
-Durable note: `docs/phase2/SLICE40_INGRESS_TERMINALIZATION.md`.
+## Slice 42 finite-boundary rules
 
-### Slice 41 — exact explicit disposition wake
+### Largest request
 
-PR #107 merged as `a1176a3afa55931b409696e8d5b50ab6992f129f`.
+The legal ordinal-four request uses exactly these eight current-lifecycle parent types:
 
-Final exact PR head `d6cb713aae5df2ed3e12740bbc474a89cbbb2df8`, run 593: `358 passed in 42.65s` plus installation, compilation, and schema-v1 genesis CLI smoke.
+`wake_accepted`, `input_claimed`, `observation_created`, `action_abstained`, `evaluation_completed`, `failure_streak_updated`, `lifecycle_completed`, `budget_ledger`.
 
-It implements exact current-state/disposition preimages, IDs, envelope, all six protected outcomes, oldest eligible proposal selection, four-event transaction and ledger, lifecycle/failure/input/garden invariants, checkpoint publication and repair, precommit rollback, finality, concurrency, real physical refusal, and no action/fixture/adaptive-state effect.
+It also uses the maximum legal organism ID, all fixed arrays, closed request fields, exact bytes/ID, no filler, an ordinary checkpoint, and all physical limits/reserve.
 
-Durable note: `docs/phase2/SLICE41_DISPOSITION_WAKE.md`.
+### Fifth request
 
-## ADR 0014 exact request-parent clarification
+An otherwise eligible fifth current-lineage request wake returns the exact noncanonical reason:
 
-The only eligible request path is incomplete-objective `no_applicable_action`. Immediately before `consultation_request_created`, the exact existing current-lifecycle parents are:
+```text
+consultation_request_not_created_lineage_request_limit
+```
 
-1. `wake_accepted`;
-2. `input_claimed`;
-3. `observation_created`;
-4. `action_abstained`;
-5. `evaluation_completed`;
-6. `failure_streak_updated`;
-7. `lifecycle_completed`;
-8. `budget_ledger`.
+It creates no fifth consultation mutation while the frozen Phase 1 core and checkpoint still commit.
 
-The request event cannot parent itself. The later `checkpoint_pending` event does not yet exist. The superseded sixteen-parent example must not be manufactured.
+### Logical payload
 
-Every other largest-request requirement remains: maximum legal organism ID, ordinal four, all fixed action/permission/proposal arrays, closed field set, no filler/context, exact ID/bytes, ordinary checkpoint, and inherited physical limits/reserve.
+One pure accounting function admits exactly 65536 projected bytes and rejects 65537. The legal closed-v1 maximum is measured through four complete public cycles and must remain below 65536. No filler, forged package, metadata double count, or direct consultation mutation is allowed.
+
+Accepted rollback starts new request, charge, and logical-payload epochs at zero for the new current lineage. Old rows remain immutable history and inactive.
 
 ## Remaining boundaries
 
-- Exact four-request/four-charge and mixed 64 KiB boundaries require legitimate repeated terminal/disposition cycles.
-- The legal largest structural request must use exactly the eight ADR 0014 parents and public operations only.
-- Rollback must prove the fresh current-lineage epoch and fail-closed old-lineage packages/proposals.
-- Complete event ancestry, export, authority, physical, and explicit-absence closure remains before the implementation audit.
-- Do not create private rows or manufacture ordinals, charges, dispositions, lineage, events, parents, or payload size.
+- Legal four-request/four-charge/fifth-refusal and maximum-request evidence.
+- Pure and end-to-end logical-payload evidence.
+- New-lineage reset and fail-closed old-lineage packages/proposals.
+- Complete ancestry/export/authority, physical, checkpoint/rollback, and explicit-absence closure.
+- No private canonical mutation or manufactured payload size.
 
 ## Exact restart
 
-1. Merge the ADR 0014 documentation PR and close Issue #109.
-2. Begin Slice 42 test-first using only legitimate repeated request→dispatch→ingress/terminal→disposition cycles and the accepted rollback path.
-3. Close the fourth request/charge success, fifth refusal, legal ordinal-four largest request with eight parents, mixed 64 KiB boundary/one-over, new-lineage reset, old-lineage rejection, complete event reconstruction, and remaining physical/absence evidence.
-4. Do not modify frozen Phase 1 semantics or manufacture canonical state.
-5. Keep all 152 Phase 1 tests unchanged and passing.
-6. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
-7. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+1. Merge the ADR 0015/0016 documentation PR and close Issues #111/#112.
+2. Begin Slice 42 test-first through legitimate public consultation cycles and the accepted rollback path.
+3. Add the fifth-limit classification in the public request wrapper while preserving the retained implementation blob.
+4. Add and use the pure logical-payload accounting function.
+5. Prove four requests/charges, fifth refusal, ADR 0014 maximum request, legal payload maximum, 65536/65537 arithmetic, rollback epoch reset, old-lineage rejection, full reconstruction, physical limits, and explicit absence.
+6. Keep all 152 Phase 1 tests unchanged and passing.
+7. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green candidate is ready.
