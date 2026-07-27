@@ -1,6 +1,6 @@
 # Slice 38c: Dispatch, Response, and External Package Protocol Graph
 
-Status: implementation-complete on PR #95; final documentation CI and merge pending.
+Status: merged through PR #95 as `d5cbe115caaada4b71d58bb81527fb6179e0c913`.
 
 ## Scope
 
@@ -30,11 +30,7 @@ Protected evidence closes:
 - declared fixture case ID;
 - work class.
 
-The final envelope adds only:
-
-- derived dispatch ID;
-- later event sequence;
-- exact administration authority `administration:consultation.dispatch`.
+The final envelope adds only the derived dispatch ID, later event sequence, and exact administration authority `administration:consultation.dispatch`.
 
 The fixture case must belong to the ADR 0010 protected allowlist. Unknown cases fail before later canonical use.
 
@@ -75,12 +71,20 @@ Implementation head `cd1e2f176fffb3e481f5d07f4d4bfdacb4373110`, run 558:
 - source/test compilation succeeded;
 - schema-v1 genesis CLI smoke succeeded.
 
+Final exact PR head `c420c6153281b08d125666c1efd4a56b642282d8`, run 559:
+
+- 294 passed in 37.06 seconds;
+- dependency installation succeeded;
+- source/test compilation succeeded;
+- schema-v1 genesis CLI smoke succeeded.
+
 All original 152 Phase 1 tests remain unchanged and included.
 
 ## Remaining boundary
 
-- P2-E10 real largest structural request/checkpoint evidence remains separate;
+- P2-E10 requires a legitimate four-request terminal cycle; ordinal four must not be manufactured by private canonical mutation;
 - Slice 39 must connect dispatch identity to a fresh fail-fast administrative transaction, conservative charge, and post-commit fixture boundary;
+- the exact `consultation_cost_charge.charge_id` and the single dispatch-admission event type/payload are not defined by ADRs 0008–0010 or Protocol v1 and require a reviewed clarification before canonical dispatch code;
 - Slice 40 must independently parse and validate raw package bytes before canonical ingress;
 - Slice 41 must use ADR 0010 current-state projection for disposition.
 
