@@ -1,6 +1,6 @@
 # Slice 36b2a6: Independent Absolute Physical Limits
 
-Status: implemented on PR #73; final review and merge pending.
+Status: merged in PR #73 as `c9004027a94b709802af7f590d46de862dd93d7d`; narrow shared Phase 1 physical boundaries re-frozen.
 
 ## Scope
 
@@ -148,16 +148,18 @@ No operational consultation `sqlite_sequence` entry exists.
 
 ## Regression and audit state
 
+- final exact PR head: `e1ef85e71ddefef06c9940145e6d27db0c22d39b`
+- final branch CI: run 512, 230 passed in 32.41 seconds
 - all original 152 Phase 1 tests remain unchanged
-- latest code CI: run 507, 230 passed in 35.28 seconds
 - installation, source/test compilation, and schema-v1 genesis CLI smoke passed
 - no test was skipped, weakened, conditioned, or reinterpreted
 - no Codex audit was used
+- Issues #74–#79 are closed as completed
 
-The touched shared Phase 1 boundary is re-frozen after PR #73 final documentation CI and merge. Future changes require a new explicit defect and authorization; these wrappers are not permission for general Phase 1 redesign.
+PR #73 was squash-merged as `c9004027a94b709802af7f590d46de862dd93d7d`. The touched shared Phase 1 physical boundaries are re-frozen. Future changes require a new explicit defect and authorization; these wrappers are not permission for general Phase 1 redesign.
 
 ## Next boundary
 
-After PR #73 merges, Slice 36 is complete. Slice 37 may begin from updated `main` with request-envelope and storage-safe request-extension requirements. Codex remains deferred until the single full Phase 2 implementation-completion candidate exists.
+Slice 36 is complete. Slice 37 begins from updated `main` with request-envelope and storage-safe request-extension requirements. Codex remains deferred until the single full Phase 2 implementation-completion candidate exists.
 
 See `SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md` for the focused active-repair red/green evidence.
