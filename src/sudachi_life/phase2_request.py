@@ -11,6 +11,10 @@ from typing import Any, Callable
 
 from .constants import BUDGET_CONFIG_VERSION
 from .errors import SchemaValidationError
+from .phase2_request_storage import (
+    project_request_storage_after_write,
+    project_request_storage_before_write,
+)
 from .phase2_schema import (
     CONSULTATION_PROTOCOL_VERSION,
     FIXTURE_CONFIGURATION_VERSION,
@@ -25,6 +29,7 @@ REQUESTED_PROPOSAL_TYPES = ("abstain", "action_candidate", "defer")
 OBJECTIVE_ID = "seed-garden.harvest-fruit/v1"
 REQUEST_ID_PREFIX = "consultation-request:"
 REQUEST_ID_DOMAIN = b"sudachi.consultation/v1\nrequest-id\n"
+REQUEST_STORAGE_REFUSAL = "consultation_request_not_created_storage_budget"
 
 _AppendEvent = Callable[..., int]
 
@@ -45,6 +50,16 @@ class ConsultationRequestResult:
             "event_sequence": self.event_sequence,
             "canonical_size_bytes": self.canonical_size_bytes,
         }
+
+
+def _storage_refusal_result() -> ConsultationRequestResult:
+    return ConsultationRequestResult(
+        created=False,
+        reason=REQUEST_STORAGE_REFUSAL,
+        request_id=None,
+        event_sequence=None,
+        canonical_size_bytes=None,
+    )
 
 
 def _canonical_bytes(value: object) -> bytes:
@@ -165,10 +180,13 @@ def maybe_create_fixture_request(
     checkpoint_payload: dict[str, Any],
     budget_snapshot: dict[str, Any] | None,
     append_event: _AppendEvent,
+    protected_test_reject_before_write: bool = False,
+    protected_test_reject_after_write: bool = False,
 ) -> ConsultationRequestResult | None:
     """Create one request after the unchanged Phase 1 core, or create nothing."""
 
-    del runtime_root  # Reserved for the storage-safe extension in Slice 37a2.
+    if protected_test_reject_before_write and protected_test_reject_after_write:
+        raise SchemaValidationError("request storage refusal probes overlap")
     configuration_version, limits = _configuration_limits(connection)
     if configuration_version != FIXTURE_CONFIGURATION_VERSION or limits is None:
         return None
@@ -312,13 +330,21 @@ def maybe_create_fixture_request(
     envelope_bytes = _canonical_bytes(envelope)
     canonical_size_bytes = len(envelope_bytes)
     if canonical_size_bytes > int(limits["request_envelope_bytes"]):
-        return ConsultationRequestResult(
-            created=False,
-            reason="consultation_request_not_created_storage_budget",
-            request_id=None,
-            event_sequence=None,
-            canonical_size_bytes=None,
-        )
+        return _storage_refusal_result()
+
+    request_event_payload = {
+        "canonical_size_bytes": canonical_size_bytes,
+        "request": envelope,
+    }
+    preflight = project_request_storage_before_write(
+        connection,
+        runtime_root=runtime_root,
+        organism_id=organism_id,
+        request_row_bytes=canonical_size_bytes,
+        request_event_bytes=len(_canonical_bytes(request_event_payload)),
+    )
+    if not preflight.admissible or protected_test_reject_before_write:
+        return _storage_refusal_result()
 
     connection.execute("SAVEPOINT consultation_request_extension")
     try:
@@ -330,10 +356,7 @@ def maybe_create_fixture_request(
             wall_time_utc_us=wall_time_utc_us,
             event_type="consultation_request_created",
             source=REQUEST_SOURCE,
-            payload={
-                "canonical_size_bytes": canonical_size_bytes,
-                "request": envelope,
-            },
+            payload=request_event_payload,
         )
         if inserted_event_sequence != event_sequence:
             raise SchemaValidationError(
@@ -360,6 +383,15 @@ def maybe_create_fixture_request(
                 canonical_size_bytes,
             ),
         )
+        postwrite = project_request_storage_after_write(
+            connection,
+            runtime_root=runtime_root,
+            organism_id=organism_id,
+        )
+        if not postwrite.admissible or protected_test_reject_after_write:
+            connection.execute("ROLLBACK TO SAVEPOINT consultation_request_extension")
+            connection.execute("RELEASE SAVEPOINT consultation_request_extension")
+            return _storage_refusal_result()
         connection.execute("RELEASE SAVEPOINT consultation_request_extension")
     except Exception:
         connection.execute("ROLLBACK TO SAVEPOINT consultation_request_extension")
