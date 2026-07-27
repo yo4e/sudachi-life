@@ -11,22 +11,23 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 1. `README.md`
 2. `docs/CHATGPT_PROJECT_HANDOFF.md`
 3. `docs/AI_COLLABORATION_OPERATIONS.md`
-4. `docs/ORIGIN.md`
-5. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-6. accepted `docs/decisions/` files in numeric order, including ADRs 0010–0012
-7. `docs/ARCHITECTURE.md`
-8. `docs/ROADMAP.md`
-9. `docs/IMPLEMENTATION_DISCIPLINE.md`
-10. `docs/PHASE1_TEST_MATRIX.md`
-11. implemented `docs/phase1/` notes
-12. implemented `docs/phase2/` notes
-13. `docs/RESEARCH_QUESTIONS.md`
-14. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
-15. preliminary `docs/research/` notes
-16. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
-17. `docs/HANDOFF.md`
-18. Issue #61 and current Issues/PRs
-19. Consultation Protocol v1, ADR 0010–0012 matrix amendments, the Phase 2 matrix, and Issue #59/#63 audit reports
+4. `docs/phase2/CLARIFICATION_DELEGATION.md`
+5. `docs/ORIGIN.md`
+6. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+7. accepted `docs/decisions/` files in numeric order, including ADRs 0010–0013
+8. `docs/ARCHITECTURE.md`
+9. `docs/ROADMAP.md`
+10. `docs/IMPLEMENTATION_DISCIPLINE.md`
+11. `docs/PHASE1_TEST_MATRIX.md`
+12. implemented `docs/phase1/` notes
+13. implemented `docs/phase2/` notes
+14. `docs/RESEARCH_QUESTIONS.md`
+15. `docs/PARENT_MODEL_PROVIDER_REVIEW.md`
+16. preliminary `docs/research/` notes
+17. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
+18. `docs/HANDOFF.md`
+19. Issue #61 and current Issues/PRs
+20. Consultation Protocol v1, ADR 0010–0013 matrix amendments, the Phase 2 matrix, and Issue #59/#63 audit reports
 
 ## Core question
 
@@ -60,7 +61,7 @@ The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0012, Consultation Protocol v1, the ADR 0010–0012 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
+ADRs 0008–0013, Consultation Protocol v1, the ADR 0010–0013 matrix amendments, and the Phase 2 matrix form one accepted design package after the ADR 0013 documentation PR merges. Issue #61 owns implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -72,13 +73,21 @@ Operational boundaries remain explicit:
 2. Administrative dispatch commits one dispatch, one conservative charge, and one admission event before fixture execution and releases SQLite ownership first.
 3. The deterministic fixture receives only the final request envelope and declared case, with no runtime authority handles.
 4. Administrative ingress or terminalization validates exact typed bytes and never automatically retries fixture work.
-5. Explicit disposition considers at most one proposal, checkpoints, and does not execute an action or create memory/skills.
+5. Explicit disposition considers at most one proposal, increments lifecycle, preserves the garden failure streak, checkpoints, and does not execute an action or create memory/skills.
 
 Proposal types: `action_candidate`, `abstain`, `defer`.
 
 Dispositions: `accepted`, `rejected`, `deferred`, `clarification_requested`.
 
 Clarification rounds: zero.
+
+## Routine clarification delegation
+
+The project owner authorizes routine recommended clarifications to be formally adopted without a separate chat confirmation only under the exact limits in `docs/phase2/CLARIFICATION_DELEGATION.md`.
+
+A delegated clarification must be the smallest deterministic closure of an ambiguity inside already accepted scope, must be documented in a focused Issue and reviewed ADR/documentation PR, and must pass protected CI before becoming canonical.
+
+Human confirmation remains required for changes to the research question, contract or ADR intent, frozen Phase 1, authority/security boundaries, live external capabilities, destructive migration, protected evidence, material autonomy/resource scope, or an unresolved contradiction between equally authoritative requirements.
 
 ## Accepted limits
 
@@ -119,6 +128,7 @@ The prior request constructor remains byte-identical in `phase2_request_impl.py`
 - ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 closed.
 - ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 closed.
 - ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 closed.
+- ADR 0013: project-owner adoption of Issue #105 fixes final disposition envelope, exact reason mapping, event/outcome, direct parents, fixed ledger, lifecycle/checkpoint ordering, and crash/idempotence behavior. Documentation merge is the adoption closeout gate.
 
 ### Slice 39a — dispatch admission and fixture boundary
 
@@ -143,17 +153,18 @@ Durable note: `docs/phase2/SLICE40_INGRESS_TERMINALIZATION.md`.
 ## Open boundaries
 
 - P2-D07/D08, P2-E10, P2-F08, exact mixed 64 KiB boundaries, and lineage reset require legitimate repeated disposition/rollback cycles. Do not manufacture ordinals, charges, or lineage state through private canonical mutation.
-- The next implementation slice is the explicit disposition wake, but every immutable disposition identity, event type, payload, outcome shape, reason-code set, and checkpoint linkage must be audited against accepted documents before code is written.
+- Slice 41 implementation begins only after the ADR 0013 documentation PR merges and Issue #105 closes.
 
 ## Exact restart point
 
-1. Audit Consultation Protocol v1, ADR 0010 disposition clarification, schema, and matrix for every exact disposition/outcome/event identity.
-2. If any immutable value is under-specified, open one focused design-clarification Issue and stop before implementation.
-3. Otherwise implement the separate caller-selected disposition wake test-first against P2-L01–L14 and applicable M/N/O requirements.
-4. Preserve current state over fixture assumptions, consider at most one proposal, increment lifecycle, preserve the garden failure streak, and create a checkpoint.
-5. Never claim garden input, execute an action, create memory/skills, retry consultation, or expand authority.
+1. Merge ADR 0013 documentation and close Issue #105.
+2. Implement Slice 41 test-first against P2-L01–L14 and applicable P2-M/P2-N/P2-O requirements.
+3. Use the exact ADR 0010 current-state projection and ADR 0013 final envelope, mapping, four-event order, budget ledger, lifecycle, and checkpoint behavior.
+4. Consider at most one oldest eligible current-lineage proposal, preserve the garden failure streak, claim no garden input, and publish the ordinary checkpoint.
+5. Prove precommit rollback, postcommit pending-checkpoint repair, idempotent finality, real physical refusal, and no action/fixture/memory/skill effect.
 6. Keep all 152 Phase 1 tests unchanged and passing.
-7. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
+7. Use the routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
+8. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
 
 ## End-of-work protocol
 

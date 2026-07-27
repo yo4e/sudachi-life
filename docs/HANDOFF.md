@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008–0012 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, and Slice 40 are merged.
+Phase 1 is frozen. ADRs 0008–0013 are accepted after the ADR 0013 documentation PR merges. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, and Slice 40 are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -12,18 +12,20 @@ Read, in order:
 
 1. `AGENTS.md`
 2. `docs/AI_COLLABORATION_OPERATIONS.md`
-3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-4. accepted ADRs 0001–0012
-5. `docs/PHASE1_TEST_MATRIX.md`
-6. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
-7. this handoff
-8. `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
-9. `docs/phase2/ADR0010_TEST_MATRIX_AMENDMENT.md`
-10. `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
-11. `docs/phase2/ADR0012_TEST_MATRIX_AMENDMENT.md`
-12. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-13. implemented `docs/phase2/` notes
-14. Issue #61 and current PRs/issues
+3. `docs/phase2/CLARIFICATION_DELEGATION.md`
+4. `docs/MINIMAL_ORGANISM_CONTRACT.md`
+5. accepted ADRs 0001–0013
+6. `docs/PHASE1_TEST_MATRIX.md`
+7. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
+8. this handoff
+9. `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
+10. `docs/phase2/ADR0010_TEST_MATRIX_AMENDMENT.md`
+11. `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
+12. `docs/phase2/ADR0012_TEST_MATRIX_AMENDMENT.md`
+13. `docs/phase2/ADR0013_TEST_MATRIX_AMENDMENT.md`
+14. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+15. implemented `docs/phase2/` notes
+16. Issue #61 and current PRs/issues
 
 Repository and GitHub state outrank conversation history.
 
@@ -51,7 +53,7 @@ The garden wake before the schema-v2 request extension remains byte-identical in
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0012, Consultation Protocol v1, the ADR 0010–0012 matrix amendments, and the Phase 2 matrix form one accepted package.
+ADRs 0008–0013, Consultation Protocol v1, the ADR 0010–0013 matrix amendments, and the Phase 2 matrix form one accepted package after ADR 0013 documentation merges.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -60,6 +62,14 @@ Original Phase 1 budget locations remain exactly `phase1-v1`. Phase 2 policy liv
 Physical limits remain 8 MiB active/artifact, 40 MiB checkpoint store, 64 MiB working set, and 1 MiB next-wake reserve.
 
 Consultation limits include 16 KiB request, 16 KiB package, 8 KiB provenance inside package, four requests/charged calls per lineage, one outstanding request, 64 KiB logical payload, and zero human/model/money/declared latency.
+
+## Routine clarification delegation
+
+The project owner explicitly authorizes routine recommended clarifications to be formally adopted without another human confirmation under `docs/phase2/CLARIFICATION_DELEGATION.md`.
+
+This delegation applies only to the smallest deterministic closure of an implementation ambiguity inside already accepted scope. Every adoption still requires a focused Issue, normative ADR/document update, protected CI, and durable handoff record before implementation.
+
+Human confirmation remains required for material changes to the research question, contract/ADR intent, frozen Phase 1, authority/security boundaries, live external capabilities, destructive migration, protected evidence, autonomy/resource scope, or unresolved contradictions between equally authoritative requirements.
 
 ## Implemented evidence
 
@@ -84,6 +94,7 @@ PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exac
 - ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 completed.
 - ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 completed.
 - ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 completed.
+- ADR 0013: project-owner acceptance of Issue #105 fixes the exact final disposition envelope, full current-state reference, six disposition/reason branches, event/outcome, three direct parents, fixed budget ledger, lifecycle/checkpoint ordering, and crash/idempotence behavior. Documentation merge remains the adoption closeout gate.
 
 ### Slice 39a — dispatch admission and deterministic fixture
 
@@ -125,15 +136,11 @@ Durable note: `docs/phase2/SLICE40_INGRESS_TERMINALIZATION.md`.
 
 ## Exact restart
 
-1. Audit the accepted disposition specification before implementation:
-   - disposition ID digest preimage;
-   - exact envelope and current-state reference;
-   - exact protected reason-code set;
-   - event type, source, payload, direct parents, and outcome shape;
-   - lifecycle/checkpoint atomic ordering and failure behavior.
-2. If any immutable value is missing, open one focused design-clarification Issue and stop before code.
-3. Otherwise implement the separate caller-selected disposition wake test-first against P2-L01–L14 and applicable M/N/O requirements.
-4. Consider at most one proposal, use current state over fixture assumptions, increment lifecycle, preserve garden failure streak, and checkpoint.
-5. Never claim garden input, execute an action, create memory/skills, retry consultation, or expand authority.
+1. Merge the ADR 0013 documentation PR and close Issue #105.
+2. Begin Slice 41 test-first against P2-L01–L14 and applicable P2-M/P2-N/P2-O requirements.
+3. Use ADR 0010's current-state identity and ADR 0013's exact final envelope, six reason branches, event/outcome, fixed four-event order, budget ledger, lifecycle, and checkpoint behavior.
+4. Select at most one oldest eligible current-lineage proposal, preserve the failure streak, claim no garden input, and publish the ordinary checkpoint.
+5. Prove all disposition outcomes, precommit rollback, postcommit checkpoint repair, finality/idempotence, expiry, real physical refusal, and absence of action/fixture/memory/skill effects.
 6. Keep all 152 Phase 1 tests unchanged and passing.
-7. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+7. Use routine clarification delegation only within its exact documented limits; request human confirmation for material boundary changes.
+8. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
