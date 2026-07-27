@@ -32,7 +32,7 @@ from sudachi_life.runtime_storage import (
 from sudachi_life.storage import connect_database, read_status
 
 
-MAX_ORGANISM_ID = "o" * 128
+MAX_ORGANISM_ID = "o" * 64
 PARENT_TYPES = [
     "wake_accepted",
     "input_claimed",
@@ -300,7 +300,7 @@ def test_four_legal_cycles_largest_request_fifth_refusal_and_payload_maximum(
         _successful_reset(root, paths, ordinal)
 
     fourth = requests[-1]
-    assert len(fourth["organism_id"]) == 128
+    assert len(fourth["organism_id"]) == 64
     assert fourth["request_ordinal"] == 4
     assert fourth["allowed_action_ids"] == ["harvest_plot", "water_plot"]
     assert fourth["permission_ids"] == [
