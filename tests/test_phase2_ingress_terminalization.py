@@ -540,7 +540,7 @@ def test_interrupted_reconciliation_records_zero_byte_terminal_without_fixture(
 def test_expired_before_ingress_requires_lifecycle_crossing_and_raw_bytes(
     tmp_path: Path,
 ) -> None:
-    root, paths, wake, dispatched = _fixture_dispatch(
+    root, paths, _wake, dispatched = _fixture_dispatch(
         tmp_path,
         organism_id="terminal-expired",
     )
@@ -564,7 +564,9 @@ def test_expired_before_ingress_requires_lifecycle_crossing_and_raw_bytes(
             seed=50 + index,
             clock=_wake_clock(2_211_000_000_000_000 + index),
         )
-    assert read_status(paths).lifecycle_number > wake.consultation_request.expiry_lifecycle_number
+    assert read_status(paths).lifecycle_number > int(
+        dispatched.admission.request_envelope["expiry_lifecycle_number"]
+    )
 
     with pytest.raises(IngressRejectedError, match="expired"):
         ingress_external_package(
