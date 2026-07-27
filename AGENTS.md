@@ -151,7 +151,7 @@ Branch: `slice36b2-absolute-physical-limits`.
 
 Base: merged PR #72 at `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
 
-Code head `409b82962cee00f59e573b6bf5c90d0d9d426cb6` passed run 502 with `222 passed in 32.16s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+Code head `09c8e52dde8f1f26e8bb149237591a62f55cdc1a` passed run 507 with `230 passed in 35.28s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
 
 It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
 
@@ -159,12 +159,12 @@ It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
 - checkpoint-store 40 MiB boundary
 - runtime working-set 64 MiB boundary
 - exact 1 MiB next-wake reserve
-- exact and one-over checkpoint publication, pending repair, retention, rollback archive, source candidate, and transformed candidate paths
-- idempotent RA/RC/TC reentry admission at the same absolute working-set limit
-- no retained newly published artifact, deleted existing artifact, or rejected canonical registration
+- exact and one-over checkpoint publication, pending repair, retention, rollback archive, source candidate, transformed candidate, active replacement, and rollback completion paths
+- idempotent RA/RC/TC, already-replaced, and completed-rollback reentry admission at the same absolute limits
+- no retained newly published artifact, deleted existing artifact, inadmissible authority transfer, or rejected canonical registration
 - raw zero-caregiver configuration and empty operational tables in active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
 
-Protected tests found and closed Issues #74–#78 plus the same-turn post-write registration-growth defect under explicit project-owner authorization. No accepted limit, authority, idempotence, retention choice, or semantic rule changed.
+Protected tests found and closed Issues #74–#79 plus the same-turn post-write registration-growth defect under explicit project-owner authorization. No accepted limit, authority, idempotence, retention choice, lineage rule, or semantic behavior changed.
 
 Durable notes:
 
@@ -209,7 +209,7 @@ No Codex audit was used for retention, rollback, event export, paired overhead, 
 
 1. inspect Issue #61, PR #73, `docs/HANDOFF.md`, and all implemented Slice 36 notes
 2. verify PR #73 final documentation head and CI
-3. review and merge PR #73; close Issues #74–#78 as completed and re-freeze the narrow Phase 1 boundaries
+3. review and merge PR #73; close Issues #74–#79 as completed and re-freeze the narrow Phase 1 boundaries
 4. create Slice 37 from updated `main`
 5. implement request-envelope/storage-safe extension requirements test-first
 6. keep all 152 Phase 1 tests unchanged and passing
