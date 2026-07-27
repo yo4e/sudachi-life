@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008–0013 are accepted after the ADR 0013 documentation PR merges. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, and Slice 40 are merged.
+Phase 1 is frozen. ADRs 0008–0013 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, Slice 39a, Slice 40, and Slice 41 are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -53,7 +53,7 @@ The garden wake before the schema-v2 request extension remains byte-identical in
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0013, Consultation Protocol v1, the ADR 0010–0013 matrix amendments, and the Phase 2 matrix form one accepted package after ADR 0013 documentation merges.
+ADRs 0008–0013, Consultation Protocol v1, the ADR 0010–0013 matrix amendments, and the Phase 2 matrix form one accepted package.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -94,15 +94,13 @@ PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exac
 - ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 completed.
 - ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 completed.
 - ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 completed.
-- ADR 0013: project-owner acceptance of Issue #105 fixes the exact final disposition envelope, full current-state reference, six disposition/reason branches, event/outcome, three direct parents, fixed budget ledger, lifecycle/checkpoint ordering, and crash/idempotence behavior. Documentation merge remains the adoption closeout gate.
+- ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 completed.
 
 ### Slice 39a — dispatch admission and deterministic fixture
 
 PR #99 merged as `b7c434aed249ed0bc52160db66e594824186890e`.
 
 Final exact PR head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569: `316 passed in 56.74s` plus installation, compilation, and schema-v1 genesis CLI smoke.
-
-It implements exact admission, conservative precharge, no-retry idempotence, commit-before-fixture lock release, real reserve refusal, and a capability-minimal deterministic fixture.
 
 Durable note: `docs/phase2/SLICE39A_DISPATCH_ADMISSION_FIXTURE.md`.
 
@@ -112,35 +110,43 @@ PR #103 merged as `f0238f108b2eb05a6774ca68a0b056eb12772dd1`.
 
 Final exact PR head `e6221bb42ad5e94ddd4d0c2e576975d64693464c`, run 580: `338 passed in 73.21s` plus installation, compilation, and schema-v1 genesis CLI smoke.
 
+Durable note: `docs/phase2/SLICE40_INGRESS_TERMINALIZATION.md`.
+
+### Slice 41 — exact explicit disposition wake
+
+PR #107 merged as `a1176a3afa55931b409696e8d5b50ab6992f129f`.
+
+Final exact PR head `d6cb713aae5df2ed3e12740bbc474a89cbbb2df8`, run 593: `358 passed in 42.65s` plus installation, compilation, and schema-v1 genesis CLI smoke.
+
 It implements:
 
-- raw-size-before-parse and exact canonical package acceptance;
-- atomic response/optional proposal/receipt/completion/event ingress;
-- exact `unavailable` zero-proposal final state;
-- exact invalid, expired, and interrupted terminal branches;
-- success/terminal duplicate idempotence and conflict rejection;
-- busy rejection and explicit same-byte resubmission;
-- logical payload accounting without metadata double count;
-- real active/reserve refusal;
-- spawned process exit after admission, retained charge, and explicit interruption reconciliation without fixture recall;
-- no checkpoint, lifecycle, garden, action, maintenance, retry, refund, memory, or skill effect.
+- exact current-state and disposition preimages, IDs, final envelope, authority, and parents;
+- all six disposition/reason branches;
+- oldest eligible current-lineage proposal selection and immutable finality;
+- exact four-event organism transaction, five-field outcome, and fixed ledger;
+- lifecycle increment while preserving garden failure streak, input, environment, inventory, and plots;
+- ordinary checkpoint publication and existing pending registration repair;
+- precommit rollback and restored proposal eligibility;
+- same-process and spawned fail-fast ownership without queueing;
+- real active/reserve, checkpoint-store, and working-set refusal;
+- no fixture, action execution, network, subprocess, memory, or skill effect.
 
-Durable note: `docs/phase2/SLICE40_INGRESS_TERMINALIZATION.md`.
+Durable note: `docs/phase2/SLICE41_DISPOSITION_WAKE.md`.
 
 ## Remaining boundaries
 
-- Exact four-request/four-charge and mixed 64 KiB boundaries require legitimate repeated disposition/terminal cycles.
-- Rollback must prove new-lineage epoch reset and old-lineage late-package rejection.
-- Maximum-envelope and complete request→dispatch→response→proposal→receipt→disposition reconstruction require the explicit disposition wake.
-- Do not create private canonical rows or manufacture ordinals, charges, lineage, or disposition state.
+- Exact four-request/four-charge and mixed 64 KiB boundaries require legitimate repeated terminal/disposition cycles.
+- The largest structural request must be produced by legal protocol-v1 state, not filler.
+- Rollback must prove the fresh current-lineage epoch and fail-closed old-lineage packages/proposals.
+- Complete event ancestry, export, authority, physical, and explicit-absence closure remains before the implementation audit.
+- Do not create private rows or manufacture ordinals, charges, dispositions, lineage, or payload size.
 
 ## Exact restart
 
-1. Merge the ADR 0013 documentation PR and close Issue #105.
-2. Begin Slice 41 test-first against P2-L01–L14 and applicable P2-M/P2-N/P2-O requirements.
-3. Use ADR 0010's current-state identity and ADR 0013's exact final envelope, six reason branches, event/outcome, fixed four-event order, budget ledger, lifecycle, and checkpoint behavior.
-4. Select at most one oldest eligible current-lineage proposal, preserve the failure streak, claim no garden input, and publish the ordinary checkpoint.
-5. Prove all disposition outcomes, precommit rollback, postcommit checkpoint repair, finality/idempotence, expiry, real physical refusal, and absence of action/fixture/memory/skill effects.
-6. Keep all 152 Phase 1 tests unchanged and passing.
-7. Use routine clarification delegation only within its exact documented limits; request human confirmation for material boundary changes.
-8. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+1. Audit every remaining unchecked Phase 2 matrix row against merged Slices 36–41.
+2. Begin Slice 42 test-first using only legitimate repeated request→dispatch→ingress/terminal→disposition cycles and the accepted rollback path.
+3. Close the fourth request/charge success, fifth refusal, largest structural request, mixed 64 KiB boundary/one-over, new-lineage reset, old-lineage rejection, complete event reconstruction, and remaining physical/absence evidence.
+4. Do not modify frozen Phase 1 semantics or manufacture canonical state.
+5. Keep all 152 Phase 1 tests unchanged and passing.
+6. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
+7. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
