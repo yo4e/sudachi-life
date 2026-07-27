@@ -1,6 +1,6 @@
 # Slice 41: Exact Explicit Disposition Wake
 
-Status: implementation-complete on draft PR #107; final exact-head CI and merge pending.
+Status: merged through PR #107 as `a1176a3afa55931b409696e8d5b50ab6992f129f`.
 
 ## Scope
 
@@ -132,12 +132,12 @@ The first implementation stops at the disposition record and checkpoint.
 
 Tests-only head `7253671f472ec9b6c85928caf2eccc2c813b6603`, run 586:
 
-- dependency installation and compilation passed;
+- installation and compilation passed;
 - protected enforcement failed because `phase2_disposition` did not exist.
 
 Initial runtime head `6942893c28b60505dd896626977402a864c12884`, run 588:
 
-- 340 passed and 15 failed;
+- 340 passed, 15 failed;
 - fourteen failures shared one row/envelope linkage bug;
 - one failure was the known request-result test fixture attribute.
 
@@ -150,6 +150,11 @@ Boundary head `d7865fdbdde50bd639009919fbc963ae667835ac`, run 592:
 
 - 358 passed in 66.65 seconds;
 - spawned fail-fast and real checkpoint-store/working-set refusal passed;
+- install, compile, and schema-v1 genesis CLI smoke passed.
+
+Final exact PR head `d6cb713aae5df2ed3e12740bbc474a89cbbb2df8`, run 593:
+
+- 358 passed in 42.65 seconds;
 - install, compile, and schema-v1 genesis CLI smoke passed.
 
 All original 152 Phase 1 tests remain unchanged and included.
