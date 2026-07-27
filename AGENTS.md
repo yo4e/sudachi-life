@@ -151,7 +151,7 @@ Branch: `slice36b2-absolute-physical-limits`.
 
 Base: merged PR #72 at `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
 
-Code head `47da614119d9b11cb4b791ad5ed9a85ff8fbdbce` passed run 488 with `215 passed in 28.36s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
+Code head `409b82962cee00f59e573b6bf5c90d0d9d426cb6` passed run 502 with `222 passed in 32.16s`, including all unchanged 152 Phase 1 tests, dependency installation, compilation, and schema-v1 genesis CLI smoke.
 
 It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
 
@@ -159,15 +159,19 @@ It closes P2-O18, P2-O19, P2-O21, and P2-O22 with real schema-v2-zero files:
 - checkpoint-store 40 MiB boundary
 - runtime working-set 64 MiB boundary
 - exact 1 MiB next-wake reserve
-- exact and one-over checkpoint, repair, rollback archive, source candidate, and transformed candidate paths
-- no retained newly published artifact or rejected canonical registration
+- exact and one-over checkpoint publication, pending repair, retention, rollback archive, source candidate, and transformed candidate paths
+- idempotent RA/RC/TC reentry admission at the same absolute working-set limit
+- no retained newly published artifact, deleted existing artifact, or rejected canonical registration
 - raw zero-caregiver configuration and empty operational tables in active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
 
-Protected tests found and closed Issues #74, #75, and #76 plus a same-turn post-write registration-growth defect under explicit project-owner authorization. No accepted limit, authority, idempotence, or semantic rule changed.
+Protected tests found and closed Issues #74–#78 plus the same-turn post-write registration-growth defect under explicit project-owner authorization. No accepted limit, authority, idempotence, retention choice, or semantic rule changed.
 
-Durable note: `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`.
+Durable notes:
 
-PR #73 remains the merge gate until documentation CI is green, review is complete, and the PR is merged.
+- `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
+- `docs/phase2/SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md`
+
+PR #73 remains the merge gate until final documentation CI is green, review is complete, and the PR is merged.
 
 ## Accepted budgets and expiry
 
@@ -205,7 +209,7 @@ No Codex audit was used for retention, rollback, event export, paired overhead, 
 
 1. inspect Issue #61, PR #73, `docs/HANDOFF.md`, and all implemented Slice 36 notes
 2. verify PR #73 final documentation head and CI
-3. review and merge PR #73; close Issues #74–#76 as completed and re-freeze the narrow Phase 1 boundaries
+3. review and merge PR #73; close Issues #74–#78 as completed and re-freeze the narrow Phase 1 boundaries
 4. create Slice 37 from updated `main`
 5. implement request-envelope/storage-safe extension requirements test-first
 6. keep all 152 Phase 1 tests unchanged and passing
