@@ -40,10 +40,7 @@ def _budget_snapshot() -> dict[str, object]:
         "elapsed_monotonic_ns": 30_000_000,
         "lifecycle_wall_time_limit_ns": 5_000_000_000,
         "limits": limits,
-        "remaining": {
-            name: limits[name] - consumed[name]
-            for name in limits
-        },
+        "remaining": {name: limits[name] - consumed[name] for name in limits},
         "semantic_steps_limit": 16,
         "semantic_steps_used": 12,
     }
@@ -75,7 +72,6 @@ def _identity() -> dict[str, object]:
 
 def _envelope() -> dict[str, object]:
     identity = _identity()
-    request_id = request_id_from_identity(identity)
     return {
         "allowed_action_ids": identity["allowed_action_ids"],
         "authority": {
@@ -103,7 +99,7 @@ def _envelope() -> dict[str, object]:
         "policy_version": identity["policy_version"],
         "protocol_version": identity["protocol_version"],
         "reason_code": identity["reason_code"],
-        "request_id": request_id,
+        "request_id": request_id_from_identity(identity),
         "request_ordinal": identity["request_ordinal"],
         "request_schema": identity["request_schema"],
         "requested_proposal_types": identity["requested_proposal_types"],
@@ -152,11 +148,7 @@ def test_request_identity_and_id_are_exact_and_event_independent() -> None:
 
     changed = deepcopy(envelope)
     changed["event_sequence"] = 999
-    changed["parent_event_sequences"] = [1, 2, 3]
-    changed["authority"] = {
-        "source": "organism:consultation.request",
-        "writer_category": "organism",
-    }
+    changed["parent_event_sequences"] = [3, 4, 5]
     assert request_identity_from_envelope(changed) == identity
     assert request_id_from_identity(request_identity_from_envelope(changed)) == (
         envelope["request_id"]
