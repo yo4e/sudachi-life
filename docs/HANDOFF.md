@@ -2,7 +2,7 @@
 
 Updated: **2026-07-27**
 
-Phase 1 is frozen. ADRs 0008–0011 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, and Slice 39a are merged.
+Phase 1 is frozen. ADRs 0008–0012 are accepted. Issue #61 owns Phase 2 implementation. Slice 36, Slice 37a1–a3, Slice 38a–c, and Slice 39a are merged.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
 
@@ -13,16 +13,17 @@ Read, in order:
 1. `AGENTS.md`
 2. `docs/AI_COLLABORATION_OPERATIONS.md`
 3. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-4. accepted ADRs 0001–0011
+4. accepted ADRs 0001–0012
 5. `docs/PHASE1_TEST_MATRIX.md`
 6. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 7. this handoff
 8. `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
 9. `docs/phase2/ADR0010_TEST_MATRIX_AMENDMENT.md`
 10. `docs/phase2/ADR0011_TEST_MATRIX_AMENDMENT.md`
-11. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-12. implemented `docs/phase2/` notes
-13. Issue #61 and current PRs/issues
+11. `docs/phase2/ADR0012_TEST_MATRIX_AMENDMENT.md`
+12. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
+13. implemented `docs/phase2/` notes
+14. Issue #61 and current PRs/issues
 
 Repository and GitHub state outrank conversation history.
 
@@ -50,7 +51,7 @@ The garden wake before the schema-v2 request extension remains byte-identical in
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0011, Consultation Protocol v1, the ADR 0010/0011 matrix amendments, and the Phase 2 matrix form one accepted package.
+ADRs 0008–0012, Consultation Protocol v1, the ADR 0010–0012 matrix amendments, and the Phase 2 matrix form one accepted package.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -80,12 +81,11 @@ PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, exac
 
 These close the request/dispatch/proposal/response/package identity graph and exact proposal/provenance/package schemas.
 
-### ADRs 0010 and 0011
+### Accepted clarifications
 
-- PR #94 merged ADR 0010 as `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 are completed.
-- PR #98 merged ADR 0011 as `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 is completed.
-
-ADR 0010 fixes dispatch identity, provenance, response/package cardinality, current-state projection, disposition identity, and no optional request context. ADR 0011 fixes charge identity, ledger, and the single dispatch-admission event.
+- ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 completed.
+- ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 completed.
+- ADR 0012: project-owner acceptance of Issue #101 fixes typed receipt/completion/terminal IDs, success-ingress event and receipt evidence, rejected raw-byte digest, terminal event/envelope, direct parents, measured-byte rules, and branch atomicity/idempotence. Documentation merge remains the adoption closeout gate.
 
 ### Slice 39a — dispatch admission and deterministic fixture
 
@@ -115,12 +115,13 @@ Durable note: `docs/phase2/SLICE39A_DISPATCH_ADMISSION_FIXTURE.md`.
 
 ## Exact restart
 
-1. Before Slice 40 code, inspect every immutable response, proposal, ingress-receipt, cost-completion, terminal ID, event type, and event payload in ADRs 0008–0011, Consultation Protocol v1, the matrix, and schema.
-2. If any exact canonical identifier or event payload is absent, open one focused design clarification and stop before choosing a private value.
-3. Otherwise implement raw-size-before-parse validation and exact package ingress in one fresh fail-fast administrative transaction.
-4. Successful ingress atomically writes response, optional proposal, ingress receipt, cost completion, and one administrative event; it adds the measured package bytes exactly once to lineage logical payload.
-5. Implement byte-identical duplicate idempotence and explicit identical-byte resubmission after busy/pending-only rejection without fixture recall or another charge.
-6. Implement invalid/expired/interrupted admitted work as one explicit terminal outcome and reconciliation without fixture retry.
-7. Do not checkpoint, clear maintenance, execute an action, create memory/skills, or invoke the fixture during Slice 40.
-8. Keep all 152 Phase 1 tests unchanged and passing.
-9. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+1. Merge the ADR 0012 documentation PR and close Issue #101.
+2. Begin Slice 40 test-first against the applicable P2-J/K/N/O requirements and ADR 0012 amendment.
+3. Check raw package size before parsing and accept only byte equality with independently reconstructed canonical package bytes.
+4. Successful ingress atomically writes response, optional proposal, receipt, cost completion, and one `consultation_response_ingressed` event.
+5. Invalid, expired, or interrupted admitted work atomically writes terminal, cost completion, and one `consultation_dispatch_terminalized` event.
+6. Preserve exact typed aliases, two direct parents, reason-specific rejected-byte fields, measured sizes, duplicate idempotence, and same-byte resubmission after busy/pending-only rejection.
+7. Reconciliation may create only `dispatch_interrupted`; no ingress, terminal, duplicate, or reconciliation path invokes the fixture.
+8. Do not checkpoint, increment lifecycle, clear maintenance, execute an action, create memory/skills, retry, or refund.
+9. Keep all 152 Phase 1 tests unchanged and passing.
+10. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.

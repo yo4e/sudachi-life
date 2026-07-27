@@ -13,7 +13,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 3. `docs/AI_COLLABORATION_OPERATIONS.md`
 4. `docs/ORIGIN.md`
 5. `docs/MINIMAL_ORGANISM_CONTRACT.md`
-6. accepted `docs/decisions/` files in numeric order, including ADRs 0010 and 0011
+6. accepted `docs/decisions/` files in numeric order, including ADRs 0010–0012
 7. `docs/ARCHITECTURE.md`
 8. `docs/ROADMAP.md`
 9. `docs/IMPLEMENTATION_DISCIPLINE.md`
@@ -26,7 +26,7 @@ Assume you remember nothing about SUDACHI. Reconstruct the project from reposito
 16. `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`
 17. `docs/HANDOFF.md`
 18. Issue #61 and current Issues/PRs
-19. Consultation Protocol v1, ADR 0010/0011 matrix amendments, the Phase 2 matrix, and Issue #59/#63 audit reports
+19. Consultation Protocol v1, ADR 0010–0012 matrix amendments, the Phase 2 matrix, and Issue #59/#63 audit reports
 
 ## Core question
 
@@ -60,7 +60,7 @@ The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0011, Consultation Protocol v1, the ADR 0010/0011 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
+ADRs 0008–0012, Consultation Protocol v1, the ADR 0010–0012 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -112,16 +112,13 @@ PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, zero
 - PR #91 merged as `068b3d30b91bd0bec89344a0d27b4685b3764a65`; run 551: `275 passed in 29.84s`.
 - PR #95 merged as `d5cbe115caaada4b71d58bb81527fb6179e0c913`; final run 559: `294 passed in 37.06s`.
 
-These slices close canonical bytes and digest labels, request/dispatch/proposal/response/package identities, exact proposal types, external provenance, package cardinality, and the pure cycle-free protocol graph.
-
 The prior request constructor remains byte-identical in `phase2_request_impl.py`, blob `46881e023d990f5c7ce393cac7060958419383c0`.
 
-### ADRs 0010 and 0011
+### Accepted clarifications
 
-- PR #94 merged ADR 0010 as `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 are closed.
-- PR #98 merged ADR 0011 as `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 is closed.
-
-ADR 0010 fixes exact dispatch identity, provenance, response/package cardinality, current-state projection, disposition identity, and no optional request context. ADR 0011 fixes the charge ID, exact conservative ledger, and one `consultation_dispatch_admitted` event with payload exactly `charge` and `dispatch`.
+- ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 closed.
+- ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 closed.
+- ADR 0012: project-owner adoption of Issue #101 fixes receipt/completion/terminal typed aliases, exact ingress and terminal events/payloads, direct parents, rejected raw-byte digest, reason-specific nullable/size rules, and atomic/idempotent branches. Documentation merge remains the only adoption closeout gate.
 
 ### Slice 39a — dispatch admission and fixture boundary
 
@@ -137,16 +134,19 @@ Durable note: `docs/phase2/SLICE39A_DISPATCH_ADMISSION_FIXTURE.md`.
 
 - P2-D07/D08, P2-E10, and P2-F08 require legitimate terminalization/disposition cycles. Do not manufacture request ordinal four or multiple charges through private canonical mutation.
 - P2-F06 still needs spawned process-crash evidence; fixture exception/interruption retention is implemented.
-- Slice 40 must not invent immutable ingress/terminal IDs, event types, or payloads. Confirm they are normatively closed before code.
+- Slice 40 implementation begins only after ADR 0012 documentation merges and Issue #101 closes.
 
 ## Exact restart point
 
-1. Inspect ADRs 0008–0011, Consultation Protocol v1, the matrix, and schema for every Slice 40 response/receipt/completion/terminal ID and event payload.
-2. If any immutable canonical identity or payload is missing, create one focused design clarification and stop before implementation.
-3. Otherwise implement Slice 40 test-first: raw-size-before-parse validation, exact package ingress, response/proposal/receipt/cost-completion atomicity, duplicate and same-byte resubmission behavior, invalid-package terminalization, and explicit interrupted-dispatch reconciliation.
-4. Never invoke the fixture again during ingress, terminalization, reconciliation, or duplicate handling.
-5. Keep all 152 Phase 1 tests unchanged and passing.
-6. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
+1. Merge ADR 0012 documentation and close Issue #101.
+2. Implement Slice 40 test-first against applicable P2-J/K/N/O requirements.
+3. Check raw size before parse; accept only exact reconstructed canonical package bytes.
+4. Atomically write the success response/optional proposal/receipt/completion/event branch, or the exact mutually exclusive terminal/completion/event branch.
+5. Preserve byte-identical duplicate idempotence and explicit same-byte resubmission after busy/pending-only rejection.
+6. Reconcile interruption only as `dispatch_interrupted`; never invoke the fixture again.
+7. Never checkpoint, increment lifecycle, clear maintenance, execute an action, change authority/budgets/permissions, retry, or refund.
+8. Keep all 152 Phase 1 tests unchanged and passing.
+9. Do not use Codex until the complete Phase 2 implementation candidate is CI-green and ready for the single completion audit.
 
 ## End-of-work protocol
 
