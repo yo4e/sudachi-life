@@ -106,7 +106,7 @@ Branch: `slice36b2-absolute-physical-limits`.
 
 Base: merged PR #72 at `3cd46b5929d6bc5dea8b0cbede417b40e792ce72`.
 
-Code head `47da614119d9b11cb4b791ad5ed9a85ff8fbdbce` passed run 488 with `215 passed in 28.36s`. Installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
+Code head `409b82962cee00f59e573b6bf5c90d0d9d426cb6` passed run 502 with `222 passed in 32.16s`. Installation, compilation, and schema-v1 genesis CLI smoke succeeded. The unchanged 152 Phase 1 tests remain included. Codex was not used.
 
 Protected real-file evidence closes P2-O18, P2-O19, P2-O21, and P2-O22:
 
@@ -114,8 +114,9 @@ Protected real-file evidence closes P2-O18, P2-O19, P2-O21, and P2-O22:
 - exact 1 MiB next-wake reserve and subsequent real wake
 - checkpoint database exact 8 MiB acceptance and one-page-over rejection
 - checkpoint store exact 40 MiB acceptance and one-byte-over cleanup
-- runtime working set exact 64 MiB acceptance and one-byte-over rejection for checkpoint registration, pending repair, rollback archive, source candidate, and transformed candidate
-- no retained new artifact or rejected canonical registration
+- runtime working set exact 64 MiB acceptance and one-byte-over rejection for checkpoint registration, pending repair, retention, rollback archive, source candidate, and transformed candidate
+- idempotent RA/RC/TC reentry obeys the same full working-set admission
+- no retained new artifact, deleted existing artifact, or rejected canonical registration
 - raw immutable zero-caregiver configuration and empty operational consultation state inside active, `CP`, `RA`, `RC`, and `TC` SQLite bodies
 
 Test-first work found and closed:
@@ -123,11 +124,16 @@ Test-first work found and closed:
 - Issue #74: source/transformed candidate manifest bytes omitted from admission
 - Issue #75: shared checkpoint validator omitted the independent 8 MiB artifact ceiling
 - Issue #76: rollback archive remained published after post-publication rejection
+- Issue #77: pending repair omitted the independent active-database ceiling
+- Issue #78: idempotent rollback and retention no-op bypassed full working-set admission
 - one same-turn checkpoint/repair post-write registration-growth defect
 
-Each shared repair was explicitly owner-authorized and limited to physical admission, cleanup, or transaction rollback. No accepted limit, authority, idempotence, or semantic rule changed.
+Each shared repair was explicitly owner-authorized and limited to physical admission, cleanup, or transaction rollback. No accepted limit, authority, idempotence, retention choice, or semantic rule changed.
 
-Durable note: `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`.
+Durable notes:
+
+- `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
+- `docs/phase2/SLICE36B2A6_ACTIVE_REPAIR_ADDENDUM.md`
 
 PR #73 final documentation head is the current gate. Run final CI, review the complete diff, mark ready, and merge only if green.
 
@@ -158,7 +164,7 @@ No live model/API/human caregiver, memory or skill generation, source/test gener
 
 1. inspect Issue #61, PR #73, this handoff, and `docs/phase2/SLICE36B2A6_ABSOLUTE_PHYSICAL_LIMITS.md`
 2. verify the final PR #73 documentation head and CI
-3. review and merge PR #73; close Issues #74–#76 and re-freeze the narrow shared boundaries
+3. review and merge PR #73; close Issues #74–#78 and re-freeze the narrow shared boundaries
 4. confirm the unchanged 152 Phase 1 tests remain included and passing
 5. create Slice 37 from updated `main`
 6. implement the request-envelope and storage-safe request-extension boundary test-first
