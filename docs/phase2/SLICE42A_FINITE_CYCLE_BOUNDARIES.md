@@ -1,6 +1,6 @@
 # Slice 42a: Finite Consultation Cycle Boundaries
 
-Status: implementation-complete on draft PR #114; final exact-head CI and merge pending.
+Status: merged through PR #114 as `716834b9bd3200989db2d078fb8c108b499a09b9`.
 
 ## Scope
 
@@ -175,6 +175,11 @@ Corrected wrapper and identifier head `49323d175c9725d82ac0632fb3f9c74d66da842d`
 Measured-case head `663443f5f45b0157b1fdaf182d176360dc9b7a45`, run 606:
 
 - 360 passed in 50.75 seconds;
+- dependency installation, source/test compilation, and schema-v1 genesis CLI smoke passed.
+
+Final exact PR head `1cbfbb8dd0e649d0e83570ffd9c05baecff39619`, run 607:
+
+- 360 passed in 115.98 seconds;
 - dependency installation, source/test compilation, and schema-v1 genesis CLI smoke passed.
 
 All original 152 Phase 1 tests remain unchanged and included.
