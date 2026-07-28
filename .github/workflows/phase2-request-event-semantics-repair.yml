@@ -54,11 +54,7 @@ jobs:
       - name: Preserve Phase 1 blob boundary
         run: |
           set -euo pipefail
-          changed_phase1="$(git diff --name-only 62c9e0c6ba7e33eee85e1687b8bf6a3978a25338 -- 'tests/test_phase1*.py' 'tests/phase1_audit_helpers.py')"
-          if [ -n "$changed_phase1" ]; then
-            printf 'Phase 1 test/helper changes detected:\n%s\n' "$changed_phase1"
-            exit 1
-          fi
+          git diff --exit-code -- 'tests/test_phase1*.py' 'tests/phase1_audit_helpers.py'
 
       - name: Commit only the green repair
         env:
