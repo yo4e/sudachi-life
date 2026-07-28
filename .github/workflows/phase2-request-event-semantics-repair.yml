@@ -27,6 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           python .github/phase2_request_event_semantics_repair.py
+          python .github/phase2_request_event_semantics_followup.py
           changed="$(git diff --name-only)"
           expected=$'src/sudachi_life/phase2_dispatch_runtime.py\ntests/test_phase2_implementation_audit_repairs.py'
           if [ "$changed" != "$expected" ]; then
@@ -65,6 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           rm .github/phase2_request_event_semantics_repair.py
+          rm .github/phase2_request_event_semantics_followup.py
           rm .github/workflows/phase2-request-event-semantics-repair.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
