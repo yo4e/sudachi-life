@@ -19,15 +19,6 @@ if missing_parameter not in test:
     raise SystemExit("generated missing-event parameter was not found")
 test = test.replace(missing_parameter, "", 1)
 
-import_anchor = '''from sudachi_life.constants import MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT
-'''
-import_replacement = '''from sudachi_life.constants import MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT
-from sudachi_life.errors import SchemaValidationError
-'''
-if import_anchor not in test:
-    raise SystemExit("test import anchor was not found")
-test = test.replace(import_anchor, import_replacement, 1)
-
 marker = "def test_dispatch_rejects_missing_request_created_event_before_clock("
 if marker in test:
     raise SystemExit("missing-event regression already exists")
@@ -95,7 +86,7 @@ def test_dispatch_rejects_missing_request_created_event_before_clock(
     )
 
     no_clock = FakeClock([])
-    with pytest.raises(SchemaValidationError, match="foreign-key errors"):
+    with pytest.raises(DispatchAdmissionRejectedError, match="foreign-key errors"):
         admit_fixture_dispatch(
             root,
             paths.organism_id,
