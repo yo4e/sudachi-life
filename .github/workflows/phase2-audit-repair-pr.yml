@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - .github/workflows/phase2-audit-repair-pr.yml
+      - .github/phase2_audit_repair.py
 
 permissions:
   contents: write
@@ -21,69 +22,22 @@ jobs:
           ref: agent/phase2-implementation-audit-prep
           fetch-depth: 0
 
-      - name: Extract and apply the repair script
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
+      - name: Apply accepted audit repairs
+        run: python .github/phase2_audit_repair.py
 
-          source = Path('.github/workflows/phase2-audit-repair.yml').read_text(
-              encoding='utf-8'
-          ).splitlines()
-          start = next(
-              index
-              for index, line in enumerate(source)
-              if line.strip() == "python - <<'PY'"
-          ) + 1
-          end = next(
-              index
-              for index in range(start, len(source))
-              if source[index].strip() == 'PY'
-          )
-          script = '\n'.join(
-              line[10:] if line.startswith('          ') else line
-              for line in source[start:end]
-          ) + '\n'
-          compile(script, '<phase2-audit-repair>', 'exec')
-          Path('/tmp/phase2_audit_repair.py').write_text(script, encoding='utf-8')
-          PY
-          python /tmp/phase2_audit_repair.py
+      - name: Compile repaired source and tests
+        run: python -m compileall -q src tests
 
-      - name: Compile generated repairs or report exact lines
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set +e
-          python -m compileall -q src tests > /tmp/compile.log 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            {
-              echo '## Generated repair syntax diagnostics'
-              echo
-              echo 'No repair commit was pushed.'
-              echo
-              echo '```text'
-              cat /tmp/compile.log
-              echo '--- dispatch lines 742-760 ---'
-              nl -ba src/sudachi_life/phase2_dispatch_runtime.py | sed -n '742,760p' | cat -vet
-              echo '--- repair test lines 178-194 ---'
-              nl -ba tests/test_phase2_implementation_audit_repairs.py | sed -n '178,194p' | cat -vet
-              echo '```'
-            } > /tmp/failure.md
-            gh issue comment 121 --repo yo4e/sudachi-life --body-file /tmp/failure.md
-            exit 1
-          fi
-
-      - name: Run repaired protected suite
+      - name: Install and run repaired protected suite
         shell: bash
         run: |
           python -m pip install --quiet -e ".[dev]"
-          pytest -q --tb=short
+          pytest -q --tb=short | tee /tmp/pytest.log
 
       - name: Commit only the green repair candidate
         shell: bash
         run: |
+          rm .github/phase2_audit_repair.py
           rm .github/workflows/phase2-audit-repair.yml
           rm .github/workflows/phase2-audit-repair-pr.yml
           git config user.name "github-actions[bot]"
