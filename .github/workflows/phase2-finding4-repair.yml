@@ -1,0 +1,52 @@
+name: Phase 2 Finding 4 repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/phase2_finding4_repair.py
+      - .github/workflows/phase2-finding4-repair.yml
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  repair:
+    if: github.head_ref == 'agent/phase2-implementation-audit-prep'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase2-implementation-audit-prep
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Apply focused Phase 2 repair
+        run: python .github/phase2_finding4_repair.py
+
+      - name: Compile repaired source and tests
+        run: python -m compileall -q src tests
+
+      - name: Install package and test dependencies
+        run: python -m pip install --quiet -e '.[dev]'
+
+      - name: Run protected suite
+        run: pytest -q --tb=short | tee /tmp/pytest.log
+
+      - name: Commit only the green repair candidate
+        run: |
+          rm .github/phase2_finding4_repair.py
+          rm .github/workflows/phase2-finding4-repair.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Bind dispatch to exact checkpoint snapshot'
+          git push origin HEAD:agent/phase2-implementation-audit-prep
