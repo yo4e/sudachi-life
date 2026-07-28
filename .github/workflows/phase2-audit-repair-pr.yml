@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   apply-repairs:
@@ -20,7 +21,7 @@ jobs:
           ref: agent/phase2-implementation-audit-prep
           fetch-depth: 0
 
-      - name: Extract and apply the validated repair script
+      - name: Extract and apply the repair script
         shell: bash
         run: |
           python - <<'PY'
@@ -48,13 +49,38 @@ jobs:
           PY
           python /tmp/phase2_audit_repair.py
 
-      - name: Validate repaired candidate
+      - name: Validate repaired candidate and report failures
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .
-          python -m compileall -q src tests
-          python -m pytest -q
+          set +e
+          python -m pip install --upgrade pip > /tmp/install.log 2>&1
+          install_status=$?
+          python -m pip install -e . >> /tmp/install.log 2>&1
+          package_status=$?
+          python -m compileall -q src tests > /tmp/compile.log 2>&1
+          compile_status=$?
+          python -m pytest -q > /tmp/pytest.log 2>&1
+          pytest_status=$?
+          if [ "$install_status" -ne 0 ] || [ "$package_status" -ne 0 ] || \
+             [ "$compile_status" -ne 0 ] || [ "$pytest_status" -ne 0 ]; then
+            {
+              echo '## Automated repair validation failure'
+              echo
+              echo 'The repair script was applied only in the isolated Actions checkout; no repair commit was pushed.'
+              echo
+              echo '```text'
+              echo "install_status=$install_status package_status=$package_status compile_status=$compile_status pytest_status=$pytest_status"
+              tail -n 160 /tmp/install.log
+              tail -n 80 /tmp/compile.log
+              tail -n 220 /tmp/pytest.log
+              echo '```'
+            } > /tmp/failure.md
+            gh issue comment 121 --repo yo4e/sudachi-life --body-file /tmp/failure.md
+            exit 1
+          fi
+          cat /tmp/pytest.log
 
       - name: Commit only the green repair candidate
         shell: bash
