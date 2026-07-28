@@ -53,15 +53,17 @@ Normative precedence:
 
 Phase 1 passed final independent audit at `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`. All 152 protected tests remain unchanged and form the schema-v1 control.
 
-Phase 2 must not reinterpret or change Phase 1 garden actions, selector, executor, evaluators, clocks, checkpoint rules, rollback transformation, writer categories, or protected tests.
+Phase 2 must not reinterpret or change Phase 1 garden actions, selector, executor, evaluators, clocks, checkpoint rules, rollback transformation, writer categories, or protected tests without explicit project-owner authorization for one exact defect.
 
 PR #73 temporarily reopened shared code only for explicitly authorized physical-limit defects and merged as `c9004027a94b709802af7f590d46de862dd93d7d`. Those physical boundaries are re-frozen. Pre-repair bodies remain in explicit `*_impl.py` modules.
+
+Issue #117 explicitly authorized one narrow rollback-retention reconciliation repair after tests-only Slice 42b exposed a deterministic post-retention rollback defect. PR #116 merged the repair as `0059e0e20ececcf9e16a9b1a4376c3564cf9c391`. The pre-repair `rollback_transform_impl.py` remains byte-identical at blob `91f77ff91929f53be46dc9b74a3d1558ddd89b00`; the repaired public rollback boundary is re-frozen.
 
 The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.py`, blob `c971d77cc9beab22f5c50fb692b4f81210cbf3ed`.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0016, Consultation Protocol v1, the ADR 0010–0016 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
+ADRs 0008–0016, Consultation Protocol v1, the ADR 0010–0016 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation completion and the final implementation-audit gate.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -166,29 +168,45 @@ Final exact PR head `1cbfbb8dd0e649d0e83570ffd9c05baecff39619`, run 607: `360 pa
 
 It closes legitimate request ordinals one through four, the exact noncanonical fifth refusal, four conservative charges with no fifth invocation, the ADR 0014 eight-parent largest structural request, the pure 65536/65537 accounting guard, the measured legal closed-v1 payload maximum, ordinary checkpoint and physical-limit evidence, and no-private-mutation proof.
 
-The pre-ADR 0016 ingress runtime and retained request constructor remain byte-identical in their explicit `*_impl.py` modules.
-
 Durable note: `docs/phase2/SLICE42A_FINITE_CYCLE_BOUNDARIES.md`.
 
-## Open boundaries
+### Slice 42b — rollback lineage epochs
 
-- P2-J10 and P2-M08–P2-M11 require one accepted rollback through the public path, a fresh request/charge/logical-payload epoch, and historical inactive old-lineage rows.
-- Old-lineage unresolved work must not block current-lineage work, and late old-lineage packages/proposals must fail before mutation.
-- P2-M10 and ADR 0007 require the full two-lineage maximum of eight charged invocations and rejection of a second completed rollback.
-- Complete event export, authority/ancestry reconstruction, rollback artifact preservation, physical accounting, and remaining explicit-absence review remain before the implementation-completion audit.
+PR #116 merged as `0059e0e20ececcf9e16a9b1a4376c3564cf9c391`.
+
+Final exact PR head `7f9b718f8b65f71e411a5ed632257ed5609d3ede`, run 614: `365 passed in 46.13s` plus install, compile, protected enforcement, and schema-v1 CLI smoke.
+
+It closes one full old-lineage epoch, one accepted public rollback, one full fresh-lineage epoch, exactly eight maximum charges across the physical organism, second-rollback rejection, zero fresh-lineage payload before ordinal one, immutable inactive old rows, nonblocking unresolved old work, pre-mutation stale-package rejection, old-proposal exclusion, event/export/authority reconstruction, rollback artifact preservation, and inherited physical limits.
+
+Tests-only run 611 exposed the rollback-retention temporal-skew defect. Issue #117 authorized the exact wrapper repair; all 152 Phase 1 tests remain unchanged, and dedicated schema-v1 regression now protects rollback after checkpoint pruning and the next ordinary checkpoint.
+
+Durable note: `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md`.
+
+## Open gate
+
+No additional Consultation Boundary behavior is authorized or required before the implementation-completion audit.
+
+The remaining gate is evidence and independent review:
+
+- map every accepted P2-A through P2-P matrix row to exact protected implementation evidence;
+- verify all 152 Phase 1 tests remain unchanged and included;
+- verify schema-v1 support, zero-caregiver behavior, deterministic-fixture behavior, and explicit-absence surfaces at one exact candidate head;
+- assemble accepted ADRs, implementation notes, completed matrix mapping, CI evidence, and current Issues;
+- run the single independent read-only Phase 2 implementation audit required by `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`;
+- repair only accepted findings and freeze Phase 2 only after a satisfactory completion conclusion.
 
 ## Exact restart point
 
-1. Merge the Slice 42a closeout PR, then begin Slice 42b test-first from updated `main`.
-2. Build legitimate pre-rollback consultation history only through public request, dispatch, ingress/terminalization, disposition, ordinary wake, checkpoint, and maintenance operations.
-3. Invoke the accepted public rollback path once; do not alter the frozen rollback transformation or manufacture lineage state.
-4. Prove the new current lineage starts with request ordinal one, zero current-lineage logical bytes before its first request, and a fresh four-request/four-charge epoch while all old rows remain immutable historical evidence.
-5. Prove old-lineage unresolved work does not block current work, late old-lineage packages fail before mutation, and old-lineage proposals are excluded from disposition selection.
-6. Prove at most eight charged invocations across the two allowed epochs, preserve rollback archive/source/transformed-candidate/completion evidence, and reject a second completed rollback under ADR 0007.
-7. Reconstruct consultation rows, events, parents, authority, checkpoint/rollback artifacts, and physical totals across both lineages without private canonical mutation.
-8. Keep all 152 Phase 1 tests unchanged and passing.
-9. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
-10. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+1. Merge the Slice 42b closeout PR and reconstruct from updated `main`.
+2. Treat `0059e0e20ececcf9e16a9b1a4376c3564cf9c391` and run 614 as the merged implementation baseline, subject to closeout-only documentation commits.
+3. Build a complete P2-A–P2-P implementation-evidence map without weakening or reinterpreting any accepted row.
+4. Confirm the original 152 Phase 1 tests are byte-unchanged and included in the exact green candidate.
+5. Confirm no live caregiver/API/human chat, network, subprocess, memory, skill, action-adoption, arbitrary-code, or continuous-execution surface exists.
+6. Request one read-only independent Phase 2 implementation audit against one exact candidate commit; do not use per-slice or iterative audit calls.
+7. Record findings with severity, exact invariant, file/symbol evidence, matrix coverage, and recommended disposition.
+8. Repair accepted findings through ordinary protected work and repeat the audit only if the policy's gate-level conditions require it.
+9. Close Issue #61 and freeze Phase 2 only after all completion-gate checkboxes and the independent audit conclusion are satisfied.
+10. Request human confirmation for any audit finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.
 
 ## End-of-work protocol
 

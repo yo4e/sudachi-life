@@ -1,6 +1,6 @@
 # Slice 42b: Rollback Lineage Epoch Boundaries
 
-Status: exact CI-green implementation candidate in draft PR #116.
+Status: merged through PR #116 as `0059e0e20ececcf9e16a9b1a4376c3564cf9c391`.
 
 ## Scope
 
@@ -38,7 +38,7 @@ Rollback restores the selected checkpoint snapshot. The pre-repair transformatio
 
 This was not filesystem corruption, retryable interruption, or a Phase 2 fixture assumption. It was deterministic temporal skew between the selected checkpoint snapshot and the exact pre-rollback archived future.
 
-Issue #117 records the defect, rejected alternatives, and minimal repair. The project owner explicitly authorized the narrowly scoped frozen-Phase-1 repair on 2026-07-28 JST before implementation continued.
+Issue #117 records the defect, rejected alternatives, and minimal repair. The project owner explicitly authorized the narrowly scoped frozen-Phase-1 repair on 2026-07-28 JST before implementation continued. Issue #117 closed after PR #116 merged the protected repair.
 
 ## Preserved implementation body
 
@@ -177,7 +177,15 @@ Implementation and regression head `685e62d4260bc686cbbb65ec1d8f41b9e28a4d14`, r
 - protected test enforcement passed;
 - schema-v1 genesis CLI smoke passed.
 
-The exact final PR head will be recorded after this durable note and continuity documents receive their final green run.
+Final exact PR head `7f9b718f8b65f71e411a5ed632257ed5609d3ede`, run 614:
+
+- dependency installation passed;
+- source and test compilation passed;
+- `365 passed in 46.13s`;
+- protected test enforcement passed;
+- schema-v1 genesis CLI smoke passed.
+
+PR #116 merged that head as `0059e0e20ececcf9e16a9b1a4376c3564cf9c391`.
 
 ## Matrix status
 
@@ -204,10 +212,10 @@ No new Phase 2 behavior remains to be designed in this slice.
 
 ## Next gate
 
-After PR #116 merges and its closeout records the exact merge and final CI head:
+After the Slice 42b closeout merges:
 
 1. map every accepted P2-A through P2-P row to its protected implementation evidence;
-2. verify all 152 Phase 1 tests remain unchanged and included;
+2. verify all 152 Phase 1 tests remain byte-unchanged and included;
 3. verify schema-v1 support and explicit-absence surfaces at the exact candidate head;
 4. assemble accepted ADRs, implementation notes, completed matrix mapping, CI evidence, and current Issues;
 5. request the single independent read-only Phase 2 implementation audit required by `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`;
