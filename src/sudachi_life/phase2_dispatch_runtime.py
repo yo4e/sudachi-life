@@ -414,7 +414,12 @@ def _require_request_checkpoint_snapshot(
     request_event_sequence = int(request_row["event_sequence"])
     snapshot = connect_database(checkpoint_dir / "organism.sqlite3", read_only=True)
     try:
-        snapshot_row, snapshot_envelope = _load_request(snapshot, request_id)
+        try:
+            snapshot_row, snapshot_envelope = _load_request(snapshot, request_id)
+        except DispatchAdmissionRejectedError as exc:
+            raise DispatchAdmissionRejectedError(
+                f"dispatch checkpoint request is invalid: {exc}"
+            ) from exc
         if snapshot_envelope != request_envelope or dict(snapshot_row) != dict(request_row):
             raise DispatchAdmissionRejectedError(
                 "dispatch checkpoint request row does not match active request"
