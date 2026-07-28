@@ -1,0 +1,44 @@
+name: Phase 2 audit closeout update
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/phase2_audit_closeout.py
+      - .github/workflows/phase2-audit-closeout.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-audit-evidence:
+    if: github.head_ref == 'agent/phase2-implementation-audit-prep'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase2-implementation-audit-prep
+          fetch-depth: 0
+
+      - name: Update audit evidence and restart state
+        run: python .github/phase2_audit_closeout.py
+
+      - name: Verify temporary repair infrastructure is absent
+        shell: bash
+        run: |
+          test ! -e .github/phase2_audit_repair.py
+          test ! -e .github/phase2_audit_repair_followup.py
+          test ! -e .github/workflows/phase2-audit-repair.yml
+          test ! -e .github/workflows/phase2-audit-repair-pr.yml
+
+      - name: Commit durable closeout state
+        shell: bash
+        run: |
+          rm .github/phase2_audit_closeout.py
+          rm .github/workflows/phase2-audit-closeout.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Record Phase 2 audit repairs and re-audit gate"
+          git push origin HEAD:agent/phase2-implementation-audit-prep
