@@ -142,28 +142,43 @@ Tests-only run 611 exposed the rollback-retention temporal-skew defect. Issue #1
 
 Durable note: `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md`.
 
-## Implementation-completion gate
+## Implementation-completion audit and repairs
 
-No additional Consultation Boundary behavior is authorized or required before the implementation-completion audit.
+Issue #120 completed the single independent read-only Phase 2 implementation audit at `44e363e874679537fef43d9f78e382ecf5dc5d3e`. It independently reconstructed the 213 accepted IDs and the unchanged 152-test Phase 1 control, then concluded **not ready to freeze; specified repairs required**.
 
-The remaining work is evidence closure and independent review:
+Issue #121 accepted four repairs without changing the accepted contract:
 
-- map every accepted P2-A through P2-P matrix row to exact protected implementation evidence;
-- verify all 152 Phase 1 tests remain byte-unchanged and included;
-- verify schema-v1 support, zero-caregiver behavior, deterministic-fixture behavior, and explicit-absence surfaces at one exact candidate head;
-- assemble accepted ADRs, implementation notes, completed matrix mapping, CI evidence, and current Issues;
-- run the single independent read-only Phase 2 implementation audit required by `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`;
-- repair only accepted findings and freeze Phase 2 only after a satisfactory completion conclusion.
+1. remove the public caller-supplied fixture callable and bind exact deterministic fixture execution;
+2. terminalize caught fixture failure through the existing `fixture_output_invalid` branch exactly once;
+3. admit and preserve canonical stable `maintenance_required` state during ingress and terminalization;
+4. validate the exact stable checkpoint artifact and registry linkage before dispatch clock or mutation.
+
+Exact repair evidence:
+
+- implementation head `6cc312a4e2ac64f866babe7cbab44aca8493b24d`;
+- ordinary CI head `579e7098e66b679c5d69baa8290e452e4ab10db6`;
+- run 636: `381 passed in 52.21s`;
+- install, source/test compilation, protected enforcement, and schema-v1 genesis CLI smoke passed;
+- original 152 Phase 1 tests remain unchanged;
+- temporary repair scripts/workflows are absent;
+- durable note: `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`.
+
+The repaired candidate adds no live caregiver, model API, human chat, network, subprocess, arbitrary code, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route. Writer categories remain exactly `organism` and `administration`.
+
+## Remaining gate
+
+The prior independent conclusion directly blocks Phase 2 freeze, and the repairs touch capability, persistence, checkpoint, and terminalization boundaries. One focused read-only completion re-audit is therefore required under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
+
+PR #119 remains open and unmerged. Issue #61 and Issue #121 remain open. Phase 2 is not frozen.
 
 ## Exact restart
 
-1. Merge the Slice 42b closeout PR, then reconstruct from updated `main`.
-2. Treat merge `0059e0e20ececcf9e16a9b1a4376c3564cf9c391` and exact head run 614 as the merged implementation baseline, subject only to closeout documentation commits.
-3. Build a complete P2-A–P2-P implementation-evidence map without weakening or reinterpreting any accepted row.
-4. Confirm the original 152 Phase 1 tests are byte-unchanged and included in the exact green candidate.
-5. Confirm no live caregiver/API/human chat, network, subprocess, memory, skill, action-adoption, arbitrary-code, or continuous-execution surface exists.
-6. Request one read-only independent Phase 2 implementation audit against one exact candidate commit; do not use per-slice or iterative audit calls.
-7. Record findings with severity, exact invariant, file/symbol evidence, matrix coverage, and recommended disposition.
-8. Repair accepted findings through ordinary protected work and repeat the audit only if the policy's gate-level conditions require it.
-9. Close Issue #61 and freeze Phase 2 only after all completion-gate checkboxes and the independent audit conclusion are satisfied.
-10. Request human confirmation for any finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.
+1. Read PR #119, Issue #120, Issue #121, the updated evidence map, and `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`.
+2. Verify the final exact PR #119 head contains the repaired implementation head `6cc312a4e2ac64f866babe7cbab44aca8493b24d`, ordinary run 636 evidence at `579e7098e66b679c5d69baa8290e452e4ab10db6`, and only documentation closeout changes afterward.
+3. Confirm all 381 protected tests, including the unchanged original 152 Phase 1 tests, are present and green.
+4. Confirm no temporary repair helper or workflow remains.
+5. Request one focused read-only completion re-audit against the final exact head.
+6. Require a conclusion of `ready to freeze`, `ready to freeze after specified documentation-only corrections`, or `not ready to freeze; specified repairs required`.
+7. Do not merge PR #119, close Issue #61/#121, or declare Phase 2 frozen before a satisfactory conclusion.
+8. After a satisfactory conclusion, merge PR #119, update final evidence and handoff, close the completion issues, and freeze Phase 2.
+9. Request human confirmation for any finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.

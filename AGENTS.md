@@ -184,29 +184,30 @@ Durable note: `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md`.
 
 ## Open gate
 
-No additional Consultation Boundary behavior is authorized or required before the implementation-completion audit.
+Issue #120 completed the single independent Phase 2 implementation audit at `44e363e874679537fef43d9f78e382ecf5dc5d3e` and found one high and three medium implementation defects. The conclusion was **not ready to freeze; specified repairs required**.
 
-The remaining gate is evidence and independent review:
+Issue #121 owns the accepted repairs. PR #119 now contains the repaired implementation and evidence:
 
-- map every accepted P2-A through P2-P matrix row to exact protected implementation evidence;
-- verify all 152 Phase 1 tests remain unchanged and included;
-- verify schema-v1 support, zero-caregiver behavior, deterministic-fixture behavior, and explicit-absence surfaces at one exact candidate head;
-- assemble accepted ADRs, implementation notes, completed matrix mapping, CI evidence, and current Issues;
-- run the single independent read-only Phase 2 implementation audit required by `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`;
-- repair only accepted findings and freeze Phase 2 only after a satisfactory completion conclusion.
+- repair implementation head `6cc312a4e2ac64f866babe7cbab44aca8493b24d`;
+- ordinary CI head `579e7098e66b679c5d69baa8290e452e4ab10db6`, run 636: `381 passed in 52.21s`;
+- install, compile, protected enforcement, and schema-v1 CLI smoke passed;
+- original 152 Phase 1 tests remain unchanged;
+- durable note: `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`.
+
+The repairs close the arbitrary caller-supplied fixture callable, terminalize caught fixture failure exactly once, admit and preserve canonical stable maintenance state during ingress/terminalization, and validate the exact stable checkpoint artifact before dispatch effects. They do not change ADR 0008–0016 or Protocol v1 meaning and add no live external capability.
+
+Because the prior audit conclusion blocks the phase gate and the repairs touch capability, persistence, checkpoint, and terminalization boundaries, one focused read-only completion re-audit is required under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`. PR #119 must remain unmerged and Issue #61/#121 must remain open until that conclusion is satisfactory.
 
 ## Exact restart point
 
-1. Merge the Slice 42b closeout PR and reconstruct from updated `main`.
-2. Treat `0059e0e20ececcf9e16a9b1a4376c3564cf9c391` and run 614 as the merged implementation baseline, subject to closeout-only documentation commits.
-3. Build a complete P2-A–P2-P implementation-evidence map without weakening or reinterpreting any accepted row.
-4. Confirm the original 152 Phase 1 tests are byte-unchanged and included in the exact green candidate.
-5. Confirm no live caregiver/API/human chat, network, subprocess, memory, skill, action-adoption, arbitrary-code, or continuous-execution surface exists.
-6. Request one read-only independent Phase 2 implementation audit against one exact candidate commit; do not use per-slice or iterative audit calls.
-7. Record findings with severity, exact invariant, file/symbol evidence, matrix coverage, and recommended disposition.
-8. Repair accepted findings through ordinary protected work and repeat the audit only if the policy's gate-level conditions require it.
-9. Close Issue #61 and freeze Phase 2 only after all completion-gate checkboxes and the independent audit conclusion are satisfied.
-10. Request human confirmation for any audit finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.
+1. Reconstruct from PR #119, Issue #120, Issue #121, and `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`.
+2. Confirm the final exact re-audit candidate includes `6cc312a4e2ac64f866babe7cbab44aca8493b24d` and run 636 evidence, plus only documentation closeout changes after `579e7098e66b679c5d69baa8290e452e4ab10db6`.
+3. Confirm all temporary repair scripts/workflows are absent and all original 152 Phase 1 tests are unchanged.
+4. Request one focused read-only completion re-audit against the final exact PR #119 head.
+5. Require the reviewer to independently inspect all four Issue #120 findings, affected cross-boundaries, the 213-ID evidence map, Phase 1 byte identity, schema-v1 support, physical accounting, authority, rollback, and explicit-absence surfaces.
+6. Do not modify or merge the candidate while the re-audit is running.
+7. If the conclusion is satisfactory, merge PR #119, close Issue #121 and Issue #61, update the final handoff, and freeze Phase 2.
+8. Request human confirmation for any new finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.
 
 ## End-of-work protocol
 

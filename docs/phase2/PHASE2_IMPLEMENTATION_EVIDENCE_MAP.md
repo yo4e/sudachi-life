@@ -1,6 +1,6 @@
 # Phase 2 Implementation Evidence Map
 
-Status: **implementation-completion candidate; independent audit not yet run**.
+Status: **implementation repair candidate; focused completion re-audit pending**.
 
 This document maps the final accepted Phase 2 Consultation Boundary evidence set to the exact protected tests and durable implementation notes present after Slice 42b. It is an audit input, not an audit conclusion and not a Phase 2 freeze decision.
 
@@ -375,3 +375,24 @@ The independent audit must still verify, against one exact candidate commit:
 ## Completion rule
 
 This map may become the input to the single read-only Phase 2 implementation audit only after its exact branch head is CI-green. Phase 2 remains open under Issue #61 until the audit concludes satisfactorily and any accepted findings are repaired through protected work.
+
+## Independent audit and accepted repair supplement
+
+The single independent read-only implementation audit in Issue #120 inspected exact candidate `44e363e874679537fef43d9f78e382ecf5dc5d3e` and concluded **not ready to freeze; specified repairs required**. Issue #121 owns the accepted repairs.
+
+Exact repair evidence:
+
+- runtime repair head: `6cc312a4e2ac64f866babe7cbab44aca8493b24d`;
+- ordinary CI candidate: `579e7098e66b679c5d69baa8290e452e4ab10db6`;
+- GitHub Actions run 636: `381 passed in 52.21s`;
+- install, source/test compilation, protected-test enforcement, and schema-v1 genesis CLI smoke passed;
+- original 152 Phase 1 tests remain unchanged;
+- durable repair note: `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`;
+- repair regressions: `tests/test_phase2_implementation_audit_repairs.py`;
+- exact audited pre-repair dispatch bytes retained outside the installed package at `docs/phase2/retained/phase2_dispatch_runtime_impl.py`, SHA-256 `ed573180a7017b9ec8b1002ec59f2376e90653ee8a4013f8b24775a80a0f80ac`.
+
+The repair evidence supplements the existing row mapping without changing any accepted ID or requirement meaning. In particular it strengthens the mapped evidence for the Phase 1 capability-isolation boundary, exact deterministic-fixture dispatch and charge boundary, stable-checkpoint admission, package ingress and terminalization, maintenance-state preservation, interrupted-dispatch reconciliation, and explicit absence of arbitrary caller-selected execution.
+
+The repaired candidate adds no live caregiver, model API, human chat, network, subprocess, arbitrary code, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route. Canonical writer categories remain exactly `organism` and `administration`.
+
+This map remains an audit input. It does not declare the repairs accepted by an independent reviewer and does not freeze Phase 2. One focused read-only completion re-audit is required before PR #119 may merge or Issue #61 may close.
