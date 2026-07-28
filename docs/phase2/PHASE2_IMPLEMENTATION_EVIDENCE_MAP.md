@@ -1,6 +1,6 @@
 # Phase 2 Implementation Evidence Map
 
-Status: **implementation repair candidate; focused completion re-audit pending**.
+Status: **Finding 4 repair candidate; final focused closure audit pending**.
 
 This document maps the final accepted Phase 2 Consultation Boundary evidence set to the exact protected tests and durable implementation notes present after Slice 42b. It is an audit input, not an audit conclusion and not a Phase 2 freeze decision.
 
@@ -55,10 +55,11 @@ Unlisted base-matrix rows remain in force. A later amendment is authoritative on
 | `FINITE` | `tests/test_phase2_finite_cycle_boundaries.py` | PR #114; `docs/phase2/SLICE42A_FINITE_CYCLE_BOUNDARIES.md` |
 | `ROLLBACK` | `tests/test_phase2_rollback_lineage_boundaries.py`; `tests/test_rollback_retention_reconciliation.py` | PR #116; `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md` |
 | `ABSENCE` | `tests/test_phase2_explicit_absence.py` | audit-preparation branch; package AST/import, CLI, schema/status/configuration, and selector/executor isolation |
+| `REPAIR-F4` | `tests/test_phase2_implementation_audit_repairs.py` | Issue #123; exact manifest fields, active-organism binding, request-row/event snapshot equality, and coherent adversarial substitutions |
 
 ## Row-by-row mapping
 
-Every status below means **mapped to protected evidence; independent implementation audit pending**. It does not mean the audit has accepted the evidence or that Phase 2 is frozen.
+Every status below means **mapped to protected evidence; final focused closure audit pending**. It does not mean the remaining Finding 4 closure has been independently accepted or that Phase 2 is frozen.
 
 ### A. Frozen Phase 1 baseline
 
@@ -376,23 +377,25 @@ The independent audit must still verify, against one exact candidate commit:
 
 This map may become the input to the single read-only Phase 2 implementation audit only after its exact branch head is CI-green. Phase 2 remains open under Issue #61 until the audit concludes satisfactorily and any accepted findings are repaired through protected work.
 
-## Independent audit and accepted repair supplement
+## Independent audits and accepted repair supplement
 
-The single independent read-only implementation audit in Issue #120 inspected exact candidate `44e363e874679537fef43d9f78e382ecf5dc5d3e` and concluded **not ready to freeze; specified repairs required**. Issue #121 owns the accepted repairs.
+Issue #120 inspected exact candidate `44e363e874679537fef43d9f78e382ecf5dc5d3e` and concluded **not ready to freeze; specified repairs required**. Issue #121 owns its accepted repairs.
 
-Exact repair evidence:
+Issue #122 inspected exact candidate `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`. It independently confirmed Findings 1–3 closed, all 47 original Phase 1 test/helper blobs byte-identical, the 152-test control green, the full 381-test suite green, the 213-ID set exact, schema-v1 support intact, and the explicit-absence surface intact. It still concluded **not ready to freeze; specified repairs required** because Finding 4 lacked active-organism, exact-manifest-field, and exact request snapshot linkage.
 
-- runtime repair head: `6cc312a4e2ac64f866babe7cbab44aca8493b24d`;
-- ordinary CI candidate: `579e7098e66b679c5d69baa8290e452e4ab10db6`;
-- GitHub Actions run 636: `381 passed in 52.21s`;
-- install, source/test compilation, protected-test enforcement, and schema-v1 genesis CLI smoke passed;
-- original 152 Phase 1 tests remain unchanged;
-- durable repair note: `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`;
-- repair regressions: `tests/test_phase2_implementation_audit_repairs.py`;
-- exact audited pre-repair dispatch bytes retained outside the installed package at `docs/phase2/retained/phase2_dispatch_runtime_impl.py`, SHA-256 `ed573180a7017b9ec8b1002ec59f2376e90653ee8a4013f8b24775a80a0f80ac`.
+Issue #123 adds the following `REPAIR-F4` evidence without changing any accepted ID or requirement meaning:
 
-The repair evidence supplements the existing row mapping without changing any accepted ID or requirement meaning. In particular it strengthens the mapped evidence for the Phase 1 capability-isolation boundary, exact deterministic-fixture dispatch and charge boundary, stable-checkpoint admission, package ingress and terminalization, maintenance-state preservation, interrupted-dispatch reconciliation, and explicit absence of arbitrary caller-selected execution.
+- exact 18-field checkpoint manifest enforcement;
+- `manifest.organism_id` and validated snapshot organism binding to the active organism/request;
+- complete checkpoint request row/envelope equality with the active request;
+- complete checkpoint `consultation_request_created` event equality with the active event;
+- coherent wrong-organism substitution rejection;
+- registry-linked undeclared manifest field rejection;
+- missing request row and mismatched request event rejection;
+- zero clock, dispatch, charge, admission-event, terminal, completion, or fixture effects on every rejection.
 
-The repaired candidate adds no live caregiver, model API, human chat, network, subprocess, arbitrary code, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route. Canonical writer categories remain exactly `organism` and `administration`.
+Exact Finding 4 implementation head: `9814908aae2646f4c09142030b7381e5f9a1394b`. Strict isolated validation: `385 passed in 54.25s`, plus install and source/test compilation. The shared frozen Phase 1 validator and original Phase 1 test/helper blobs are unchanged. Temporary repair infrastructure is absent.
 
-This map remains an audit input. It does not declare the repairs accepted by an independent reviewer and does not freeze Phase 2. One focused read-only completion re-audit is required before PR #119 may merge or Issue #61 may close.
+This supplement strengthens P2-F02, P2-O20, ADR 0008's stable request-checkpoint admission boundary, and the existing dispatch/physical/explicit-absence evidence. It does not add live capability, authority, schema, resource, or protocol behavior.
+
+This map remains an audit input. One final focused read-only closure audit must independently verify Finding 4 and regression across the complete gate before PR #119 may merge or Issue #61 may close. Phase 2 is not frozen.

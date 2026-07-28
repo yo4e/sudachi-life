@@ -1,6 +1,6 @@
 # Slice 42c: Phase 2 Implementation-Audit Repairs
 
-Status: **repair candidate complete; focused completion re-audit pending**.
+Status: **Finding 4 repair complete; final focused closure audit pending**.
 
 ## Gate origin
 
@@ -107,3 +107,24 @@ Because Issue #120 directly blocked the Phase 2 completion gate and the repairs 
 The commit containing this final evidence synchronization is the proposed re-audit candidate. Its exact SHA and ordinary CI run are fixed in the focused re-audit Issue. Do not modify or merge that candidate while the re-audit is running.
 
 Do not merge PR #119, close Issue #61 or Issue #121, or declare Phase 2 frozen until the focused re-audit conclusion is satisfactory.
+
+## Focused re-audit and remaining Finding 4 closure
+
+Issue #122 independently audited exact candidate `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`. It confirmed Findings 1–3 fully resolved, but found that Finding 4 was only partially closed: a coherently relinked checkpoint belonging to another organism and a manifest containing an undeclared field could still pass dispatch admission, and the selected snapshot was not required to contain the exact active request row/event.
+
+Issue #123 closes that gap only in `phase2_dispatch_runtime.py`; the shared frozen Phase 1 checkpoint validator remains unchanged.
+
+The Phase 2 admission check now requires:
+
+- the exact 18-field checkpoint manifest set;
+- manifest/snapshot organism identity equal to the active organism and request;
+- byte-equivalent canonical request envelope and complete request-row equality between active and snapshot databases;
+- complete equality of the linked `consultation_request_created` event between active and snapshot databases;
+- all previously accepted ID, lineage, boundary, digest, size, registry, SQLite integrity, canonical-state, store, working-set, and pre-mutation checks.
+
+New coherent adversarial regressions cover wrong-organism artifact substitution, an undeclared manifest field with a matching registry SHA, a missing snapshot request row, and a mismatched snapshot request event. Each rejects before clock read with zero dispatch, charge, admission event, terminal, completion, or fixture effect.
+
+Exact implementation head: `9814908aae2646f4c09142030b7381e5f9a1394b`. Strict validation: `385 passed in 54.25s`, plus install and source/test compilation. All temporary repair helpers/workflows are absent from the implementation head.
+
+One final focused read-only closure audit is required before merge or Phase 2 freeze.
+

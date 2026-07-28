@@ -142,43 +142,48 @@ Tests-only run 611 exposed the rollback-retention temporal-skew defect. Issue #1
 
 Durable note: `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md`.
 
-## Implementation-completion audit and repairs
+## Implementation-completion audits and repairs
 
-Issue #120 completed the single independent read-only Phase 2 implementation audit at `44e363e874679537fef43d9f78e382ecf5dc5d3e`. It independently reconstructed the 213 accepted IDs and the unchanged 152-test Phase 1 control, then concluded **not ready to freeze; specified repairs required**.
+Issue #120 audited exact candidate `44e363e874679537fef43d9f78e382ecf5dc5d3e` and concluded **not ready to freeze; specified repairs required**. Issue #121 accepted four repairs without changing the accepted contract.
 
-Issue #121 accepted four repairs without changing the accepted contract:
+Issue #122 then audited exact candidate `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`. Independent evidence confirmed:
 
-1. remove the public caller-supplied fixture callable and bind exact deterministic fixture execution;
-2. terminalize caught fixture failure through the existing `fixture_output_invalid` branch exactly once;
-3. admit and preserve canonical stable `maintenance_required` state during ingress and terminalization;
-4. validate the exact stable checkpoint artifact and registry linkage before dispatch clock or mutation.
+- Findings 1–3 fully resolved;
+- exactly 213 accepted IDs and evidence-map IDs;
+- all 47 original Phase 1 test/helper blobs byte-identical to the Phase 1 audit baseline;
+- independent `152 passed` Phase 1 control and `381 passed` full suite;
+- schema-v1 installed CLI support and explicit capability absence.
 
-Exact repair evidence:
+Issue #122 still concluded **not ready to freeze; specified repairs required** because Finding 4 remained partially open. A coherently linked checkpoint from another organism and a manifest with an undeclared field could still certify dispatch, and the selected snapshot was not required to contain the exact active request row/event.
 
-- implementation head `6cc312a4e2ac64f866babe7cbab44aca8493b24d`;
-- ordinary CI head `579e7098e66b679c5d69baa8290e452e4ab10db6`;
-- run 636: `381 passed in 52.21s`;
-- install, source/test compilation, protected enforcement, and schema-v1 genesis CLI smoke passed;
-- original 152 Phase 1 tests remain unchanged;
-- temporary repair scripts/workflows are absent;
-- durable note: `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`.
+Issue #123 owns the narrow Phase 2-only closure. The repair:
 
-The repaired candidate adds no live caregiver, model API, human chat, network, subprocess, arbitrary code, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route. Writer categories remain exactly `organism` and `administration`.
+1. requires the exact 18-field checkpoint manifest schema;
+2. binds manifest/snapshot organism ID to the active organism and request;
+3. requires the checkpoint snapshot's complete `consultation_request` row and validated envelope to equal the active row/envelope;
+4. requires the snapshot's complete linked `consultation_request_created` event to equal the active event;
+5. retains all existing directory, digest, size, ID, lineage, boundary, registry, SQLite integrity, canonical state, checkpoint-store, working-set, charge, and no-partial-effect checks.
+
+Protected adversarial evidence now covers coherent wrong-organism substitution, a registry-linked undeclared manifest field, a missing request row, and a mismatched request event. Every case rejects before clock read with zero dispatch, charge, admission event, terminal, completion, or fixture effect.
+
+Exact Finding 4 implementation head: `9814908aae2646f4c09142030b7381e5f9a1394b`. Strict isolated validation: `385 passed in 54.25s`, plus install and source/test compilation. The shared frozen Phase 1 checkpoint validator and all original Phase 1 tests/helpers are unchanged. Temporary repair scripts/workflows are absent.
+
+The repaired candidate adds no live caregiver, model API, human chat, network, subprocess, arbitrary code, caller-selected callable, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route. Writer categories remain exactly `organism` and `administration`.
 
 ## Remaining gate
 
-The prior independent conclusion directly blocks Phase 2 freeze, and the repairs touch capability, persistence, checkpoint, and terminalization boundaries. One focused read-only completion re-audit is therefore required under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
+PR #119 remains open and unmerged. Issues #61, #121, and #123 remain open. Phase 2 is not frozen.
 
-PR #119 remains open and unmerged. Issue #61 and Issue #121 remain open. Phase 2 is not frozen.
+Because Issue #122 directly blocked the completion gate, one final focused read-only closure audit is required at one exact ordinary-CI-green PR #119 head. The audit must independently close Finding 4 and verify no regression of Findings 1–3 or the complete Phase 2 boundary.
 
 ## Exact restart
 
-1. Read PR #119, Issue #120, Issue #121, the updated evidence map, and `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`.
-2. Verify the final exact PR #119 head contains the repaired implementation head `6cc312a4e2ac64f866babe7cbab44aca8493b24d`, ordinary run 636 evidence at `579e7098e66b679c5d69baa8290e452e4ab10db6`, and only documentation closeout changes afterward.
-3. Confirm all 381 protected tests, including the unchanged original 152 Phase 1 tests, are present and green.
-4. Confirm no temporary repair helper or workflow remains.
-5. Request one focused read-only completion re-audit against the final exact head.
+1. Read PR #119; Issues #61/#120/#121/#122/#123; the updated evidence map; and `docs/phase2/SLICE42C_IMPLEMENTATION_AUDIT_REPAIRS.md`.
+2. Verify the final PR #119 candidate contains Finding 4 implementation head `9814908aae2646f4c09142030b7381e5f9a1394b` and only durable documentation closeout changes afterward.
+3. Confirm all 385 protected tests, including the unchanged original 152 Phase 1 tests, pass under ordinary CI and schema-v1 CLI smoke passes.
+4. Confirm all temporary repair helpers/workflows are absent and all 47 original Phase 1 test/helper blobs remain byte-identical.
+5. Request one final focused read-only closure audit against the exact fixed head.
 6. Require a conclusion of `ready to freeze`, `ready to freeze after specified documentation-only corrections`, or `not ready to freeze; specified repairs required`.
-7. Do not merge PR #119, close Issue #61/#121, or declare Phase 2 frozen before a satisfactory conclusion.
+7. Do not merge PR #119, close Issues #61/#121/#123, or declare Phase 2 frozen before a satisfactory conclusion.
 8. After a satisfactory conclusion, merge PR #119, update final evidence and handoff, close the completion issues, and freeze Phase 2.
 9. Request human confirmation for any finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.
