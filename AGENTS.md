@@ -61,7 +61,7 @@ The pre-request-extension garden wake remains byte-identical in `lifecycle_impl.
 
 ## Accepted Phase 2 boundary
 
-ADRs 0008–0016, Consultation Protocol v1, the ADR 0010–0016 matrix amendments, and the Phase 2 matrix form one accepted design package after the ADR 0015/0016 documentation PR merges. Issue #61 owns implementation.
+ADRs 0008–0016, Consultation Protocol v1, the ADR 0010–0016 matrix amendments, and the Phase 2 matrix form one accepted design package. Issue #61 owns implementation.
 
 Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
 
@@ -130,8 +130,7 @@ The prior request constructor remains byte-identical in `phase2_request_impl.py`
 - ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 closed.
 - ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 closed.
 - ADR 0014: PR #110, merge `b5d1ae3ae9ed46855f285c8539e4c2ed7891dbc3`; Issue #109 closed. It fixes P2-E10 to the exact eight-parent eligible request path.
-- ADR 0015: delegated adoption of Issue #111 fixes the exact noncanonical fifth-request reason `consultation_request_not_created_lineage_request_limit`. Documentation merge is pending.
-- ADR 0016: delegated adoption of Issue #112 separates the exact pure 64 KiB/one-over arithmetic guard from the smaller legal closed-v1 four-cycle maximum. Documentation merge is pending.
+- ADRs 0015 and 0016: PR #113, merge `fc194cba5f90d0c0c1f81907646f4e661dc80bc7`; Issues #111/#112 closed. They fix the exact fifth-request refusal and separate the pure 64 KiB/one-over guard from the legal closed-v1 maximum.
 
 ### Slice 39a — dispatch admission and fixture boundary
 
@@ -159,31 +158,37 @@ It implements exact current-state/disposition identities and envelope, all six p
 
 Durable note: `docs/phase2/SLICE41_DISPOSITION_WAKE.md`.
 
-## Finite-boundary clarifications for Slice 42
+### Slice 42a — finite consultation cycle boundaries
 
-- The legal largest ordinal-four request uses exactly the eight ADR 0014 current-lifecycle parents.
-- An otherwise eligible fifth request returns the exact ADR 0015 typed result and creates no consultation mutation.
-- The 64 KiB hard limit and 65537 rejection are proven in ADR 0016's pure accounting function.
-- The separate legal maximum fixture reaches four complete public cycles, measures the largest closed-v1 packages, and proves the real current-lineage sum remains below 64 KiB without filler or direct mutation.
-- Accepted rollback starts fresh request, charge, and logical-payload epochs for the new current lineage; old rows remain immutable history.
+PR #114 merged as `716834b9bd3200989db2d078fb8c108b499a09b9`.
+
+Final exact PR head `1cbfbb8dd0e649d0e83570ffd9c05baecff39619`, run 607: `360 passed in 115.98s` plus install, compile, and schema-v1 CLI smoke.
+
+It closes legitimate request ordinals one through four, the exact noncanonical fifth refusal, four conservative charges with no fifth invocation, the ADR 0014 eight-parent largest structural request, the pure 65536/65537 accounting guard, the measured legal closed-v1 payload maximum, ordinary checkpoint and physical-limit evidence, and no-private-mutation proof.
+
+The pre-ADR 0016 ingress runtime and retained request constructor remain byte-identical in their explicit `*_impl.py` modules.
+
+Durable note: `docs/phase2/SLICE42A_FINITE_CYCLE_BOUNDARIES.md`.
 
 ## Open boundaries
 
-- P2-D07/D08, P2-E10, P2-F08, P2-J09/J10, and full four-request/four-charge reconstruction require legitimate repeated cycles.
-- Rollback must prove fresh current-lineage epochs and fail-closed old-lineage late packages/proposals.
-- Complete event/export/authority/physical/absence closure remains before the one implementation-completion audit.
+- P2-J10 and P2-M08–P2-M11 require one accepted rollback through the public path, a fresh request/charge/logical-payload epoch, and historical inactive old-lineage rows.
+- Old-lineage unresolved work must not block current-lineage work, and late old-lineage packages/proposals must fail before mutation.
+- P2-M10 and ADR 0007 require the full two-lineage maximum of eight charged invocations and rejection of a second completed rollback.
+- Complete event export, authority/ancestry reconstruction, rollback artifact preservation, physical accounting, and remaining explicit-absence review remain before the implementation-completion audit.
 
 ## Exact restart point
 
-1. Merge ADR 0015/0016 documentation and close Issues #111/#112.
-2. Implement Slice 42 test-first using only legitimate repeated request→dispatch→ingress/terminal→disposition cycles and the accepted rollback path.
-3. Add the exact fifth-request typed result without changing the retained constructor body.
-4. Add and use the pure logical-payload accounting function; prove 65536/65537 and the legal four-cycle maximum.
-5. Close ordinal/charge limits, ADR 0014 largest request, rollback lineage reset, old-lineage rejection, complete reconstruction, and remaining physical/absence evidence.
-6. Do not manufacture ordinals, charges, dispositions, lineage rows, events, parents, packages, or payload size through private canonical mutation.
-7. Keep all 152 Phase 1 tests unchanged and passing.
-8. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
-9. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
+1. Merge the Slice 42a closeout PR, then begin Slice 42b test-first from updated `main`.
+2. Build legitimate pre-rollback consultation history only through public request, dispatch, ingress/terminalization, disposition, ordinary wake, checkpoint, and maintenance operations.
+3. Invoke the accepted public rollback path once; do not alter the frozen rollback transformation or manufacture lineage state.
+4. Prove the new current lineage starts with request ordinal one, zero current-lineage logical bytes before its first request, and a fresh four-request/four-charge epoch while all old rows remain immutable historical evidence.
+5. Prove old-lineage unresolved work does not block current work, late old-lineage packages fail before mutation, and old-lineage proposals are excluded from disposition selection.
+6. Prove at most eight charged invocations across the two allowed epochs, preserve rollback archive/source/transformed-candidate/completion evidence, and reject a second completed rollback under ADR 0007.
+7. Reconstruct consultation rows, events, parents, authority, checkpoint/rollback artifacts, and physical totals across both lineages without private canonical mutation.
+8. Keep all 152 Phase 1 tests unchanged and passing.
+9. Use routine clarification delegation only within its documented limits; request human confirmation for material boundary changes.
+10. Do not use Codex until every accepted Phase 2 requirement has protected evidence and one exact CI-green completion candidate is ready.
 
 ## End-of-work protocol
 
