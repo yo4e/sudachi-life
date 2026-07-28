@@ -27,6 +27,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          sed -i 's/dfda290b508dba16c802f084f564f1d8a8c68d0e/ed573180a7017b9ec8b1002ec59f2376e90653ee8a4013f8b24775a80a0f80ac/g' .github/phase2_audit_repair.py
           set +e
           python .github/phase2_audit_repair.py > /tmp/apply.log 2>&1
           status=$?
