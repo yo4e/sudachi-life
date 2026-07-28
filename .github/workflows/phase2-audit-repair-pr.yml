@@ -22,8 +22,27 @@ jobs:
           ref: agent/phase2-implementation-audit-prep
           fetch-depth: 0
 
-      - name: Apply accepted audit repairs
-        run: python .github/phase2_audit_repair.py
+      - name: Apply accepted audit repairs or report precondition failure
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          python .github/phase2_audit_repair.py > /tmp/apply.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo '## Standalone repair precondition failure'
+              echo
+              echo 'No generated repair was committed.'
+              echo
+              echo '```text'
+              cat /tmp/apply.log
+              echo '```'
+            } > /tmp/apply.md
+            gh issue comment 121 --repo yo4e/sudachi-life --body-file /tmp/apply.md
+            exit 1
+          fi
 
       - name: Compile repaired source and tests
         run: python -m compileall -q src tests
