@@ -45,8 +45,27 @@ jobs:
             exit 1
           fi
 
-      - name: Compile repaired source and tests
-        run: python -m compileall -q src tests
+      - name: Compile repaired source and tests or report failure
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          python -m compileall -q src tests > /tmp/compile.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo '## Standalone repair compile failure'
+              echo
+              echo 'No generated repair was committed.'
+              echo
+              echo '```text'
+              cat /tmp/compile.log
+              echo '```'
+            } > /tmp/compile.md
+            gh issue comment 121 --repo yo4e/sudachi-life --body-file /tmp/compile.md
+            exit 1
+          fi
 
       - name: Install and run repaired protected suite
         shell: bash
