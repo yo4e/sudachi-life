@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/phase2-audit-repair-pr.yml
       - .github/phase2_audit_repair.py
+      - .github/phase2_audit_repair_followup.py
 
 permissions:
   contents: write
@@ -22,122 +23,28 @@ jobs:
           ref: agent/phase2-implementation-audit-prep
           fetch-depth: 0
 
-      - name: Apply accepted audit repairs or report precondition failure
+      - name: Apply accepted audit repairs
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           sed -i 's/dfda290b508dba16c802f084f564f1d8a8c68d0e/ed573180a7017b9ec8b1002ec59f2376e90653ee8a4013f8b24775a80a0f80ac/g' .github/phase2_audit_repair.py
           sed -i 's/b"\\n"/b"\\\\n"/g; s/+ "\\n",/+ "\\\\n",/g' .github/phase2_audit_repair.py
-          sed -i 's/{"fixture_exception", "probe_lock_released"}/{"exit_after_admission", "fixture_exception", "probe_lock_released"}/' .github/phase2_audit_repair.py
-          python - <<'PY'
-          from pathlib import Path
+          python .github/phase2_audit_repair.py
+          python .github/phase2_audit_repair_followup.py
 
-          path = Path('.github/phase2_audit_repair.py')
-          text = path.read_text(encoding='utf-8')
-          needle = '''        if fixture_fault == "fixture_exception":
-            raise RuntimeError("protected deterministic fixture failure")
-'''
-          replacement = '''        if fixture_fault == "exit_after_admission":
-            raise SystemExit(23)
-        if fixture_fault == "fixture_exception":
-            raise RuntimeError("protected deterministic fixture failure")
-'''
-          if text.count(needle) != 1:
-              raise SystemExit('closed crash probe insertion point mismatch')
-          path.write_text(text.replace(needle, replacement, 1), encoding='utf-8')
-          PY
-          set +e
-          python .github/phase2_audit_repair.py > /tmp/apply.log 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            {
-              echo '## Standalone repair precondition failure'
-              echo
-              echo 'No generated repair was committed.'
-              echo
-              echo '```text'
-              cat /tmp/apply.log
-              echo '```'
-            } > /tmp/apply.md
-            gh issue comment 121 --repo yo4e/sudachi-life --body-file /tmp/apply.md
-            exit 1
-          fi
-          python - <<'PY'
-          from pathlib import Path
-          import re
+      - name: Compile repaired source and tests
+        run: python -m compileall -q src tests
 
-          path = Path('tests/test_phase2_ingress_terminalization_boundaries.py')
-          text = path.read_text(encoding='utf-8')
-          text = text.replace('import os\n', '')
-          text, count = re.subn(
-              r'\n\ndef _exit_fixture\(_request: dict\[str, object\], _case: str\) -> bytes:\n    os\._exit\(23\)\n',
-              '',
-              text,
-              count=1,
-          )
-          if count != 1:
-              raise SystemExit('legacy exit fixture definition mismatch')
-          if text.count('fixture_runner=_exit_fixture,') != 1:
-              raise SystemExit('legacy exit fixture call mismatch')
-          text = text.replace(
-              'fixture_runner=_exit_fixture,',
-              'protected_test_fault="exit_after_admission",',
-              1,
-          )
-          path.write_text(text, encoding='utf-8')
-          PY
-
-      - name: Compile repaired source and tests or report failure
+      - name: Install and run repaired protected suite
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set +e
-          python -m compileall -q src tests > /tmp/compile.log 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            {
-              echo '## Standalone repair compile failure'
-              echo
-              echo 'No generated repair was committed.'
-              echo
-              echo '```text'
-              cat /tmp/compile.log
-              echo '```'
-            } > /tmp/compile.md
-            gh issue comment 121 --repo yo4e/sudachi-life --body-file /tmp/compile.md
-            exit 1
-          fi
-
-      - name: Install and run repaired protected suite or report failures
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           python -m pip install --quiet -e ".[dev]"
-          set +e
-          pytest -q --tb=short > /tmp/pytest.log 2>&1
-          status=$?
-          cat /tmp/pytest.log
-          if [ "$status" -ne 0 ]; then
-            {
-              echo '## Repaired protected-suite failure'
-              echo
-              echo 'No generated repair was committed.'
-              echo
-              echo '```text'
-              tail -n 260 /tmp/pytest.log
-              echo '```'
-            } > /tmp/pytest.md
-            gh issue comment 121 --repo yo4e/sudachi-life --body-file /tmp/pytest.md
-            exit 1
-          fi
+          pytest -q --tb=short
 
       - name: Commit only the green repair candidate
         shell: bash
         run: |
           rm .github/phase2_audit_repair.py
+          rm .github/phase2_audit_repair_followup.py
           rm .github/workflows/phase2-audit-repair.yml
           rm .github/workflows/phase2-audit-repair-pr.yml
           git config user.name "github-actions[bot]"
