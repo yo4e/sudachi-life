@@ -16,11 +16,14 @@ Issue #121 owns the accepted repairs. The findings did not change the accepted A
 - repair implementation head: `6cc312a4e2ac64f866babe7cbab44aca8493b24d`;
 - isolated green repair run: GitHub Actions repair-driver run 14;
 - protected suite at that head: **381 tests passed**;
-- source and test compilation: passed;
+- ordinary CI evidence head: `579e7098e66b679c5d69baa8290e452e4ab10db6`;
+- ordinary GitHub Actions run 636: `381 passed in 52.21s`;
+- install, source/test compilation, protected-test enforcement, and schema-v1 genesis CLI smoke: passed;
 - original 152 Phase 1 tests: unchanged;
-- temporary repair scripts and workflows: absent from the repaired head.
+- temporary repair and closeout scripts and workflows: absent from the repaired candidate;
+- durable evidence closeout head: `6546c079520981e99668dd4ed1c46473d503cc73`.
 
-The repaired head remains on PR #119 and is not merged. Issue #61 remains open. Phase 2 is not frozen.
+The repaired candidate remains on PR #119 and is not merged. Issue #61 and Issue #121 remain open. Phase 2 is not frozen.
 
 ## Accepted repair 1: closed fixture execution surface
 
@@ -101,11 +104,6 @@ Canonical writer categories remain exactly `organism` and `administration`. Fixt
 
 Because Issue #120 directly blocked the Phase 2 completion gate and the repairs touch capability, persistence, checkpoint, and terminalization boundaries, `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md` requires one focused read-only completion re-audit at the final exact repair candidate.
 
-Before requesting that re-audit:
-
-1. obtain ordinary protected CI on the final candidate head;
-2. update the implementation evidence map, `AGENTS.md`, and `docs/HANDOFF.md` with the exact repaired head and CI evidence;
-3. update PR #119 and Issues #61/#120/#121;
-4. fix one exact re-audit candidate and do not modify or merge it during review.
+The commit containing this final evidence synchronization is the proposed re-audit candidate. Its exact SHA and ordinary CI run are fixed in the focused re-audit Issue. Do not modify or merge that candidate while the re-audit is running.
 
 Do not merge PR #119, close Issue #61 or Issue #121, or declare Phase 2 frozen until the focused re-audit conclusion is satisfactory.
