@@ -73,13 +73,77 @@ def _require_logical_payload_capacity(
     )
 
 
+def _require_common_state(
+    connection,
+    paths,
+    *,
+    organism,
+    request: dict[str, object],
+    dispatch: dict[str, object],
+) -> None:
+    """Admit exact stable sleeping or maintenance evidence-recording states."""
+
+    if int(organism["schema_version"]) != _impl.PHASE2_SCHEMA_VERSION:
+        raise _impl.IngressRejectedError("consultation ingress requires schema-v2")
+    status = organism["status"]
+    maintenance_reason = organism["maintenance_reason"]
+    if status not in {"sleeping", "maintenance_required"} or bool(
+        organism["checkpoint_pending"]
+    ):
+        raise _impl.IngressRejectedError(
+            "consultation ingress requires a stable sleeping or maintenance state "
+            "with no pending checkpoint"
+        )
+    if status == "sleeping" and maintenance_reason is not None:
+        raise _impl.IngressRejectedError(
+            "sleeping consultation ingress has an unexpected maintenance reason"
+        )
+    if status == "maintenance_required" and maintenance_reason is None:
+        raise _impl.IngressRejectedError(
+            "maintenance consultation ingress is missing its reason"
+        )
+    if request["configuration_version"] != _impl.FIXTURE_CONFIGURATION_VERSION:
+        raise _impl.IngressRejectedError(
+            "consultation ingress requires fixture configuration"
+        )
+    if int(request["lineage_generation"]) != int(organism["lineage_generation"]):
+        raise _impl.IngressRejectedError(
+            "consultation work is not in the current lineage"
+        )
+    if dispatch["lineage_generation"] != request["lineage_generation"]:
+        raise _impl.IngressRejectedError("dispatch lineage does not match request")
+    if dispatch["organism_id"] != organism["organism_id"]:
+        raise _impl.IngressRejectedError(
+            "dispatch organism does not match canonical organism"
+        )
+    if dispatch["request_id"] != request["request_id"]:
+        raise _impl.IngressRejectedError("dispatch request linkage does not match")
+    _impl.ensure_active_database_within_limit(
+        connection,
+        context="consultation ingress preflight",
+    )
+    _impl.ensure_active_database_has_wake_reserve(
+        connection,
+        context="consultation ingress preflight",
+    )
+    _impl.ensure_checkpoint_store_within_limit(
+        paths,
+        context="consultation ingress preflight",
+    )
+    _impl.ensure_runtime_working_set_within_limit(
+        paths,
+        context="consultation ingress preflight",
+    )
+
+
 _impl._require_logical_payload_capacity = _require_logical_payload_capacity
+_impl._require_common_state = _require_common_state
 
 for _name, _value in vars(_impl).items():
     if not _name.startswith("__"):
         globals()[_name] = _value
 
-# Restore the public helper after re-exporting implementation globals.
+# Restore the public helpers after re-exporting implementation globals.
 globals()["validate_lineage_payload_projection"] = validate_lineage_payload_projection
 globals()["LOGICAL_PAYLOAD_LIMIT_BYTES"] = LOGICAL_PAYLOAD_LIMIT_BYTES
 
