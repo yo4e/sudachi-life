@@ -1,0 +1,470 @@
+name: Phase 2 audit repair application
+
+on:
+  push:
+    branches:
+      - agent/phase2-implementation-audit-prep
+    paths:
+      - .github/workflows/phase2-audit-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-repairs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase2-implementation-audit-prep
+          fetch-depth: 0
+
+      - name: Apply accepted audit repairs and protected regressions
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          dispatch_path = Path("src/sudachi_life/phase2_dispatch_runtime.py")
+          text = dispatch_path.read_text(encoding="utf-8")
+          text = text.replace(
+              "from dataclasses import dataclass\nimport json",
+              "from dataclasses import dataclass\nimport hashlib\nimport json",
+          )
+          text = text.replace("from typing import Callable, Final", "from typing import Final")
+          text = text.replace(
+              "from .clock import Clock, RealClock",
+              "from .checkpoints import validate_checkpoint_directory\nfrom .clock import Clock, RealClock",
+          )
+          text = text.replace(
+              "from .errors import OrganismNotFoundError, SchemaValidationError, SudachiError",
+              "from .errors import (\n    CheckpointError,\n    OrganismNotFoundError,\n    SchemaValidationError,\n    SudachiError,\n)",
+          )
+          text = text.replace(
+              "from .phase2_fixture import run_deterministic_fixture",
+              "from .phase2_fixture import run_deterministic_fixture\n"
+              "from .phase2_ingress_runtime import terminalize_fixture_dispatch",
+          )
+          text = text.replace(
+              "\n\nFixtureRunner = Callable[[dict[str, object], str], bytes]\n",
+              "",
+          )
+          text = text.replace(
+              '        "SELECT lineage_generation, event_sequence FROM checkpoint_registry "\n'
+              '        "WHERE checkpoint_id=?",',
+              '        "SELECT lineage_generation, event_sequence, manifest_sha256, "\n'
+              '        "database_sha256, database_size_bytes FROM checkpoint_registry "\n'
+              '        "WHERE checkpoint_id=?",',
+          )
+          old_artifact = '''    if not (paths.checkpoints / str(latest_checkpoint_id)).is_dir():
+        raise DispatchAdmissionRejectedError("dispatch stable checkpoint artifact is missing")
+'''
+          new_artifact = '''    checkpoint_dir = paths.checkpoints / str(latest_checkpoint_id)
+    if not checkpoint_dir.is_dir():
+        raise DispatchAdmissionRejectedError("dispatch stable checkpoint artifact is missing")
+    try:
+        manifest = validate_checkpoint_directory(checkpoint_dir)
+    except CheckpointError as exc:
+        raise DispatchAdmissionRejectedError(str(exc)) from exc
+    if manifest.get("checkpoint_id") != latest_checkpoint_id:
+        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest ID mismatch")
+    if int(manifest.get("lineage_generation", -1)) != int(registry["lineage_generation"]):
+        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest lineage mismatch")
+    if int(manifest.get("event_sequence", -1)) != int(registry["event_sequence"]):
+        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest boundary mismatch")
+    if manifest.get("database_sha256") != registry["database_sha256"]:
+        raise DispatchAdmissionRejectedError("dispatch checkpoint database digest mismatch")
+    if int(manifest.get("database_size_bytes", -1)) != int(
+        registry["database_size_bytes"]
+    ):
+        raise DispatchAdmissionRejectedError("dispatch checkpoint database size mismatch")
+    manifest_sha = hashlib.sha256((checkpoint_dir / "manifest.json").read_bytes()).hexdigest()
+    if manifest_sha != registry["manifest_sha256"]:
+        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest digest mismatch")
+'''
+          if old_artifact not in text:
+              raise SystemExit("stable checkpoint artifact block not found")
+          text = text.replace(old_artifact, new_artifact)
+
+          prefix, tail = text.split("def perform_fixture_dispatch(\n", 1)
+          _old_function, suffix = tail.split("\n\n__all__ = [", 1)
+          new_function = '''def _terminalize_fixture_failure(
+    runtime_root: Path | str,
+    organism_id: str,
+    *,
+    admission: DispatchAdmissionResult,
+    raw_package_bytes: bytes,
+    clock: Clock | None,
+) -> None:
+    terminalize_fixture_dispatch(
+        runtime_root,
+        organism_id,
+        dispatch_id=admission.dispatch_id,
+        reason_code="fixture_output_invalid",
+        raw_package_bytes=raw_package_bytes,
+        clock=clock,
+    )
+
+
+def _perform_fixture_dispatch_for_protected_test(
+    runtime_root: Path | str,
+    organism_id: str,
+    *,
+    request_id: str,
+    fixture_case_id: str,
+    clock: Clock | None = None,
+    fixture_runner=run_deterministic_fixture,
+    terminal_clock: Clock | None = None,
+    protected_test_fault: str | None = None,
+) -> FixtureDispatchResult:
+    """Private protected-test seam; production callers cannot select execution."""
+
+    admission = admit_fixture_dispatch(
+        runtime_root,
+        organism_id,
+        request_id=request_id,
+        fixture_case_id=fixture_case_id,
+        clock=clock,
+        protected_test_fault=protected_test_fault,
+    )
+    if not admission.created:
+        return FixtureDispatchResult(
+            admission=admission,
+            fixture_invoked=False,
+            fixture_output=None,
+        )
+    try:
+        output = fixture_runner(
+            deepcopy(admission.request_envelope),
+            fixture_case_id,
+        )
+    except Exception as exc:
+        try:
+            _terminalize_fixture_failure(
+                runtime_root,
+                organism_id,
+                admission=admission,
+                raw_package_bytes=b"",
+                clock=terminal_clock,
+            )
+        except Exception as terminal_exc:
+            raise FixtureExecutionError(
+                f"deterministic fixture failed and terminalization failed: {terminal_exc}"
+            ) from terminal_exc
+        raise FixtureExecutionError(str(exc)) from exc
+    if not isinstance(output, bytes):
+        _terminalize_fixture_failure(
+            runtime_root,
+            organism_id,
+            admission=admission,
+            raw_package_bytes=b"",
+            clock=terminal_clock,
+        )
+        raise FixtureExecutionError("deterministic fixture output must be bytes")
+    if len(output) > 16 * 1024:
+        _terminalize_fixture_failure(
+            runtime_root,
+            organism_id,
+            admission=admission,
+            raw_package_bytes=bytes(output),
+            clock=terminal_clock,
+        )
+        raise FixtureExecutionError("deterministic fixture output exceeds 16 KiB")
+    return FixtureDispatchResult(
+        admission=admission,
+        fixture_invoked=True,
+        fixture_output=bytes(output),
+    )
+
+
+def perform_fixture_dispatch(
+    runtime_root: Path | str,
+    organism_id: str,
+    *,
+    request_id: str,
+    fixture_case_id: str,
+    clock: Clock | None = None,
+    protected_test_fault: str | None = None,
+) -> FixtureDispatchResult:
+    """Commit admission, then invoke only the exact protected deterministic fixture."""
+
+    return _perform_fixture_dispatch_for_protected_test(
+        runtime_root,
+        organism_id,
+        request_id=request_id,
+        fixture_case_id=fixture_case_id,
+        clock=clock,
+        terminal_clock=clock,
+        protected_test_fault=protected_test_fault,
+    )
+'''
+          dispatch_path.write_text(
+              prefix + new_function + "\n\n__all__ = [" + suffix,
+              encoding="utf-8",
+          )
+
+          for test_name in (
+              "tests/test_phase2_dispatch_admission_fixture.py",
+              "tests/test_phase2_dispatch_admission_matrix.py",
+          ):
+              path = Path(test_name)
+              test = path.read_text(encoding="utf-8")
+              test = test.replace(
+                  "    perform_fixture_dispatch,\n",
+                  "    _perform_fixture_dispatch_for_protected_test,\n"
+                  "    perform_fixture_dispatch,\n",
+              )
+              test = test.replace(
+                  "perform_fixture_dispatch(",
+                  "_perform_fixture_dispatch_for_protected_test(",
+              )
+              path.write_text(test, encoding="utf-8")
+
+          fixture_test = Path("tests/test_phase2_dispatch_admission_fixture.py")
+          test = fixture_test.read_text(encoding="utf-8")
+          needle = '''            fixture_runner=failing_fixture,
+        )
+'''
+          replacement = '''            fixture_runner=failing_fixture,
+            terminal_clock=FakeClock.fixed(
+                wall_time_utc_us=2_108_000_000_000_000,
+                monotonic_ns=90_000_000,
+            ),
+        )
+'''
+          if needle not in test:
+              raise SystemExit("fixture exception call not found")
+          fixture_test.write_text(test.replace(needle, replacement, 1), encoding="utf-8")
+
+          repair_tests = r'''from __future__ import annotations
+
+import inspect
+import json
+from pathlib import Path
+
+import pytest
+
+from sudachi_life.clock import FakeClock
+from sudachi_life.constants import MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT
+from sudachi_life.phase2_dispatch_runtime import (
+    DispatchAdmissionRejectedError,
+    FixtureExecutionError,
+    _perform_fixture_dispatch_for_protected_test,
+    admit_fixture_dispatch,
+    perform_fixture_dispatch,
+)
+from sudachi_life.phase2_ingress_runtime import (
+    ingress_external_package,
+    terminalize_fixture_dispatch,
+)
+from sudachi_life.storage import connect_database, read_status
+
+from test_phase2_dispatch_admission_fixture import _init_request
+
+
+def _consultation_counts(paths) -> tuple[int, int, int, int, int]:
+    connection = connect_database(paths.database, read_only=True)
+    try:
+        return tuple(
+            int(value)
+            for value in connection.execute(
+                "SELECT "
+                "(SELECT COUNT(*) FROM consultation_dispatch), "
+                "(SELECT COUNT(*) FROM consultation_cost_charge), "
+                "(SELECT COUNT(*) FROM consultation_dispatch_terminal), "
+                "(SELECT COUNT(*) FROM consultation_cost_completion), "
+                "(SELECT COUNT(*) FROM event WHERE event_type="
+                "'consultation_dispatch_terminalized')"
+            ).fetchone()
+        )
+    finally:
+        connection.close()
+
+
+def _enter_failure_maintenance(paths) -> None:
+    connection = connect_database(paths.database)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            "UPDATE organism SET status='maintenance_required', "
+            "maintenance_reason=?, consecutive_failures=3 WHERE singleton_id=1",
+            (MAINTENANCE_REASON_CONSECUTIVE_FAILURE_LIMIT,),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def test_public_dispatch_signature_has_no_callable_execution_seam() -> None:
+    parameters = inspect.signature(perform_fixture_dispatch).parameters
+    assert "fixture_runner" not in parameters
+    assert "terminal_clock" not in parameters
+    with pytest.raises(TypeError, match="fixture_runner"):
+        perform_fixture_dispatch(
+            Path("unused"),
+            "unused",
+            request_id="unused",
+            fixture_case_id="unused",
+            fixture_runner=lambda *_: b"unsafe",
+        )
+
+
+def test_caught_fixture_failure_terminalizes_once_without_retry(tmp_path: Path) -> None:
+    root, paths, wake = _init_request(tmp_path, organism_id="audit-fixture-failure")
+
+    def fail(_request, _case):
+        raise ValueError("fixture failure")
+
+    with pytest.raises(FixtureExecutionError, match="fixture failure"):
+        _perform_fixture_dispatch_for_protected_test(
+            root,
+            paths.organism_id,
+            request_id=wake.consultation_request.request_id,
+            fixture_case_id="fixture-exception",
+            clock=FakeClock.fixed(
+                wall_time_utc_us=2_300_000_000_000_000,
+                monotonic_ns=100_000_000,
+            ),
+            fixture_runner=fail,
+            terminal_clock=FakeClock.fixed(
+                wall_time_utc_us=2_301_000_000_000_000,
+                monotonic_ns=110_000_000,
+            ),
+        )
+    assert _consultation_counts(paths) == (1, 1, 1, 1, 1)
+
+    second = perform_fixture_dispatch(
+        root,
+        paths.organism_id,
+        request_id=wake.consultation_request.request_id,
+        fixture_case_id="fixture-exception",
+        clock=FakeClock([]),
+    )
+    assert second.admission.created is False
+    assert second.fixture_invoked is False
+    assert _consultation_counts(paths) == (1, 1, 1, 1, 1)
+
+
+def test_success_ingress_preserves_failure_maintenance(tmp_path: Path) -> None:
+    root, paths, wake = _init_request(tmp_path, organism_id="audit-maintenance-ingress")
+    dispatched = perform_fixture_dispatch(
+        root,
+        paths.organism_id,
+        request_id=wake.consultation_request.request_id,
+        fixture_case_id="valid-defer",
+        clock=FakeClock.fixed(
+            wall_time_utc_us=2_310_000_000_000_000,
+            monotonic_ns=120_000_000,
+        ),
+    )
+    _enter_failure_maintenance(paths)
+    before = read_status(paths)
+    result = ingress_external_package(
+        root,
+        paths.organism_id,
+        dispatch_id=dispatched.admission.dispatch_id,
+        raw_package_bytes=dispatched.fixture_output,
+        clock=FakeClock.fixed(
+            wall_time_utc_us=2_311_000_000_000_000,
+            monotonic_ns=130_000_000,
+        ),
+    )
+    assert result.created is True
+    after = read_status(paths)
+    assert after.status == before.status == "maintenance_required"
+    assert after.maintenance_reason == before.maintenance_reason
+    assert after.consecutive_failures == before.consecutive_failures == 3
+    assert after.lifecycle_number == before.lifecycle_number
+
+
+def test_terminalization_preserves_failure_maintenance(tmp_path: Path) -> None:
+    root, paths, wake = _init_request(tmp_path, organism_id="audit-maintenance-terminal")
+    admission = admit_fixture_dispatch(
+        root,
+        paths.organism_id,
+        request_id=wake.consultation_request.request_id,
+        fixture_case_id="valid-defer",
+        clock=FakeClock.fixed(
+            wall_time_utc_us=2_320_000_000_000_000,
+            monotonic_ns=140_000_000,
+        ),
+    )
+    _enter_failure_maintenance(paths)
+    before = read_status(paths)
+    result = terminalize_fixture_dispatch(
+        root,
+        paths.organism_id,
+        dispatch_id=admission.dispatch_id,
+        reason_code="fixture_output_invalid",
+        raw_package_bytes=b"{",
+        clock=FakeClock.fixed(
+            wall_time_utc_us=2_321_000_000_000_000,
+            monotonic_ns=150_000_000,
+        ),
+    )
+    assert result.created is True
+    after = read_status(paths)
+    assert after.status == before.status == "maintenance_required"
+    assert after.maintenance_reason == before.maintenance_reason
+    assert after.consecutive_failures == before.consecutive_failures == 3
+    assert after.lifecycle_number == before.lifecycle_number
+
+
+@pytest.mark.parametrize("corruption", ["database-bytes", "manifest-bytes"])
+def test_dispatch_validates_exact_stable_checkpoint_artifact_before_mutation(
+    tmp_path: Path,
+    corruption: str,
+) -> None:
+    root, paths, wake = _init_request(
+        tmp_path,
+        organism_id=f"audit-checkpoint-{corruption}",
+    )
+    status = read_status(paths)
+    checkpoint_dir = paths.checkpoints / status.latest_stable_checkpoint_id
+    if corruption == "database-bytes":
+        with (checkpoint_dir / "organism.sqlite3").open("ab") as handle:
+            handle.write(b"x")
+        match = "size mismatch"
+    else:
+        manifest_path = checkpoint_dir / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest_path.write_text(
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n\n",
+            encoding="utf-8",
+        )
+        match = "manifest digest mismatch"
+    no_clock = FakeClock([])
+    with pytest.raises(DispatchAdmissionRejectedError, match=match):
+        admit_fixture_dispatch(
+            root,
+            paths.organism_id,
+            request_id=wake.consultation_request.request_id,
+            fixture_case_id="valid-defer",
+            clock=no_clock,
+        )
+    assert no_clock.read_count == 0
+    assert _consultation_counts(paths) == (0, 0, 0, 0, 0)
+'''
+          Path("tests/test_phase2_implementation_audit_repairs.py").write_text(
+              repair_tests,
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Validate repaired candidate
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m compileall -q src tests
+          python -m pytest -q
+
+      - name: Commit validated repairs
+        shell: bash
+        run: |
+          rm .github/workflows/phase2-audit-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Repair Phase 2 implementation audit findings"
+          git push origin HEAD:agent/phase2-implementation-audit-prep
