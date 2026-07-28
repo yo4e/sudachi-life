@@ -77,6 +77,30 @@ _DISPATCH_ENVELOPE_FIELDS: Final = frozenset(
         "work_class",
     }
 )
+
+_CHECKPOINT_MANIFEST_FIELDS: Final = frozenset(
+    {
+        "budget_config_version",
+        "checkpoint_format_version",
+        "checkpoint_id",
+        "contract_version",
+        "creation_wall_time_utc_us",
+        "database_filename",
+        "database_sha256",
+        "database_size_bytes",
+        "environment_version",
+        "event_sequence",
+        "implementation_version",
+        "lifecycle_number",
+        "lineage_generation",
+        "organism_id",
+        "provenance",
+        "schema_version",
+        "snapshot_method",
+        "status",
+    }
+)
+
 _FAULT_POINTS: Final = frozenset(
     {"after_event", "after_dispatch", "after_charge", "before_commit"}
 )
@@ -378,6 +402,57 @@ def _result_from_existing(
     )
 
 
+def _require_request_checkpoint_snapshot(
+    active_connection: sqlite3.Connection,
+    checkpoint_dir: Path,
+    *,
+    active_organism_id: str,
+    request_row: sqlite3.Row,
+    request_envelope: dict[str, object],
+) -> None:
+    request_id = str(request_envelope["request_id"])
+    request_event_sequence = int(request_row["event_sequence"])
+    snapshot = connect_database(checkpoint_dir / "organism.sqlite3", read_only=True)
+    try:
+        snapshot_row, snapshot_envelope = _load_request(snapshot, request_id)
+        if snapshot_envelope != request_envelope or dict(snapshot_row) != dict(request_row):
+            raise DispatchAdmissionRejectedError(
+                "dispatch checkpoint request row does not match active request"
+            )
+
+        active_event = active_connection.execute(
+            "SELECT * FROM event WHERE event_sequence=?",
+            (request_event_sequence,),
+        ).fetchone()
+        if active_event is None:
+            raise DispatchAdmissionRejectedError(
+                "dispatch active request event is missing"
+            )
+        if active_event["event_type"] != "consultation_request_created":
+            raise DispatchAdmissionRejectedError(
+                "dispatch active request event type mismatch"
+            )
+        if active_event["organism_id"] != active_organism_id:
+            raise DispatchAdmissionRejectedError(
+                "dispatch active request event organism mismatch"
+            )
+
+        snapshot_event = snapshot.execute(
+            "SELECT * FROM event WHERE event_sequence=?",
+            (request_event_sequence,),
+        ).fetchone()
+        if snapshot_event is None:
+            raise DispatchAdmissionRejectedError(
+                "dispatch checkpoint request event is missing"
+            )
+        if dict(snapshot_event) != dict(active_event):
+            raise DispatchAdmissionRejectedError(
+                "dispatch checkpoint request event does not match active event"
+            )
+    finally:
+        snapshot.close()
+
+
 def _require_admission_state(
     connection: sqlite3.Connection,
     paths: OrganismPaths,
@@ -432,22 +507,35 @@ def _require_admission_state(
         ).hexdigest()
     except (CheckpointError, OSError) as exc:
         raise DispatchAdmissionRejectedError(str(exc)) from exc
-    if manifest.get("checkpoint_id") != latest_checkpoint_id:
+    manifest = _exact_fields(
+        manifest,
+        _CHECKPOINT_MANIFEST_FIELDS,
+        context="dispatch checkpoint manifest",
+    )
+    active_organism_id = str(organism["organism_id"])
+    if request_envelope["organism_id"] != active_organism_id:
+        raise DispatchAdmissionRejectedError("dispatch request organism mismatch")
+    if manifest["organism_id"] != active_organism_id:
+        raise DispatchAdmissionRejectedError("dispatch checkpoint organism mismatch")
+    if manifest["checkpoint_id"] != latest_checkpoint_id:
         raise DispatchAdmissionRejectedError("dispatch checkpoint manifest ID mismatch")
-    if int(manifest.get("lineage_generation", -1)) != int(
-        registry["lineage_generation"]
-    ):
+    if int(manifest["lineage_generation"]) != int(registry["lineage_generation"]):
         raise DispatchAdmissionRejectedError("dispatch checkpoint manifest lineage mismatch")
-    if int(manifest.get("event_sequence", -1)) != int(registry["event_sequence"]):
+    if int(manifest["event_sequence"]) != int(registry["event_sequence"]):
         raise DispatchAdmissionRejectedError("dispatch checkpoint manifest boundary mismatch")
-    if manifest.get("database_sha256") != registry["database_sha256"]:
+    if manifest["database_sha256"] != registry["database_sha256"]:
         raise DispatchAdmissionRejectedError("dispatch checkpoint database digest mismatch")
-    if int(manifest.get("database_size_bytes", -1)) != int(
-        registry["database_size_bytes"]
-    ):
+    if int(manifest["database_size_bytes"]) != int(registry["database_size_bytes"]):
         raise DispatchAdmissionRejectedError("dispatch checkpoint database size mismatch")
     if manifest_sha != registry["manifest_sha256"]:
         raise DispatchAdmissionRejectedError("dispatch checkpoint manifest digest mismatch")
+    _require_request_checkpoint_snapshot(
+        connection,
+        checkpoint_dir,
+        active_organism_id=active_organism_id,
+        request_row=request_row,
+        request_envelope=request_envelope,
+    )
 
     if connection.execute(
         "SELECT 1 FROM consultation_response WHERE request_id=?",
