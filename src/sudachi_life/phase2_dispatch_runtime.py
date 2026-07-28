@@ -402,6 +402,52 @@ def _result_from_existing(
     )
 
 
+def _require_exact_request_created_event(
+    event: sqlite3.Row,
+    *,
+    context: str,
+    active_organism_id: str,
+    request_row: sqlite3.Row,
+    request_envelope: dict[str, object],
+) -> None:
+    expected = {
+        "event_sequence": int(request_row["event_sequence"]),
+        "organism_id": active_organism_id,
+        "lineage_generation": int(request_row["lineage_generation"]),
+        "lifecycle_number": int(request_row["lifecycle_number"]),
+        "event_type": "consultation_request_created",
+        "source": "organism:consultation.request",
+        "payload_json": canonical_json_bytes(
+            {
+                "canonical_size_bytes": int(request_row["canonical_size_bytes"]),
+                "request": request_envelope,
+            }
+        ).decode("utf-8"),
+        "schema_version": PHASE2_SCHEMA_VERSION,
+        "environment_version": ENVIRONMENT_VERSION,
+        "budget_config_version": BUDGET_CONFIG_VERSION,
+    }
+    actual = {
+        "event_sequence": int(event["event_sequence"]),
+        "organism_id": event["organism_id"],
+        "lineage_generation": int(event["lineage_generation"]),
+        "lifecycle_number": int(event["lifecycle_number"]),
+        "event_type": event["event_type"],
+        "source": event["source"],
+        "payload_json": event["payload_json"],
+        "schema_version": int(event["schema_version"]),
+        "environment_version": event["environment_version"],
+        "budget_config_version": event["budget_config_version"],
+    }
+    if actual != expected:
+        mismatches = sorted(
+            field for field in expected if actual[field] != expected[field]
+        )
+        raise DispatchAdmissionRejectedError(
+            f"{context} request event semantics mismatch: {mismatches!r}"
+        )
+
+
 def _require_request_checkpoint_snapshot(
     active_connection: sqlite3.Connection,
     checkpoint_dir: Path,
@@ -433,14 +479,13 @@ def _require_request_checkpoint_snapshot(
             raise DispatchAdmissionRejectedError(
                 "dispatch active request event is missing"
             )
-        if active_event["event_type"] != "consultation_request_created":
-            raise DispatchAdmissionRejectedError(
-                "dispatch active request event type mismatch"
-            )
-        if active_event["organism_id"] != active_organism_id:
-            raise DispatchAdmissionRejectedError(
-                "dispatch active request event organism mismatch"
-            )
+        _require_exact_request_created_event(
+            active_event,
+            context="dispatch active",
+            active_organism_id=active_organism_id,
+            request_row=request_row,
+            request_envelope=request_envelope,
+        )
 
         snapshot_event = snapshot.execute(
             "SELECT * FROM event WHERE event_sequence=?",
@@ -450,6 +495,13 @@ def _require_request_checkpoint_snapshot(
             raise DispatchAdmissionRejectedError(
                 "dispatch checkpoint request event is missing"
             )
+        _require_exact_request_created_event(
+            snapshot_event,
+            context="dispatch checkpoint",
+            active_organism_id=active_organism_id,
+            request_row=request_row,
+            request_envelope=request_envelope,
+        )
         if dict(snapshot_event) != dict(active_event):
             raise DispatchAdmissionRejectedError(
                 "dispatch checkpoint request event does not match active event"

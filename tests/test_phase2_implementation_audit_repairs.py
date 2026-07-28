@@ -473,6 +473,175 @@ def test_dispatch_rejects_checkpoint_request_event_mismatch(
         root,
         paths,
         request_id,
-        "request event does not match",
+        "request event",
     )
 
+
+
+
+def _rewrite_request_event_database(
+    database_path: Path,
+    request_id: str,
+    *,
+    mutation: tuple[str, object] | None,
+) -> None:
+    connection = connect_database(database_path)
+    try:
+        connection.execute("PRAGMA foreign_keys=OFF")
+        connection.execute("BEGIN IMMEDIATE")
+        trigger_sql = _drop_table_triggers(connection, ("event",))
+        if mutation is None:
+            connection.execute(
+                "DELETE FROM event WHERE event_sequence=("
+                "SELECT event_sequence FROM consultation_request WHERE request_id=?"
+                ")",
+                (request_id,),
+            )
+        else:
+            column, value = mutation
+            allowed_columns = {
+                "payload_json",
+                "source",
+                "lineage_generation",
+                "lifecycle_number",
+                "schema_version",
+                "environment_version",
+                "budget_config_version",
+                "event_type",
+                "organism_id",
+            }
+            if column not in allowed_columns:
+                raise AssertionError(column)
+            connection.execute(
+                f"UPDATE event SET {column}=? WHERE event_sequence=("
+                "SELECT event_sequence FROM consultation_request WHERE request_id=?"
+                ")",
+                (value, request_id),
+            )
+        _restore_triggers(connection, trigger_sql)
+        connection.commit()
+    finally:
+        connection.close()
+
+
+@pytest.mark.parametrize(
+    ("case", "mutation"),
+    [
+        ("payload", ("payload_json", "{}")),
+        ("source", ("source", "caregiver:spoofed-authority")),
+        ("lineage", ("lineage_generation", 99)),
+        ("lifecycle", ("lifecycle_number", 99)),
+        ("schema", ("schema_version", 1)),
+        ("environment", ("environment_version", "spoofed-environment")),
+        ("budget", ("budget_config_version", "spoofed-budget")),
+        ("type", ("event_type", "consultation_request_corrupted")),
+        ("organism", ("organism_id", "spoofed-organism")),
+    ],
+)
+def test_dispatch_rejects_coherent_request_event_semantic_mutation(
+    tmp_path: Path,
+    case: str,
+    mutation: tuple[str, object] | None,
+) -> None:
+    root, paths, wake = _init_request(
+        tmp_path,
+        organism_id=f"audit-request-event-{case}",
+    )
+    request_id = wake.consultation_request.request_id
+    status = read_status(paths)
+    checkpoint_dir = paths.checkpoints / status.latest_stable_checkpoint_id
+
+    _rewrite_request_event_database(
+        paths.database,
+        request_id,
+        mutation=mutation,
+    )
+    _rewrite_request_event_database(
+        checkpoint_dir / "organism.sqlite3",
+        request_id,
+        mutation=mutation,
+    )
+    _refresh_checkpoint_manifest_and_registry(
+        paths,
+        status.latest_stable_checkpoint_id,
+    )
+
+    _assert_dispatch_snapshot_rejection(
+        root,
+        paths,
+        request_id,
+        "request event",
+    )
+
+
+
+def _relink_checkpoint_registry_without_active_validation(
+    paths,
+    checkpoint_id: str,
+    checkpoint_dir: Path,
+) -> None:
+    database_path = checkpoint_dir / "organism.sqlite3"
+    manifest_path = checkpoint_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["database_sha256"] = hashlib.sha256(database_path.read_bytes()).hexdigest()
+    manifest["database_size_bytes"] = database_path.stat().st_size
+    _write_manifest(checkpoint_dir, manifest)
+
+    connection = connect_database(paths.database)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        trigger_sql = _drop_table_triggers(connection, ("checkpoint_registry",))
+        connection.execute(
+            "UPDATE checkpoint_registry SET manifest_sha256=?, database_sha256=?, "
+            "database_size_bytes=? WHERE checkpoint_id=?",
+            (
+                hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+                hashlib.sha256(database_path.read_bytes()).hexdigest(),
+                database_path.stat().st_size,
+                checkpoint_id,
+            ),
+        )
+        _restore_triggers(connection, trigger_sql)
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def test_dispatch_rejects_missing_request_created_event_before_clock(
+    tmp_path: Path,
+) -> None:
+    root, paths, wake = _init_request(
+        tmp_path,
+        organism_id="audit-request-event-missing",
+    )
+    request_id = wake.consultation_request.request_id
+    status = read_status(paths)
+    checkpoint_dir = paths.checkpoints / status.latest_stable_checkpoint_id
+
+    _rewrite_request_event_database(
+        paths.database,
+        request_id,
+        mutation=None,
+    )
+    _rewrite_request_event_database(
+        checkpoint_dir / "organism.sqlite3",
+        request_id,
+        mutation=None,
+    )
+    _relink_checkpoint_registry_without_active_validation(
+        paths,
+        status.latest_stable_checkpoint_id,
+        checkpoint_dir,
+    )
+
+    no_clock = FakeClock([])
+    with pytest.raises(DispatchAdmissionRejectedError, match="foreign-key errors"):
+        admit_fixture_dispatch(
+            root,
+            paths.organism_id,
+            request_id=request_id,
+            fixture_case_id="valid-defer",
+            clock=no_clock,
+        )
+    assert no_clock.read_count == 0
+    assert _consultation_counts(paths) == (0, 0, 0, 0, 0)
