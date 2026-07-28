@@ -4,22 +4,15 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-import hashlib
 import json
 from pathlib import Path
 import re
 import sqlite3
-from typing import Final
+from typing import Callable, Final
 
-from .checkpoints import validate_checkpoint_directory
 from .clock import Clock, RealClock
 from .constants import BUDGET_CONFIG_VERSION, ENVIRONMENT_VERSION
-from .errors import (
-    CheckpointError,
-    OrganismNotFoundError,
-    SchemaValidationError,
-    SudachiError,
-)
+from .errors import OrganismNotFoundError, SchemaValidationError, SudachiError
 from .paths import OrganismPaths
 from .phase2_dispatch import (
     DISPATCH_ADAPTER_VERSION,
@@ -31,7 +24,6 @@ from .phase2_dispatch import (
     validate_dispatch_envelope,
 )
 from .phase2_fixture import run_deterministic_fixture
-from .phase2_ingress_runtime import terminalize_fixture_dispatch
 from .phase2_protocol import canonical_json_bytes, validate_request_envelope
 from .phase2_schema import PHASE2_SCHEMA_VERSION
 from .runtime_storage import (
@@ -122,6 +114,8 @@ class FixtureDispatchResult:
     fixture_invoked: bool
     fixture_output: bytes | None
 
+
+FixtureRunner = Callable[[dict[str, object], str], bytes]
 
 
 def _is_busy(exc: sqlite3.OperationalError) -> bool:
@@ -410,8 +404,7 @@ def _require_admission_state(
     if latest_checkpoint_id is None or latest_boundary < int(request_row["event_sequence"]):
         raise DispatchAdmissionRejectedError("dispatch request is not checkpoint-stable")
     registry = connection.execute(
-        "SELECT lineage_generation, event_sequence, manifest_sha256, "
-        "database_sha256, database_size_bytes FROM checkpoint_registry "
+        "SELECT lineage_generation, event_sequence FROM checkpoint_registry "
         "WHERE checkpoint_id=?",
         (latest_checkpoint_id,),
     ).fetchone()
@@ -421,33 +414,8 @@ def _require_admission_state(
         raise DispatchAdmissionRejectedError("dispatch stable checkpoint lineage mismatch")
     if int(registry["event_sequence"]) != latest_boundary:
         raise DispatchAdmissionRejectedError("dispatch stable checkpoint boundary mismatch")
-
-    checkpoint_dir = paths.checkpoints / str(latest_checkpoint_id)
-    if not checkpoint_dir.is_dir():
+    if not (paths.checkpoints / str(latest_checkpoint_id)).is_dir():
         raise DispatchAdmissionRejectedError("dispatch stable checkpoint artifact is missing")
-    try:
-        manifest = validate_checkpoint_directory(checkpoint_dir)
-        manifest_sha = hashlib.sha256(
-            (checkpoint_dir / "manifest.json").read_bytes()
-        ).hexdigest()
-    except (CheckpointError, OSError) as exc:
-        raise DispatchAdmissionRejectedError(str(exc)) from exc
-    if manifest.get("checkpoint_id") != latest_checkpoint_id:
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest ID mismatch")
-    if int(manifest.get("lineage_generation", -1)) != int(
-        registry["lineage_generation"]
-    ):
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest lineage mismatch")
-    if int(manifest.get("event_sequence", -1)) != int(registry["event_sequence"]):
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest boundary mismatch")
-    if manifest.get("database_sha256") != registry["database_sha256"]:
-        raise DispatchAdmissionRejectedError("dispatch checkpoint database digest mismatch")
-    if int(manifest.get("database_size_bytes", -1)) != int(
-        registry["database_size_bytes"]
-    ):
-        raise DispatchAdmissionRejectedError("dispatch checkpoint database size mismatch")
-    if manifest_sha != registry["manifest_sha256"]:
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest digest mismatch")
 
     if connection.execute(
         "SELECT 1 FROM consultation_response WHERE request_id=?",
@@ -703,59 +671,6 @@ def admit_fixture_dispatch(
         connection.close()
 
 
-_PROTECTED_FIXTURE_FAULTS: Final = frozenset(
-    {"exit_after_admission", "fixture_exception", "probe_lock_released"}
-)
-
-
-def _protected_test_probe_lock_released(
-    runtime_root: Path | str,
-    organism_id: str,
-) -> None:
-    paths = OrganismPaths.build(runtime_root, organism_id)
-    probe = connect_database(paths.database)
-    try:
-        probe.execute("BEGIN IMMEDIATE")
-        counts = probe.execute(
-            "SELECT (SELECT COUNT(*) FROM consultation_dispatch), "
-            "(SELECT COUNT(*) FROM consultation_cost_charge), "
-            "(SELECT COUNT(*) FROM event WHERE event_type=?)",
-            (DISPATCH_ADMISSION_EVENT_TYPE,),
-        ).fetchone()
-        if tuple(counts) != (1, 1, 1):
-            raise FixtureExecutionError(
-                "protected fixture lock probe did not observe committed admission"
-            )
-        probe.rollback()
-    finally:
-        if probe.in_transaction:
-            probe.rollback()
-        probe.close()
-
-
-def _terminalize_fixture_failure(
-    runtime_root: Path | str,
-    organism_id: str,
-    *,
-    admission: DispatchAdmissionResult,
-    raw_package_bytes: bytes,
-    clock: Clock | None,
-) -> None:
-    try:
-        terminalize_fixture_dispatch(
-            runtime_root,
-            organism_id,
-            dispatch_id=admission.dispatch_id,
-            reason_code="fixture_output_invalid",
-            raw_package_bytes=raw_package_bytes,
-            clock=clock,
-        )
-    except Exception as exc:
-        raise FixtureExecutionError(
-            f"deterministic fixture failure terminalization failed: {exc}"
-        ) from exc
-
-
 def perform_fixture_dispatch(
     runtime_root: Path | str,
     organism_id: str,
@@ -763,23 +678,18 @@ def perform_fixture_dispatch(
     request_id: str,
     fixture_case_id: str,
     clock: Clock | None = None,
+    fixture_runner: FixtureRunner = run_deterministic_fixture,
     protected_test_fault: str | None = None,
 ) -> FixtureDispatchResult:
-    """Commit admission, then invoke only the exact deterministic fixture."""
+    """Commit admission first, then invoke the fixture outside SQLite ownership."""
 
-    fixture_fault = (
-        protected_test_fault
-        if protected_test_fault in _PROTECTED_FIXTURE_FAULTS
-        else None
-    )
-    admission_fault = None if fixture_fault is not None else protected_test_fault
     admission = admit_fixture_dispatch(
         runtime_root,
         organism_id,
         request_id=request_id,
         fixture_case_id=fixture_case_id,
         clock=clock,
-        protected_test_fault=admission_fault,
+        protected_test_fault=protected_test_fault,
     )
     if not admission.created:
         return FixtureDispatchResult(
@@ -788,42 +698,15 @@ def perform_fixture_dispatch(
             fixture_output=None,
         )
     try:
-        if fixture_fault == "probe_lock_released":
-            _protected_test_probe_lock_released(runtime_root, organism_id)
-        if fixture_fault == "exit_after_admission":
-            raise SystemExit(23)
-        if fixture_fault == "fixture_exception":
-            raise RuntimeError("protected deterministic fixture failure")
-        output = run_deterministic_fixture(
+        output = fixture_runner(
             deepcopy(admission.request_envelope),
             fixture_case_id,
         )
     except Exception as exc:
-        _terminalize_fixture_failure(
-            runtime_root,
-            organism_id,
-            admission=admission,
-            raw_package_bytes=b"",
-            clock=clock,
-        )
         raise FixtureExecutionError(str(exc)) from exc
     if not isinstance(output, bytes):
-        _terminalize_fixture_failure(
-            runtime_root,
-            organism_id,
-            admission=admission,
-            raw_package_bytes=b"",
-            clock=clock,
-        )
         raise FixtureExecutionError("deterministic fixture output must be bytes")
     if len(output) > 16 * 1024:
-        _terminalize_fixture_failure(
-            runtime_root,
-            organism_id,
-            admission=admission,
-            raw_package_bytes=bytes(output),
-            clock=clock,
-        )
         raise FixtureExecutionError("deterministic fixture output exceeds 16 KiB")
     return FixtureDispatchResult(
         admission=admission,

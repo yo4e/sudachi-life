@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import multiprocessing
-import os
 from pathlib import Path
 
 import pytest
@@ -38,10 +37,6 @@ def _pad_active_database_beyond_reserve(paths, *, table_name: str) -> None:
         connection.close()
 
 
-def _exit_fixture(_request: dict[str, object], _case: str) -> bytes:
-    os._exit(23)
-
-
 def _crash_after_admission_worker(
     root: str,
     organism_id: str,
@@ -56,7 +51,7 @@ def _crash_after_admission_worker(
             wall_time_utc_us=2_300_000_000_000_000,
             monotonic_ns=300_000_000,
         ),
-        fixture_runner=_exit_fixture,
+        protected_test_fault="exit_after_admission",
     )
 
 

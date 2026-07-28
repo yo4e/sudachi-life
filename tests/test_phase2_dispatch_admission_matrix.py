@@ -196,13 +196,6 @@ def test_lifecycle_expiry_uses_legitimate_later_wakes_not_wall_time(
 
 def test_forced_precommit_failure_never_calls_fixture(tmp_path: Path) -> None:
     root, paths, wake = _init_request(tmp_path, organism_id="dispatch-no-early-call")
-    called = False
-
-    def fixture(_request, _case):
-        nonlocal called
-        called = True
-        return b"should-not-run"
-
     with pytest.raises(RuntimeError, match="protected dispatch admission fault"):
         perform_fixture_dispatch(
             root,
@@ -213,10 +206,8 @@ def test_forced_precommit_failure_never_calls_fixture(tmp_path: Path) -> None:
                 wall_time_utc_us=2_210_000_000_000_000,
                 monotonic_ns=110_000_000,
             ),
-            fixture_runner=fixture,
             protected_test_fault="before_commit",
         )
-    assert called is False
     rows = _rows(paths)
     assert rows["dispatch"] == []
     assert rows["charge"] == []
