@@ -43,4 +43,8 @@ Protected coherent mutations cover payload, source, lineage, lifecycle, schema, 
 - PR #119: open and unmerged;
 - Phase 2: not frozen.
 
-The exact final audit candidate is the ordinary-CI-green commit containing this evidence synchronization. Do not modify or merge that candidate, close completion Issues, or declare Phase 2 frozen while the final independent audit is running.
+## Candidate finalization
+
+The commit containing this candidate-finalization section is the proposed final audit candidate. Its exact SHA and ordinary GitHub Actions run are recorded in PR #119 and the final audit Issue after install, source/test compilation, all 395 protected tests, protected-result enforcement, and schema-v1 genesis CLI smoke pass.
+
+Do not modify or merge the fixed candidate, close completion Issues, or declare Phase 2 frozen while the final independent audit is running.
