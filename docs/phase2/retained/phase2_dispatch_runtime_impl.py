@@ -4,22 +4,15 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-import hashlib
 import json
 from pathlib import Path
 import re
 import sqlite3
-from typing import Final
+from typing import Callable, Final
 
-from .checkpoints import validate_checkpoint_directory
 from .clock import Clock, RealClock
 from .constants import BUDGET_CONFIG_VERSION, ENVIRONMENT_VERSION
-from .errors import (
-    CheckpointError,
-    OrganismNotFoundError,
-    SchemaValidationError,
-    SudachiError,
-)
+from .errors import OrganismNotFoundError, SchemaValidationError, SudachiError
 from .paths import OrganismPaths
 from .phase2_dispatch import (
     DISPATCH_ADAPTER_VERSION,
@@ -31,7 +24,6 @@ from .phase2_dispatch import (
     validate_dispatch_envelope,
 )
 from .phase2_fixture import run_deterministic_fixture
-from .phase2_ingress_runtime import terminalize_fixture_dispatch
 from .phase2_protocol import canonical_json_bytes, validate_request_envelope
 from .phase2_schema import PHASE2_SCHEMA_VERSION
 from .runtime_storage import (
@@ -77,30 +69,6 @@ _DISPATCH_ENVELOPE_FIELDS: Final = frozenset(
         "work_class",
     }
 )
-
-_CHECKPOINT_MANIFEST_FIELDS: Final = frozenset(
-    {
-        "budget_config_version",
-        "checkpoint_format_version",
-        "checkpoint_id",
-        "contract_version",
-        "creation_wall_time_utc_us",
-        "database_filename",
-        "database_sha256",
-        "database_size_bytes",
-        "environment_version",
-        "event_sequence",
-        "implementation_version",
-        "lifecycle_number",
-        "lineage_generation",
-        "organism_id",
-        "provenance",
-        "schema_version",
-        "snapshot_method",
-        "status",
-    }
-)
-
 _FAULT_POINTS: Final = frozenset(
     {"after_event", "after_dispatch", "after_charge", "before_commit"}
 )
@@ -146,6 +114,8 @@ class FixtureDispatchResult:
     fixture_invoked: bool
     fixture_output: bytes | None
 
+
+FixtureRunner = Callable[[dict[str, object], str], bytes]
 
 
 def _is_busy(exc: sqlite3.OperationalError) -> bool:
@@ -402,114 +372,6 @@ def _result_from_existing(
     )
 
 
-def _require_exact_request_created_event(
-    event: sqlite3.Row,
-    *,
-    context: str,
-    active_organism_id: str,
-    request_row: sqlite3.Row,
-    request_envelope: dict[str, object],
-) -> None:
-    expected = {
-        "event_sequence": int(request_row["event_sequence"]),
-        "organism_id": active_organism_id,
-        "lineage_generation": int(request_row["lineage_generation"]),
-        "lifecycle_number": int(request_row["lifecycle_number"]),
-        "event_type": "consultation_request_created",
-        "source": "organism:consultation.request",
-        "payload_json": canonical_json_bytes(
-            {
-                "canonical_size_bytes": int(request_row["canonical_size_bytes"]),
-                "request": request_envelope,
-            }
-        ).decode("utf-8"),
-        "schema_version": PHASE2_SCHEMA_VERSION,
-        "environment_version": ENVIRONMENT_VERSION,
-        "budget_config_version": BUDGET_CONFIG_VERSION,
-    }
-    actual = {
-        "event_sequence": int(event["event_sequence"]),
-        "organism_id": event["organism_id"],
-        "lineage_generation": int(event["lineage_generation"]),
-        "lifecycle_number": int(event["lifecycle_number"]),
-        "event_type": event["event_type"],
-        "source": event["source"],
-        "payload_json": event["payload_json"],
-        "schema_version": int(event["schema_version"]),
-        "environment_version": event["environment_version"],
-        "budget_config_version": event["budget_config_version"],
-    }
-    if actual != expected:
-        mismatches = sorted(
-            field for field in expected if actual[field] != expected[field]
-        )
-        raise DispatchAdmissionRejectedError(
-            f"{context} request event semantics mismatch: {mismatches!r}"
-        )
-
-
-def _require_request_checkpoint_snapshot(
-    active_connection: sqlite3.Connection,
-    checkpoint_dir: Path,
-    *,
-    active_organism_id: str,
-    request_row: sqlite3.Row,
-    request_envelope: dict[str, object],
-) -> None:
-    request_id = str(request_envelope["request_id"])
-    request_event_sequence = int(request_row["event_sequence"])
-    snapshot = connect_database(checkpoint_dir / "organism.sqlite3", read_only=True)
-    try:
-        try:
-            snapshot_row, snapshot_envelope = _load_request(snapshot, request_id)
-        except DispatchAdmissionRejectedError as exc:
-            raise DispatchAdmissionRejectedError(
-                f"dispatch checkpoint request is invalid: {exc}"
-            ) from exc
-        if snapshot_envelope != request_envelope or dict(snapshot_row) != dict(request_row):
-            raise DispatchAdmissionRejectedError(
-                "dispatch checkpoint request row does not match active request"
-            )
-
-        active_event = active_connection.execute(
-            "SELECT * FROM event WHERE event_sequence=?",
-            (request_event_sequence,),
-        ).fetchone()
-        if active_event is None:
-            raise DispatchAdmissionRejectedError(
-                "dispatch active request event is missing"
-            )
-        _require_exact_request_created_event(
-            active_event,
-            context="dispatch active",
-            active_organism_id=active_organism_id,
-            request_row=request_row,
-            request_envelope=request_envelope,
-        )
-
-        snapshot_event = snapshot.execute(
-            "SELECT * FROM event WHERE event_sequence=?",
-            (request_event_sequence,),
-        ).fetchone()
-        if snapshot_event is None:
-            raise DispatchAdmissionRejectedError(
-                "dispatch checkpoint request event is missing"
-            )
-        _require_exact_request_created_event(
-            snapshot_event,
-            context="dispatch checkpoint",
-            active_organism_id=active_organism_id,
-            request_row=request_row,
-            request_envelope=request_envelope,
-        )
-        if dict(snapshot_event) != dict(active_event):
-            raise DispatchAdmissionRejectedError(
-                "dispatch checkpoint request event does not match active event"
-            )
-    finally:
-        snapshot.close()
-
-
 def _require_admission_state(
     connection: sqlite3.Connection,
     paths: OrganismPaths,
@@ -542,8 +404,7 @@ def _require_admission_state(
     if latest_checkpoint_id is None or latest_boundary < int(request_row["event_sequence"]):
         raise DispatchAdmissionRejectedError("dispatch request is not checkpoint-stable")
     registry = connection.execute(
-        "SELECT lineage_generation, event_sequence, manifest_sha256, "
-        "database_sha256, database_size_bytes FROM checkpoint_registry "
+        "SELECT lineage_generation, event_sequence FROM checkpoint_registry "
         "WHERE checkpoint_id=?",
         (latest_checkpoint_id,),
     ).fetchone()
@@ -553,46 +414,8 @@ def _require_admission_state(
         raise DispatchAdmissionRejectedError("dispatch stable checkpoint lineage mismatch")
     if int(registry["event_sequence"]) != latest_boundary:
         raise DispatchAdmissionRejectedError("dispatch stable checkpoint boundary mismatch")
-
-    checkpoint_dir = paths.checkpoints / str(latest_checkpoint_id)
-    if not checkpoint_dir.is_dir():
+    if not (paths.checkpoints / str(latest_checkpoint_id)).is_dir():
         raise DispatchAdmissionRejectedError("dispatch stable checkpoint artifact is missing")
-    try:
-        manifest = validate_checkpoint_directory(checkpoint_dir)
-        manifest_sha = hashlib.sha256(
-            (checkpoint_dir / "manifest.json").read_bytes()
-        ).hexdigest()
-    except (CheckpointError, OSError) as exc:
-        raise DispatchAdmissionRejectedError(str(exc)) from exc
-    manifest = _exact_fields(
-        manifest,
-        _CHECKPOINT_MANIFEST_FIELDS,
-        context="dispatch checkpoint manifest",
-    )
-    active_organism_id = str(organism["organism_id"])
-    if request_envelope["organism_id"] != active_organism_id:
-        raise DispatchAdmissionRejectedError("dispatch request organism mismatch")
-    if manifest["organism_id"] != active_organism_id:
-        raise DispatchAdmissionRejectedError("dispatch checkpoint organism mismatch")
-    if manifest["checkpoint_id"] != latest_checkpoint_id:
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest ID mismatch")
-    if int(manifest["lineage_generation"]) != int(registry["lineage_generation"]):
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest lineage mismatch")
-    if int(manifest["event_sequence"]) != int(registry["event_sequence"]):
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest boundary mismatch")
-    if manifest["database_sha256"] != registry["database_sha256"]:
-        raise DispatchAdmissionRejectedError("dispatch checkpoint database digest mismatch")
-    if int(manifest["database_size_bytes"]) != int(registry["database_size_bytes"]):
-        raise DispatchAdmissionRejectedError("dispatch checkpoint database size mismatch")
-    if manifest_sha != registry["manifest_sha256"]:
-        raise DispatchAdmissionRejectedError("dispatch checkpoint manifest digest mismatch")
-    _require_request_checkpoint_snapshot(
-        connection,
-        checkpoint_dir,
-        active_organism_id=active_organism_id,
-        request_row=request_row,
-        request_envelope=request_envelope,
-    )
 
     if connection.execute(
         "SELECT 1 FROM consultation_response WHERE request_id=?",
@@ -848,59 +671,6 @@ def admit_fixture_dispatch(
         connection.close()
 
 
-_PROTECTED_FIXTURE_FAULTS: Final = frozenset(
-    {"exit_after_admission", "fixture_exception", "probe_lock_released"}
-)
-
-
-def _protected_test_probe_lock_released(
-    runtime_root: Path | str,
-    organism_id: str,
-) -> None:
-    paths = OrganismPaths.build(runtime_root, organism_id)
-    probe = connect_database(paths.database)
-    try:
-        probe.execute("BEGIN IMMEDIATE")
-        counts = probe.execute(
-            "SELECT (SELECT COUNT(*) FROM consultation_dispatch), "
-            "(SELECT COUNT(*) FROM consultation_cost_charge), "
-            "(SELECT COUNT(*) FROM event WHERE event_type=?)",
-            (DISPATCH_ADMISSION_EVENT_TYPE,),
-        ).fetchone()
-        if tuple(counts) != (1, 1, 1):
-            raise FixtureExecutionError(
-                "protected fixture lock probe did not observe committed admission"
-            )
-        probe.rollback()
-    finally:
-        if probe.in_transaction:
-            probe.rollback()
-        probe.close()
-
-
-def _terminalize_fixture_failure(
-    runtime_root: Path | str,
-    organism_id: str,
-    *,
-    admission: DispatchAdmissionResult,
-    raw_package_bytes: bytes,
-    clock: Clock | None,
-) -> None:
-    try:
-        terminalize_fixture_dispatch(
-            runtime_root,
-            organism_id,
-            dispatch_id=admission.dispatch_id,
-            reason_code="fixture_output_invalid",
-            raw_package_bytes=raw_package_bytes,
-            clock=clock,
-        )
-    except Exception as exc:
-        raise FixtureExecutionError(
-            f"deterministic fixture failure terminalization failed: {exc}"
-        ) from exc
-
-
 def perform_fixture_dispatch(
     runtime_root: Path | str,
     organism_id: str,
@@ -908,23 +678,18 @@ def perform_fixture_dispatch(
     request_id: str,
     fixture_case_id: str,
     clock: Clock | None = None,
+    fixture_runner: FixtureRunner = run_deterministic_fixture,
     protected_test_fault: str | None = None,
 ) -> FixtureDispatchResult:
-    """Commit admission, then invoke only the exact deterministic fixture."""
+    """Commit admission first, then invoke the fixture outside SQLite ownership."""
 
-    fixture_fault = (
-        protected_test_fault
-        if protected_test_fault in _PROTECTED_FIXTURE_FAULTS
-        else None
-    )
-    admission_fault = None if fixture_fault is not None else protected_test_fault
     admission = admit_fixture_dispatch(
         runtime_root,
         organism_id,
         request_id=request_id,
         fixture_case_id=fixture_case_id,
         clock=clock,
-        protected_test_fault=admission_fault,
+        protected_test_fault=protected_test_fault,
     )
     if not admission.created:
         return FixtureDispatchResult(
@@ -933,42 +698,15 @@ def perform_fixture_dispatch(
             fixture_output=None,
         )
     try:
-        if fixture_fault == "probe_lock_released":
-            _protected_test_probe_lock_released(runtime_root, organism_id)
-        if fixture_fault == "exit_after_admission":
-            raise SystemExit(23)
-        if fixture_fault == "fixture_exception":
-            raise RuntimeError("protected deterministic fixture failure")
-        output = run_deterministic_fixture(
+        output = fixture_runner(
             deepcopy(admission.request_envelope),
             fixture_case_id,
         )
     except Exception as exc:
-        _terminalize_fixture_failure(
-            runtime_root,
-            organism_id,
-            admission=admission,
-            raw_package_bytes=b"",
-            clock=clock,
-        )
         raise FixtureExecutionError(str(exc)) from exc
     if not isinstance(output, bytes):
-        _terminalize_fixture_failure(
-            runtime_root,
-            organism_id,
-            admission=admission,
-            raw_package_bytes=b"",
-            clock=clock,
-        )
         raise FixtureExecutionError("deterministic fixture output must be bytes")
     if len(output) > 16 * 1024:
-        _terminalize_fixture_failure(
-            runtime_root,
-            organism_id,
-            admission=admission,
-            raw_package_bytes=bytes(output),
-            clock=clock,
-        )
         raise FixtureExecutionError("deterministic fixture output exceeds 16 KiB")
     return FixtureDispatchResult(
         admission=admission,

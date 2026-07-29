@@ -142,28 +142,38 @@ Tests-only run 611 exposed the rollback-retention temporal-skew defect. Issue #1
 
 Durable note: `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md`.
 
-## Implementation-completion gate
+## Implementation-completion audits and repairs
 
-No additional Consultation Boundary behavior is authorized or required before the implementation-completion audit.
+Issue #120 audited exact candidate `44e363e874679537fef43d9f78e382ecf5dc5d3e` and concluded **not ready to freeze; specified repairs required**. Issue #121 accepted four repairs without changing the accepted contract.
 
-The remaining work is evidence closure and independent review:
+Issue #122 audited `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`, independently confirmed Findings 1–3 closed, and found the remaining Finding 4 checkpoint-linkage defect. Issue #123 repaired exact manifest fields, active organism binding, complete request-row equality, and complete active/snapshot request-event row equality in the Phase 2 dispatch boundary only.
 
-- map every accepted P2-A through P2-P matrix row to exact protected implementation evidence;
-- verify all 152 Phase 1 tests remain byte-unchanged and included;
-- verify schema-v1 support, zero-caregiver behavior, deterministic-fixture behavior, and explicit-absence surfaces at one exact candidate head;
-- assemble accepted ADRs, implementation notes, completed matrix mapping, CI evidence, and current Issues;
-- run the single independent read-only Phase 2 implementation audit required by `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`;
-- repair only accepted findings and freeze Phase 2 only after a satisfactory completion conclusion.
+Issue #124 began the final closure audit at `b0ac020dee450238b4267b76eb59addef036618c`. Its interim record confirmed the earlier Finding 4 reproductions closed, Findings 1–3 still closed, the 47 original Phase 1 blobs byte-identical, the independent Phase 1 control at 152 passed, the full candidate at 385 passed, exactly 213 accepted/evidence-map IDs, schema-v1 support, and explicit capability absence.
+
+The interim audit found one medium semantic-linkage gap: coherent mutations to both the active and checkpoint `consultation_request_created` event could pass because the two rows were compared to each other without reconstructing the accepted event from the validated request.
+
+Issue #125 owns the narrow repair. Before any dispatch clock read or mutation, the Phase 2 boundary now reconstructs and checks the exact event sequence, organism, lineage, lifecycle, type, source, canonical request payload/size, schema, environment, and budget semantics against both active and checkpoint rows, then retains complete row equality including wall time.
+
+Protected coherent mutations cover payload, source, lineage, lifecycle, schema, environment, budget, event type, and organism; a missing event is rejected through canonical foreign-key validation. All reject with zero clock, dispatch, charge, admission event, terminal, completion, or fixture effect.
+
+Exact Issue #125 implementation head: `3ddf1116b0aecc4842d257131e3e62481729db58`. Strict isolated verification: `395 passed in 49.62s`, plus install and source/test compilation. The shared frozen Phase 1 checkpoint validator and original Phase 1 tests/helpers are unchanged. Temporary repair helpers/workflows are absent after cleanup.
+
+The repaired candidate adds no live caregiver, model API, human chat, network, subprocess, arbitrary code/callable, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route. Writer categories remain exactly `organism` and `administration`.
+
+## Remaining gate
+
+PR #119 remains open and unmerged. Issues #61/#121/#123/#124/#125 remain open. Phase 2 is not frozen. Issue #124 contains an interim finding rather than a final conclusion.
+
+One final focused independent read-only closure audit is required at one exact ordinary-CI-green PR #119 head. It must independently test coherent active-and-snapshot request-event mutations and verify no regression across Findings 1–3 or the complete 213-ID gate.
 
 ## Exact restart
 
-1. Merge the Slice 42b closeout PR, then reconstruct from updated `main`.
-2. Treat merge `0059e0e20ececcf9e16a9b1a4376c3564cf9c391` and exact head run 614 as the merged implementation baseline, subject only to closeout documentation commits.
-3. Build a complete P2-A–P2-P implementation-evidence map without weakening or reinterpreting any accepted row.
-4. Confirm the original 152 Phase 1 tests are byte-unchanged and included in the exact green candidate.
-5. Confirm no live caregiver/API/human chat, network, subprocess, memory, skill, action-adoption, arbitrary-code, or continuous-execution surface exists.
-6. Request one read-only independent Phase 2 implementation audit against one exact candidate commit; do not use per-slice or iterative audit calls.
-7. Record findings with severity, exact invariant, file/symbol evidence, matrix coverage, and recommended disposition.
-8. Repair accepted findings through ordinary protected work and repeat the audit only if the policy's gate-level conditions require it.
-9. Close Issue #61 and freeze Phase 2 only after all completion-gate checkboxes and the independent audit conclusion are satisfied.
-10. Request human confirmation for any finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.
+1. Read PR #119; Issues #61/#120/#121/#122/#123/#124/#125; the evidence map; and the Slice 42c notes.
+2. Verify the final PR candidate contains request-event semantic repair head `3ddf1116b0aecc4842d257131e3e62481729db58` and only durable documentation closeout afterward.
+3. Confirm all 395 protected tests pass under ordinary CI, schema-v1 CLI smoke passes, and all temporary helpers/workflows are absent.
+4. Confirm all 47 original Phase 1 Python test/helper blobs remain byte-identical and the 152-test control remains green.
+5. Request one final focused read-only audit against the exact fixed head.
+6. Require a conclusion of `ready to freeze`, `ready to freeze after specified documentation-only corrections`, or `not ready to freeze; specified repairs required`.
+7. Do not merge PR #119, close completion Issues, or declare Phase 2 frozen before a satisfactory conclusion.
+8. After a satisfactory conclusion, merge PR #119, update final evidence/handoff, close Issues #125/#123/#121/#61, and freeze Phase 2.
+9. Request human confirmation for any finding that changes contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.

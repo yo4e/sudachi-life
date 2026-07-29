@@ -328,25 +328,6 @@ def test_fixture_runs_only_after_commit_and_without_sqlite_ownership(
     tmp_path: Path,
 ) -> None:
     root, paths, wake = _init_request(tmp_path, organism_id="dispatch-lock-release")
-    calls: list[tuple[dict[str, object], str]] = []
-
-    def fixture(request_envelope: dict[str, object], fixture_case_id: str) -> bytes:
-        calls.append((request_envelope, fixture_case_id))
-        probe = connect_database(paths.database)
-        try:
-            probe.execute("BEGIN IMMEDIATE")
-            counts = probe.execute(
-                "SELECT (SELECT COUNT(*) FROM consultation_dispatch), "
-                "(SELECT COUNT(*) FROM consultation_cost_charge), "
-                "(SELECT COUNT(*) FROM event WHERE event_type=?)",
-                (DISPATCH_EVENT_TYPE,),
-            ).fetchone()
-            assert tuple(counts) == (1, 1, 1)
-            probe.rollback()
-        finally:
-            probe.close()
-        return b"fixture-bytes"
-
     result = perform_fixture_dispatch(
         root,
         paths.organism_id,
@@ -356,12 +337,14 @@ def test_fixture_runs_only_after_commit_and_without_sqlite_ownership(
             wall_time_utc_us=2_106_000_000_000_000,
             monotonic_ns=70_000_000,
         ),
-        fixture_runner=fixture,
+        protected_test_fault="probe_lock_released",
     )
     assert result.admission.created is True
     assert result.fixture_invoked is True
-    assert result.fixture_output == b"fixture-bytes"
-    assert calls == [(result.admission.request_envelope, "valid-action-candidate")]
+    assert result.fixture_output == run_deterministic_fixture(
+        result.admission.request_envelope,
+        "valid-action-candidate",
+    )
 
     second = perform_fixture_dispatch(
         root,
@@ -369,7 +352,6 @@ def test_fixture_runs_only_after_commit_and_without_sqlite_ownership(
         request_id=wake.consultation_request.request_id,
         fixture_case_id="valid-action-candidate",
         clock=FakeClock([]),
-        fixture_runner=lambda *_: pytest.fail("fixture retry was authorized"),
     )
     assert second.admission.created is False
     assert second.fixture_invoked is False
@@ -378,24 +360,43 @@ def test_fixture_runs_only_after_commit_and_without_sqlite_ownership(
 
 def test_fixture_exception_preserves_single_conservative_charge(tmp_path: Path) -> None:
     root, paths, wake = _init_request(tmp_path, organism_id="dispatch-fixture-error")
-
-    def failing_fixture(_request: dict[str, object], _case: str) -> bytes:
-        raise ValueError("fixture failure")
-
-    with pytest.raises(FixtureExecutionError, match="fixture failure"):
+    clock = FakeClock(
+        [
+            ClockReading(2_107_000_000_000_000, 80_000_000),
+            ClockReading(2_108_000_000_000_000, 90_000_000),
+        ]
+    )
+    with pytest.raises(FixtureExecutionError, match="protected deterministic fixture failure"):
         perform_fixture_dispatch(
             root,
             paths.organism_id,
             request_id=wake.consultation_request.request_id,
             fixture_case_id="fixture-exception",
-            clock=FakeClock.fixed(
-                wall_time_utc_us=2_107_000_000_000_000,
-                monotonic_ns=80_000_000,
-            ),
-            fixture_runner=failing_fixture,
+            clock=clock,
+            protected_test_fault="fixture_exception",
         )
     rows = _rows(paths)
     assert len(rows["dispatch"]) == len(rows["charge"]) == len(rows["event"]) == 1
+    connection = connect_database(paths.database, read_only=True)
+    try:
+        terminal = connection.execute(
+            "SELECT reason_code FROM consultation_dispatch_terminal"
+        ).fetchone()
+        completion = connection.execute(
+            "SELECT terminal_id FROM consultation_cost_completion"
+        ).fetchone()
+        terminal_events = int(
+            connection.execute(
+                "SELECT COUNT(*) FROM event WHERE event_type="
+                "'consultation_dispatch_terminalized'"
+            ).fetchone()[0]
+        )
+        assert terminal is not None
+        assert terminal["reason_code"] == "fixture_output_invalid"
+        assert completion is not None and completion["terminal_id"] is not None
+        assert terminal_events == 1
+    finally:
+        connection.close()
 
 
 def test_default_fixture_is_two_argument_deterministic_and_noncanonical(
