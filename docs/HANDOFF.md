@@ -2,9 +2,11 @@
 
 Updated: **2026-07-29**
 
-Phase 1 and Phase 2 are frozen. Phase 3 research Issues #129 and #130 are complete. Issue #132 and draft PR #134 contain a proposed design-only withheld-caregiver evaluation package; Issue #135 owns the required independent read-only design audit. No Phase 3 runtime or live caregiver capability is accepted.
+Phase 1 and Phase 2 are frozen. Phase 3 research Issues #129 and #130 are complete. Issue #132 and draft PR #134 contain a **Proposed, design-only** withheld-caregiver evaluation package. The first independent audit in Issue #135 concluded **not ready; material design revision required**; the proposed package now contains a focused correction pass and awaits exact-head CI plus an independent focused re-audit.
 
-No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, training, or generic agent behavior is authorized.
+No Phase 3 runtime or live caregiver capability is accepted or authorized.
+
+No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, training, continuous loop, new writer category, repeated rollback, resource expansion, generic-agent behavior, personality, or emotion state is authorized.
 
 ## Cold start
 
@@ -21,15 +23,15 @@ Read, in order:
 9. `docs/phase2/CONSULTATION_PROTOCOL_V1.md`
 10. ADR 0010–0016 matrix amendments
 11. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
-12. implemented `docs/phase2/` notes
+12. implemented `docs/phase2/` notes, especially `docs/phase2/SLICE42C_FINAL_CLOSURE_AUDIT.md`
 13. `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`
 14. `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`
 15. proposed `docs/decisions/0017-withheld-caregiver-evaluation-contract.md`
 16. proposed `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`
 17. proposed `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`
-18. Issues #3, #132, #135, PR #134, and current GitHub state
+18. Issues #3, #132, #135, draft PR #134, and current GitHub state
 
-Repository and GitHub state outrank conversation history.
+Repository and current GitHub state outrank conversation history. An Issue #135 exact-head synchronization comment outranks an older candidate hash in prose.
 
 ## Thesis
 
@@ -45,169 +47,130 @@ The repository is the organism's auditable body, developmental history, skill ba
 
 ## Frozen Phase 1
 
-The final Phase 1 audit checked `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`: all findings resolved and 152 tests passed. Those tests remain unchanged and are the schema-v1 control.
+The final Phase 1 audit checked `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`: all findings resolved and 152 tests passed. The 47 original Phase 1 Python test/helper blobs remain the protected schema-v1 control.
 
-Do not change Phase 1 actions, selector, executor, evaluators, injected clocks, checkpoint rules, rollback transformation, writer categories, or protected tests for later-phase convenience. Any exact frozen-boundary defect requires explicit project-owner authorization before repair.
+Do not change Phase 1 actions, selector, executor, evaluators, injected clocks, checkpoint rules, rollback transformation, writer categories, budgets, physical ceilings, or protected tests for later-phase convenience. Any exact frozen-boundary defect requires explicit project-owner authorization before repair.
 
-PR #73 temporarily reopened shared code only for explicitly authorized physical-limit defects and merged as `c9004027a94b709802af7f590d46de862dd93d7d`. The repaired physical boundaries are re-frozen. Pre-repair bodies remain in explicit `*_impl.py` modules.
+PR #73 merged the explicitly authorized physical-limit repairs as `c9004027a94b709802af7f590d46de862dd93d7d`; repaired boundaries are re-frozen and pre-repair bodies remain in explicit `*_impl.py` modules.
 
-Issue #117 explicitly authorized one narrow rollback-retention reconciliation repair after tests-only Slice 42b exposed a deterministic post-retention rollback defect. PR #116 merged the repair as `0059e0e20ececcf9e16a9b1a4376c3564cf9c391`. The pre-repair `rollback_transform_impl.py` remains byte-identical at blob `91f77ff91929f53be46dc9b74a3d1558ddd89b00`; the repaired public rollback boundary is re-frozen.
+Issue #117 authorized one narrow rollback-retention repair after Slice 42b exposed a deterministic defect. PR #116 merged it as `0059e0e20ececcf9e16a9b1a4376c3564cf9c391`; the repaired public rollback boundary is re-frozen and the pre-repair body remains preserved.
 
-The garden wake before the schema-v2 request extension remains byte-identical in `lifecycle_impl.py`, blob `c971d77cc9beab22f5c50fb692b4f81210cbf3ed`.
+## Frozen Phase 2
 
-## Accepted Phase 2 boundary
+ADRs 0008–0016, Consultation Protocol v1, the accepted matrix amendments, the 213-ID evidence map, implemented Slice 36–42c behavior, and all protected tests merged through PR #119 form the frozen Phase 2 package.
 
-ADRs 0008–0016, Consultation Protocol v1, the ADR 0010–0016 matrix amendments, and the Phase 2 matrix form one accepted package.
+Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities remain untrusted provenance only.
 
-Canonical writer categories remain exactly `organism` and `administration`. Caregiver and adapter identities are untrusted provenance only.
+Original Phase 1 budget locations remain `phase1-v1`. Phase 2 policy lives only in immutable `consultation_configuration`.
 
-Original Phase 1 budget locations remain exactly `phase1-v1`. Phase 2 policy lives only in immutable `consultation_configuration`.
+Physical limits remain:
 
-Physical limits remain 8 MiB active/artifact, 40 MiB checkpoint store, 64 MiB working set, and 1 MiB next-wake reserve.
+- 8 MiB active/artifact;
+- 40 MiB checkpoint store;
+- 64 MiB working set;
+- 1 MiB next-wake reserve.
 
-Consultation limits include 16 KiB request, 16 KiB package, 8 KiB provenance inside package, four requests/charged calls per lineage, one outstanding request, 64 KiB logical payload, and zero human/model/money/declared latency.
+Consultation limits remain:
+
+- 16 KiB request;
+- 16 KiB package;
+- 8 KiB provenance inside package;
+- four requests/charged calls per lineage;
+- one outstanding request;
+- 64 KiB logical payload;
+- zero human/model/money/declared latency.
+
+The Phase 2 implementation stream was merged through PRs #65–#119. The final independent read-only audit in Issue #127 checked exact candidate `12de7b7d7413f343b2e5a74df369c26a5896c865` and verified:
+
+- 395 protected tests passed;
+- all 152 original Phase 1 tests passed;
+- all 47 original Phase 1 Python test/helper blobs remained byte-identical;
+- exactly 213 accepted and evidence-map IDs remained equal;
+- schema-v1 and schema-v2 zero-caregiver behavior remained intact;
+- writer categories remained exactly `organism` and `administration`;
+- checkpoint, rollback, identity, digest, immutable-row, artifact, physical-limit, and no-partial-effect boundaries remained intact;
+- no unauthorized live caregiver, API, chat, network, subprocess, callable/code, memory, skill, training, loop, personality/emotion, action-adoption, or selector route existed.
+
+PR #119 merged the exact audited package as `b0941a8ba2a178fc891839198cd5dd5bf6e87719`. Phase 2 is frozen at that merge.
 
 ## Routine clarification delegation
 
-The project owner authorizes routine recommended clarifications to be formally adopted without separate confirmation under `docs/phase2/CLARIFICATION_DELEGATION.md`.
+The project owner authorizes routine recommended clarifications under `docs/phase2/CLARIFICATION_DELEGATION.md`.
 
-Every delegated adoption still requires a focused Issue, normative ADR/document change, protected CI, and durable handoff. Material changes to research purpose, contract/ADR intent, frozen Phase 1, authority/security, live external capabilities, destructive migration, protected evidence, autonomy/resources, or unresolved normative contradictions require explicit human confirmation.
-
-## Implemented evidence
-
-### Slice 36
-
-PRs #65, #66, #67, #69, #70, #71, #72, and #73 implement schema-v2 genesis, zero-caregiver projection, checkpoint repair, retention, rollback, event export, paired overhead, and absolute physical limits. Final run 512: `230 passed in 32.41s`.
-
-### Slice 37
-
-- PR #81: request wake core, run 520 `236 passed in 33.52s`.
-- PR #83: storage-safe request extension, run 533 `242 passed in 31.65s`.
-- PR #85: wall-time and concurrency evidence, run 538 245 tests passed.
-
-### Slice 38
-
-- PR #87: exact digest/request schema, run 545 `261 passed in 34.10s`.
-- PR #91: exact proposal schema, run 551 `275 passed in 29.84s`.
-- PR #95: exact dispatch/response/package graph, run 559 `294 passed in 37.06s`.
-
-### Accepted clarifications
-
-- ADR 0010: PR #94, merge `b98bfdbd3de52e192f18328d6a294c8a683fa998`; Issues #88/#89/#92/#93 closed.
-- ADR 0011: PR #98, merge `c392ee160a2a056e9fa450138c845ce1f2980fd3`; Issue #96 closed.
-- ADR 0012: PR #102, merge `2721e472791d6221683ba62fdfc0a442fc1ea6c0`; Issue #101 closed.
-- ADR 0013: PR #106, merge `62336bbed44ff32470936c3eedc11f276f491d11`; Issue #105 closed.
-- ADR 0014: PR #110, merge `b5d1ae3ae9ed46855f285c8539e4c2ed7891dbc3`; Issue #109 closed. The legal largest request has exactly eight eligible parent events.
-- ADRs 0015 and 0016: PR #113, merge `fc194cba5f90d0c0c1f81907646f4e661dc80bc7`; Issues #111/#112 closed. They fix the exact fifth-request refusal and the pure 64 KiB/one-over evidence plus legal four-cycle maximum.
-
-### Slice 39
-
-PR #99 merged as `b7c434aed249ed0bc52160db66e594824186890e`. Final head `64720b736fcab47b5ebfff26155ab17728f47b14`, run 569: `316 passed in 56.74s` plus install, compile, and schema-v1 smoke.
-
-### Slice 40
-
-PR #103 merged as `f0238f108b2eb05a6774ca68a0b056eb12772dd1`. Final head `e6221bb42ad5e94ddd4d0c2e576975d64693464c`, run 580: `338 passed in 73.21s` plus install, compile, and schema-v1 smoke.
-
-### Slice 41
-
-PR #107 merged as `a1176a3afa55931b409696e8d5b50ab6992f129f`. Final head `d6cb713aae5df2ed3e12740bbc474a89cbbb2df8`, run 593: `358 passed in 42.65s` plus install, compile, and schema-v1 smoke.
-
-It implements exact disposition identity/envelope/mapping, oldest proposal selection, four-event organism transaction, fixed ledger, lifecycle/failure/input/garden invariants, checkpoint publication/repair, rollback-before-commit, finality, concurrency, physical refusal, and capability absence.
-
-### Slice 42a
-
-PR #114 merged as `716834b9bd3200989db2d078fb8c108b499a09b9`.
-
-Final exact PR head `1cbfbb8dd0e649d0e83570ffd9c05baecff39619`, run 607: `360 passed in 115.98s` plus install, compile, and schema-v1 smoke.
-
-It implements legitimate request ordinals one through four, the exact fifth-request refusal, four conservative charges, the ADR 0014 eight-parent largest request, the pure 65536/65537 payload guard, the legal four-cycle maximum, ordinary checkpoint and physical-limit evidence, retained implementation-body proof, and no private canonical mutation.
-
-Durable note: `docs/phase2/SLICE42A_FINITE_CYCLE_BOUNDARIES.md`.
-
-### Slice 42b
-
-PR #116 merged as `0059e0e20ececcf9e16a9b1a4376c3564cf9c391`.
-
-Final exact PR head `7f9b718f8b65f71e411a5ed632257ed5609d3ede`, run 614: `365 passed in 46.13s` plus install, compile, protected enforcement, and schema-v1 CLI smoke.
-
-It implements and protects:
-
-- one complete four-request/four-charge old-lineage epoch;
-- one accepted public rollback and one complete fresh-lineage epoch;
-- exactly eight maximum charged fixture invocations across one physical organism;
-- rejection of a second completed rollback under ADR 0007;
-- fresh request ordinal one and zero fresh-lineage logical bytes before its first request;
-- immutable inactive old-lineage rows;
-- old unresolved work not blocking current work;
-- pre-mutation late old-package rejection and old-proposal exclusion;
-- consultation rows, event export, parent/authority, archive/source/transformed-candidate/completion, and physical-limit reconstruction across rollback;
-- schema-v1 rollback after retention and the next ordinary checkpoint.
-
-Tests-only run 611 exposed the rollback-retention temporal-skew defect. Issue #117 authorized the exact wrapper repair; all original 152 Phase 1 tests remain unchanged.
-
-Durable note: `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md`.
-
-## Phase 2 implementation audit and freeze
-
-Issue #120 audited `44e363e874679537fef43d9f78e382ecf5dc5d3e` and found one high and three medium defects. Issues #121/#123/#125 record the accepted Phase 2-only repairs. Issues #122 and #124 independently re-audited the successive closure candidates and exposed the remaining checkpoint-linkage and request-event semantic-linkage defects.
-
-Issue #127 performed the final independent read-only audit at exact candidate `12de7b7d7413f343b2e5a74df369c26a5896c865`. It independently verified:
-
-- `395 passed` for the complete protected suite;
-- `152 passed` for the original Phase 1 control;
-- all 47 original Phase 1 Python test/helper blobs byte-identical to `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`;
-- exactly 213 accepted and evidence-map IDs;
-- schema-v1 CLI behavior and schema-v2 zero-caregiver behavior intact;
-- Findings 1–4 resolved under independent adversarial probes;
-- writer categories exactly `organism` and `administration`;
-- checkpoint, rollback, identity, digest, immutable-row, artifact, physical-limit, and no-partial-effect boundaries intact;
-- no unauthorized live caregiver, API, chat, network, subprocess, callable/code, memory, skill, training, loop, personality/emotion, action-adoption, or selector route.
-
-The required conclusion was **ready to freeze**, with no surviving finding and no documentation-only correction required.
-
-PR #119 merged the exact audited candidate as `b0941a8ba2a178fc891839198cd5dd5bf6e87719`. Phase 2 is frozen at that merge. The frozen package is ADRs 0008–0016, Consultation Protocol v1, accepted amendments, the 213-ID evidence map, implemented Slice 36–42c behavior, and all protected tests merged through PR #119.
+Every delegated adoption still requires a focused Issue, normative document change, protected CI, and durable handoff. Material changes to research purpose, contract intent, frozen behavior, authority/security, live external capability, protected evidence, autonomy/resources, or unresolved contradictions require explicit human confirmation.
 
 ## Phase 3 research
 
-Issue #129 completed the first bounded evidence pass. PR #131 merged `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`; ordinary CI passed all 395 protected tests.
+Issue #129 completed the first bounded evidence pass. PR #131 merged `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md` after ordinary CI passed all 395 protected tests.
 
-Issue #130 completed the full-text protocol extraction. PR #133 merged `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`; ordinary CI passed all 395 protected tests.
+Issue #130 completed full-text protocol extraction. PR #133 merged `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md` after ordinary CI passed all 395 protected tests.
 
 Research conclusion:
 
-- assistance fading, competence-gated intervention, full no-helper evaluation, scaffold-free deployment, finite demonstration followed by autonomy, skill internalization, versioned/tested/pruned skill lifecycles, and selected burden measures are established neighboring mechanisms;
-- a live source can disappear while prompts, demonstrations, action traces, routers, tools, or skill banks remain at runtime;
-- the remaining plausible candidate is not one mechanism but a protected integration and measurement protocol;
-- the bounded negative search does not prove novelty.
+- assistance fading, competence-gated intervention, full no-helper evaluation, scaffold-free deployment, finite demonstration followed by autonomy, skill internalization, and versioned/tested/pruned skill lifecycles are established neighboring mechanisms;
+- a live source can disappear while prompts, demonstrations, traces, routers, tools, recovery suffixes, or skill banks remain at runtime;
+- the remaining plausible SUDACHI candidate is a protected integration and measurement protocol, not any one mechanism;
+- bounded negative search does not prove novelty.
 
-## Proposed Phase 3 design package
+No code, schema, writer category, authority boundary, budget, resource ceiling, or runtime capability changed in the research passes.
 
-Issue #132 and draft PR #134 propose:
+## Proposed Phase 3 package
 
-- ADR 0017, status Proposed;
-- `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`, status Proposed;
-- `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`, status Proposed.
+Issue #132 and draft PR #134 contain:
 
-The package defines:
+- ADR 0017, status **Proposed**;
+- `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`, status **Proposed**;
+- `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`, status **Proposed**.
 
-- W0: caregiver route available;
-- W1: live source unavailable while an externalized caregiver-derived scaffold remains;
-- W2: live source and externalized scaffold unavailable, with only declared internalized policy/model updates;
-- W3: identity-bound verified local conversion under protected lineage, hidden-scaffold prohibition, withheld-caregiver evaluation, and complete cost accounting.
+The original exact audit candidate was `932ff2ad8d99e8d9fb2e78a16cd12a5f1e8995c9`, with Test run 680 successful and `395 passed in 55.27s`. Issue #135 independently audited that exact head and concluded:
 
-It binds one lineage across E0 pre-development, E1 post-adoption, and E2 withheld evaluation; inventories every runtime substrate; preserves writer categories exactly `organism` and `administration`; treats substrate `custodian` as non-writer inventory metadata; protects evaluator/suite identity; ends an episode on rollback; preserves failed futures; prohibits cross-lineage evidence substitution; and requires complete cost vectors rather than a scalar maturity score.
+> not ready; material design revision required
 
-The package deliberately leaves schema, transport, artifact types, model updates, suite/evaluator implementation, provider/legal classes, and implementation scope unresolved.
+The audit findings were:
 
-No Phase 3 code, schema, accepted ADR, accepted matrix, live capability, writer authority, budget, resource ceiling, or frozen behavior changed.
+1. `P3-D001` — W3 overlapped W1/W2;
+2. `P3-D002` — fixed configuration conflicted with E2 disablement;
+3. `P3-D003` — invalid or not-reached E0 could establish acquisition;
+4. `P3-D004` — same-lineage cross-episode evidence could be laundered;
+5. `P3-D005` — the outcome evaluator could become a development oracle;
+6. `P3-D006` — conversion, verification, adoption, and activation were not four protected transitions;
+7. `P3-D007` — opaque model updates had a fail-open exception;
+8. `P3-D008` — failed-attempt population and stopping rules were open;
+9. `P3-D009` — the cost ledger lacked a final closure boundary;
+10. `P3-D010` — the matrix could pass while contract clauses drifted.
+
+On 2026-07-29 the project owner authorized the focused correction pass, including the evaluator/information-flow redesign. That authorization permits proposed documentation repair only; it is not final contract acceptance or implementation authorization.
+
+## Corrected proposed semantics
+
+The focused correction pass now proposes:
+
+- W0/W1/W2 as the mutually exclusive point-local availability axis;
+- W3 as an orthogonal episode-level certification that preserves its E2 W1 or W2 subtype;
+- a pre-E0 study/run-set manifest with attempt ordinals, exact count or stopping rule, terminal statuses, and full-population reconciliation;
+- evidence binding across exact study, attempt, episode, organism, lineage, point/cutoff, and checkpoint identities;
+- a pre-E0 immutable protected schedule containing the sole legal E1 cutoff and E2 availability transition;
+- acquisition only from a valid, reachable, complete E0 with an explicitly eligible negative status;
+- separate immutable conversion, verification, adoption, and activation transitions with accepted-but-inactive state, authority, ordering, idempotence, conflict, and no-partial-effect rules;
+- a distinct conversion verifier and sequestered held-out outcome evaluator under a pre-E0 information-flow and probe/retry policy;
+- mandatory identity, digest, method, data-class, compute/storage, and verification evidence for any W2/W3 model update; opaque updates are unsupported rather than fail-open;
+- mandatory failure controls, failed-attempt retention, claim tiers, and stopping-rule reconciliation;
+- one immutable final cost closure after E2, integrity handling, evidence packaging, and report review;
+- an exact fourteen-group W3 report;
+- the original 140 matrix IDs retained, with normative clause references, explicit fail-closed outcomes, exact clause/report-set equality gates, and full Phase 1/2 collection/no-skip/assertion/blob integrity.
+
+No corrected document chooses a database schema, transport, live source, provider, artifact type, model-update permission, evaluator implementation, experiment count, hardware environment, or scalar maturity score.
+
+No corrected document authorizes live caregiver, memory, skills, training, model/API, network, subprocess, action adoption, new writer authority, repeated rollback, resource expansion, or other Phase 3 runtime capability.
 
 ## Exact restart
 
-1. Reconstruct Phase 1/2 from `AGENTS.md`, this handoff, `docs/phase2/SLICE42C_FINAL_CLOSURE_AUDIT.md`, PR #119, and Issue #127.
-2. Treat both phases as frozen controls.
-3. Read the two Phase 3 research notes, proposed ADR 0017, proposed contract, proposed matrix, Issue #132, draft PR #134, and audit Issue #135.
-4. Synchronize Issue #135 to the final PR #134 head after this handoff commit and ordinary CI.
-5. Run one independent read-only design audit against that exact head. The current assistant must not label its own pre-review independent.
-6. Record findings without editing during the audit; repair accepted findings in a separate focused pass.
-7. Do not change Proposed to Accepted, merge PR #134, or begin implementation before the audit conclusion and required project-owner confirmation.
-8. Do not authorize live caregiver, memory, skills, training, model/API, network, action adoption, new writer authority, repeated rollback, resource expansion, or other Phase 3 runtime capability through this design package.
+1. Treat Phase 1 and Phase 2 as frozen controls.
+2. Read Issue #135's original independent audit and all findings `P3-D001` through `P3-D010`.
+3. Inspect the corrected proposed ADR 0017, contract, and 140-ID matrix in draft PR #134.
+4. Confirm the PR remains Draft and every Phase 3 document remains Proposed.
+5. Run ordinary protected CI on the final corrected PR #134 head and synchronize the exact head/run/results in PR #134 and Issue #135.
+6. Run one **independent focused read-only re-audit** against that exact CI-green head. The authoring assistant's review does not count as independent.
+7. Require the re-audit to map every original finding to exact corrected clauses and matrix IDs and conclude one of the required Issue #135 outcomes.
+8. Do not change Proposed to Accepted, merge PR #134, or begin implementation until the focused re-audit is satisfactory and final project-owner acceptance is recorded.
+9. Acceptance of the design package still does not authorize implementation; future capability work requires separately accepted scope, matrices, controls, provider/legal review where applicable, owner authorization, and independent implementation audit.
