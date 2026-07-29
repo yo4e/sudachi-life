@@ -2,7 +2,7 @@
 
 Updated: **2026-07-29**
 
-Phase 1 and Phase 2 are frozen. Phase 3 research passes #129 and #130 narrow the caregiver-withdrawal hypothesis. Issue #132 owns the first Phase 3 design-only contract. No Phase 3 runtime or live caregiver capability is accepted.
+Phase 1 and Phase 2 are frozen. Phase 3 research Issues #129 and #130 are complete. Issue #132 and draft PR #134 contain a proposed design-only withheld-caregiver evaluation package; Issue #135 owns the required independent read-only design audit. No Phase 3 runtime or live caregiver capability is accepted.
 
 No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, training, or generic agent behavior is authorized.
 
@@ -24,7 +24,10 @@ Read, in order:
 12. implemented `docs/phase2/` notes
 13. `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`
 14. `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`
-15. Issue #3, Issue #130, Issue #132, and current PRs/issues
+15. proposed `docs/decisions/0017-withheld-caregiver-evaluation-contract.md`
+16. proposed `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`
+17. proposed `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`
+18. Issues #3, #132, #135, PR #134, and current GitHub state
 
 Repository and GitHub state outrank conversation history.
 
@@ -44,7 +47,7 @@ The repository is the organism's auditable body, developmental history, skill ba
 
 The final Phase 1 audit checked `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`: all findings resolved and 152 tests passed. Those tests remain unchanged and are the schema-v1 control.
 
-Do not change Phase 1 actions, selector, executor, evaluators, injected clocks, checkpoint rules, rollback transformation, writer categories, or protected tests for Phase 2 convenience. Any exact frozen-boundary defect requires explicit project-owner authorization before repair.
+Do not change Phase 1 actions, selector, executor, evaluators, injected clocks, checkpoint rules, rollback transformation, writer categories, or protected tests for later-phase convenience. Any exact frozen-boundary defect requires explicit project-owner authorization before repair.
 
 PR #73 temporarily reopened shared code only for explicitly authorized physical-limit defects and merged as `c9004027a94b709802af7f590d46de862dd93d7d`. The repaired physical boundaries are re-frozen. Pre-repair bodies remain in explicit `*_impl.py` modules.
 
@@ -164,38 +167,47 @@ The required conclusion was **ready to freeze**, with no surviving finding and n
 
 PR #119 merged the exact audited candidate as `b0941a8ba2a178fc891839198cd5dd5bf6e87719`. Phase 2 is frozen at that merge. The frozen package is ADRs 0008–0016, Consultation Protocol v1, accepted amendments, the 213-ID evidence map, implemented Slice 36–42c behavior, and all protected tests merged through PR #119.
 
-## Phase 3 research restart
+## Phase 3 research
 
-Issue #129 completed the first bounded Phase 3 evidence pass. PR #131 merged the research note and handoff synchronization after ordinary CI passed all 395 protected tests.
+Issue #129 completed the first bounded evidence pass. PR #131 merged `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`; ordinary CI passed all 395 protected tests.
 
-Issue #130 performs the full-text protocol extraction for SKILL0, PATS, AIM, ThriftyDAgger, MILES, “Can Language Models Teach?”, and ReSkill. Its durable output is `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`.
+Issue #130 completed the full-text protocol extraction. PR #133 merged `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`; ordinary CI passed all 395 protected tests.
 
-The sharpened conclusion is:
+Research conclusion:
 
-- full runtime-assistance unavailability is already established by multiple systems;
-- finite human input followed by autonomous behavior is established;
-- live-source absence can still leave teacher-derived prompts, demonstrations, action traces, or skill banks at runtime;
-- evidence-backed scaffold editing and created, tested, versioned, refined, accepted, rejected, selected, and pruned skills are established neighboring mechanisms;
-- no-helper evaluation, scaffold-free deployment, finite demonstrations, skill internalization, skill lifecycle, or lower intervention/token cost is sufficient as a standalone SUDACHI contribution;
-- the remaining plausible candidate is the joint W3 protocol: identity-bound caregiving events, declared and verified local conversion, hidden-scaffold prohibition, protected longitudinal evaluation, unavailable-caregiver trials, rollback lineage, failure controls, and complete cost accounting;
-- this remains a hypothesis, and the bounded negative search does not prove novelty.
+- assistance fading, competence-gated intervention, full no-helper evaluation, scaffold-free deployment, finite demonstration followed by autonomy, skill internalization, versioned/tested/pruned skill lifecycles, and selected burden measures are established neighboring mechanisms;
+- a live source can disappear while prompts, demonstrations, action traces, routers, tools, or skill banks remain at runtime;
+- the remaining plausible candidate is not one mechanism but a protected integration and measurement protocol;
+- the bounded negative search does not prove novelty.
 
-Assistance availability is now separated into:
+## Proposed Phase 3 design package
 
-- W0: assistance remains available;
-- W1: live source unavailable but source-derived runtime artifact remains;
-- W2: assistance channel and temporary scaffold unavailable, with capability retained in a policy or model;
-- W3: identity-bound verified local conversion under protected lineage and complete cost accounting.
+Issue #132 and draft PR #134 propose:
 
-No code, schema, ADR, protected test, accepted matrix, writer category, authority boundary, resource limit, or runtime capability changed in Issues #129 or #130.
+- ADR 0017, status Proposed;
+- `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`, status Proposed;
+- `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`, status Proposed.
+
+The package defines:
+
+- W0: caregiver route available;
+- W1: live source unavailable while an externalized caregiver-derived scaffold remains;
+- W2: live source and externalized scaffold unavailable, with only declared internalized policy/model updates;
+- W3: identity-bound verified local conversion under protected lineage, hidden-scaffold prohibition, withheld-caregiver evaluation, and complete cost accounting.
+
+It binds one lineage across E0 pre-development, E1 post-adoption, and E2 withheld evaluation; inventories every runtime substrate; preserves writer categories exactly `organism` and `administration`; treats substrate `custodian` as non-writer inventory metadata; protects evaluator/suite identity; ends an episode on rollback; preserves failed futures; prohibits cross-lineage evidence substitution; and requires complete cost vectors rather than a scalar maturity score.
+
+The package deliberately leaves schema, transport, artifact types, model updates, suite/evaluator implementation, provider/legal classes, and implementation scope unresolved.
+
+No Phase 3 code, schema, accepted ADR, accepted matrix, live capability, writer authority, budget, resource ceiling, or frozen behavior changed.
 
 ## Exact restart
 
-1. Reconstruct Phase 1 and Phase 2 from `AGENTS.md`, this handoff, `docs/phase2/SLICE42C_FINAL_CLOSURE_AUDIT.md`, PR #119, and Issue #127.
-2. Treat both Phase 1 and Phase 2 as frozen controls.
-3. Read `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`, `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`, Issue #3, Issue #130, and Issue #132.
-4. Continue in Issue #132 with a design-only Withheld-Caregiver Evaluation Contract.
-5. Define W0–W3, identity and lineage binding, exhaustive runtime-substrate declarations, hidden-scaffold failure, caregiving-to-artifact evidence, protected evaluation, rollback, harmful-assistance controls, complete cost accounting, and mandatory substrate baselines.
-6. Record the design in a normative Phase 3 document or ADR package and define its evidence matrix before any implementation.
-7. Do not authorize or implement live caregiver, memory, skill learning, action adoption, training, model/API, network, new writer authority, or other Phase 3 runtime behavior merely by completing the design contract.
-8. Request explicit project-owner confirmation before accepting any design that changes the research question, contract/ADR intent, frozen behavior, authority/security, live capabilities, protected evidence, or material autonomy/resource scope.
+1. Reconstruct Phase 1/2 from `AGENTS.md`, this handoff, `docs/phase2/SLICE42C_FINAL_CLOSURE_AUDIT.md`, PR #119, and Issue #127.
+2. Treat both phases as frozen controls.
+3. Read the two Phase 3 research notes, proposed ADR 0017, proposed contract, proposed matrix, Issue #132, draft PR #134, and audit Issue #135.
+4. Synchronize Issue #135 to the final PR #134 head after this handoff commit and ordinary CI.
+5. Run one independent read-only design audit against that exact head. The current assistant must not label its own pre-review independent.
+6. Record findings without editing during the audit; repair accepted findings in a separate focused pass.
+7. Do not change Proposed to Accepted, merge PR #134, or begin implementation before the audit conclusion and required project-owner confirmation.
+8. Do not authorize live caregiver, memory, skills, training, model/API, network, action adoption, new writer authority, repeated rollback, resource expansion, or other Phase 3 runtime capability through this design package.
