@@ -128,3 +128,18 @@ Exact implementation head: `9814908aae2646f4c09142030b7381e5f9a1394b`. Strict va
 
 One final focused read-only closure audit is required before merge or Phase 2 freeze.
 
+
+
+## Interim closure audit and request-event semantic repair
+
+Issue #124 began the final closure audit at `b0ac020dee450238b4267b76eb59addef036618c`. Its interim record independently confirmed all prior demonstrated checkpoint-linkage reproductions closed and Findings 1–3 remained closed, but found one medium semantic-linkage defect.
+
+The active and selected-checkpoint `consultation_request_created` event rows were required to equal each other, yet neither row was independently reconstructed from the validated request. Coherent mutation of both rows' payload, source, or lineage could therefore pass dispatch admission.
+
+Issue #125 closes that gap only in the Phase 2 dispatch admission boundary. The shared frozen Phase 1 checkpoint validator remains unchanged. The exact request-created event is reconstructed from the validated request row/envelope and binds event sequence, organism, lineage, lifecycle, event type, protected source, canonical payload and size, schema, environment, and budget. Both active and checkpoint rows must independently match before complete row equality is accepted.
+
+Protected regressions coherently mutate payload, source, lineage, lifecycle, schema, environment, budget, type, and organism in both databases; missing event evidence is rejected through canonical foreign-key validation. Every case fails before clock read with zero consultation or fixture effects.
+
+Exact implementation head: `3ddf1116b0aecc4842d257131e3e62481729db58`. Strict isolated verification: `395 passed in 49.62s`, plus install and source/test compilation. Temporary repair infrastructure is absent after cleanup.
+
+A final focused independent read-only closure audit remains required before PR #119 may merge or Phase 2 may freeze.

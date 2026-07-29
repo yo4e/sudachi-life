@@ -381,21 +381,23 @@ This map may become the input to the single read-only Phase 2 implementation aud
 
 Issue #120 inspected exact candidate `44e363e874679537fef43d9f78e382ecf5dc5d3e` and concluded **not ready to freeze; specified repairs required**. Issue #121 owns its accepted repairs.
 
-Issue #122 inspected exact candidate `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`. It independently confirmed Findings 1–3 closed, all 47 original Phase 1 test/helper blobs byte-identical, the 152-test control green, the full 381-test suite green, the 213-ID set exact, schema-v1 support intact, and the explicit-absence surface intact. It still concluded **not ready to freeze; specified repairs required** because Finding 4 lacked active-organism, exact-manifest-field, and exact request snapshot linkage.
+Issue #122 inspected exact candidate `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`, independently confirmed Findings 1–3 closed, and found the remaining Finding 4 checkpoint-linkage defect. Issue #123 added `REPAIR-F4` evidence for exact manifest fields, active organism binding, complete request-row equality, complete active/snapshot request-event row equality, coherent wrong-organism and extra-field rejection, and zero partial effects.
 
-Issue #123 adds the following `REPAIR-F4` evidence without changing any accepted ID or requirement meaning:
+Issue #124 began the final closure audit at `b0ac020dee450238b4267b76eb59addef036618c`. Its interim record independently confirmed the Issue #123 reproductions closed, Findings 1–3 remained closed, the 47 original Phase 1 blobs remained byte-identical, the Phase 1 control passed 152 tests, the complete candidate passed 385 tests, and the normative/evidence sets each contained exactly 213 IDs.
 
-- exact 18-field checkpoint manifest enforcement;
-- `manifest.organism_id` and validated snapshot organism binding to the active organism/request;
-- complete checkpoint request row/envelope equality with the active request;
-- complete checkpoint `consultation_request_created` event equality with the active event;
-- coherent wrong-organism substitution rejection;
-- registry-linked undeclared manifest field rejection;
-- missing request row and mismatched request event rejection;
-- zero clock, dispatch, charge, admission-event, terminal, completion, or fixture effects on every rejection.
+The interim audit identified one additional medium gap: active and checkpoint request-created event rows were equal but their semantics were not reconstructed from the validated request. Issue #125 adds `REPAIR-REQUEST-EVENT` evidence without changing any accepted ID or requirement meaning:
 
-Exact Finding 4 implementation head: `9814908aae2646f4c09142030b7381e5f9a1394b`. Strict isolated validation: `385 passed in 54.25s`, plus install and source/test compilation. The shared frozen Phase 1 validator and original Phase 1 test/helper blobs are unchanged. Temporary repair infrastructure is absent.
+- exact reconstruction of event sequence, organism, lineage, lifecycle, type, and source;
+- exact canonical payload reconstruction from the validated request envelope and stored canonical size;
+- exact schema-v2, `seed-garden-v1`, and `phase1-v1` binding;
+- independent active-event and checkpoint-event semantic validation;
+- retained complete row equality, including wall-time evidence;
+- coherent active-and-snapshot payload/source/lineage/lifecycle/schema/environment/budget/type/organism mutation rejection;
+- missing-event rejection through canonical foreign-key validation;
+- zero clock, dispatch, charge, admission-event, terminal, completion, or fixture effects.
 
-This supplement strengthens P2-F02, P2-O20, ADR 0008's stable request-checkpoint admission boundary, and the existing dispatch/physical/explicit-absence evidence. It does not add live capability, authority, schema, resource, or protocol behavior.
+Exact Issue #125 implementation head: `3ddf1116b0aecc4842d257131e3e62481729db58`. Strict isolated validation: `395 passed in 49.62s`, plus install and source/test compilation. The shared frozen Phase 1 validator and original Phase 1 test/helper blobs remain unchanged. Temporary repair infrastructure is absent after cleanup.
 
-This map remains an audit input. One final focused read-only closure audit must independently verify Finding 4 and regression across the complete gate before PR #119 may merge or Issue #61 may close. Phase 2 is not frozen.
+`REPAIR-REQUEST-EVENT` strengthens P2-F02, P2-N02, P2-N07, P2-O20, ADR 0008's stable request-checkpoint admission boundary, and existing authority/checkpoint/no-partial-effect evidence. It adds no live capability, authority, schema, resource, protocol, or Phase 1 behavior.
+
+This map remains an audit input. Issue #124 is an interim audit record, not a final conclusion. One final focused independent read-only closure audit must verify the Issue #125 repair and the complete gate before PR #119 may merge or Issue #61 may close. Phase 2 is not frozen.
