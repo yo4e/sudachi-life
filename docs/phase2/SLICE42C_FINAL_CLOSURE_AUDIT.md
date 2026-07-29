@@ -36,15 +36,15 @@ Protected coherent mutations cover payload, source, lineage, lifecycle, schema, 
 
 - Issue #125 implementation head: `3ddf1116b0aecc4842d257131e3e62481729db58`;
 - strict isolated verification: `395 passed in 49.62s`;
-- package installation and source/test compilation: passed;
+- final exact audit candidate: `4389fcf0cb82f5c11504fa83353112f47e762f4d`;
+- ordinary GitHub Actions run 665 (`30409919523`): `395 passed in 49.90s`;
+- package installation, source/test compilation, protected artifact upload, and schema-v1 genesis CLI smoke: passed;
 - shared frozen Phase 1 validator: unchanged;
 - original Phase 1 tests/helpers: unchanged;
-- temporary repair infrastructure: absent after cleanup;
+- temporary repair infrastructure: absent;
 - PR #119: open and unmerged;
 - Phase 2: not frozen.
 
 ## Candidate finalization
 
-The commit containing this candidate-finalization section is the proposed final audit candidate. Its exact SHA and ordinary GitHub Actions run are recorded in PR #119 and the final audit Issue after install, source/test compilation, all 395 protected tests, protected-result enforcement, and schema-v1 genesis CLI smoke pass.
-
-Do not modify or merge the fixed candidate, close completion Issues, or declare Phase 2 frozen while the final independent audit is running.
+Exact commit `4389fcf0cb82f5c11504fa83353112f47e762f4d` is the fixed final audit candidate. Do not modify or merge it, close completion Issues, or declare Phase 2 frozen while the final independent audit is running.
