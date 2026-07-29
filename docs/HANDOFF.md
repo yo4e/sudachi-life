@@ -2,9 +2,9 @@
 
 Updated: **2026-07-29**
 
-Phase 1 and Phase 2 are frozen. Phase 3 research has begun under Issue #129 as a research-only examination of caregiver withdrawal and retained competence. No Phase 3 runtime or live caregiver capability is accepted.
+Phase 1 and Phase 2 are frozen. Phase 3 research passes #129 and #130 narrow the caregiver-withdrawal hypothesis. Issue #132 owns the first Phase 3 design-only contract. No Phase 3 runtime or live caregiver capability is accepted.
 
-No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, or generic agent behavior is authorized.
+No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, training, or generic agent behavior is authorized.
 
 ## Cold start
 
@@ -23,7 +23,8 @@ Read, in order:
 11. `docs/PHASE2_CONSULTATION_TEST_MATRIX.md`
 12. implemented `docs/phase2/` notes
 13. `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`
-14. Issue #3, Issue #129, and current PRs/issues
+14. `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`
+15. Issue #3, Issue #130, Issue #132, and current PRs/issues
 
 Repository and GitHub state outrank conversation history.
 
@@ -165,26 +166,36 @@ PR #119 merged the exact audited candidate as `b0941a8ba2a178fc891839198cd5dd5bf
 
 ## Phase 3 research restart
 
-Issue #129 starts the first bounded Phase 3 research slice under the existing authorization in Issue #3. The slice tests caregiver withdrawal and retained-competence precedents only; it does not accept a Phase 3 architecture or runtime capability.
+Issue #129 completed the first bounded Phase 3 evidence pass. PR #131 merged the research note and handoff synchronization after ordinary CI passed all 395 protected tests.
 
-The first evidence pass is recorded in `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`.
+Issue #130 performs the full-text protocol extraction for SKILL0, PATS, AIM, ThriftyDAgger, MILES, “Can Language Models Teach?”, and ReSkill. Its durable output is `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`.
 
-Its current conclusion is:
+The sharpened conclusion is:
 
-- finite teacher access, assistance gating, competence-aware fading, scaffold-free deployment, and retained policy performance after withdrawal are established neighboring mechanisms;
-- SKILL0 and PATS directly rule out a broad novelty claim based only on progressively removing skills or training scaffolds;
-- SUDACHI's remaining plausible candidate is the narrower integration of one persistent bounded individual, finite recorded caregiving, provenance-preserving verified local artifacts, withheld-caregiver evaluation, protected evaluators, rollback lineage, abstention, and full human/compute/storage cost accounting;
-- this is still a hypothesis, and negative searches are not proof of novelty.
+- full runtime-assistance unavailability is already established by multiple systems;
+- finite human input followed by autonomous behavior is established;
+- live-source absence can still leave teacher-derived prompts, demonstrations, action traces, or skill banks at runtime;
+- evidence-backed scaffold editing and created, tested, versioned, refined, accepted, rejected, selected, and pruned skills are established neighboring mechanisms;
+- no-helper evaluation, scaffold-free deployment, finite demonstrations, skill internalization, skill lifecycle, or lower intervention/token cost is sufficient as a standalone SUDACHI contribution;
+- the remaining plausible candidate is the joint W3 protocol: identity-bound caregiving events, declared and verified local conversion, hidden-scaffold prohibition, protected longitudinal evaluation, unavailable-caregiver trials, rollback lineage, failure controls, and complete cost accounting;
+- this remains a hypothesis, and the bounded negative search does not prove novelty.
 
-No code, schema, ADR, protected test, accepted matrix, writer category, authority boundary, resource limit, or runtime capability changed in this slice.
+Assistance availability is now separated into:
+
+- W0: assistance remains available;
+- W1: live source unavailable but source-derived runtime artifact remains;
+- W2: assistance channel and temporary scaffold unavailable, with capability retained in a policy or model;
+- W3: identity-bound verified local conversion under protected lineage and complete cost accounting.
+
+No code, schema, ADR, protected test, accepted matrix, writer category, authority boundary, resource limit, or runtime capability changed in Issues #129 or #130.
 
 ## Exact restart
 
 1. Reconstruct Phase 1 and Phase 2 from `AGENTS.md`, this handoff, `docs/phase2/SLICE42C_FINAL_CLOSURE_AUDIT.md`, PR #119, and Issue #127.
 2. Treat both Phase 1 and Phase 2 as frozen controls.
-3. Read `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`, Issue #3, Issue #129, and the current follow-up research Issue.
-4. Perform full-text, page-level protocol extraction for SKILL0, PATS, AIM, ThriftyDAgger, MILES, “Can Language Models Teach?”, and ReSkill.
-5. For each system, extract the assistance unit, withdrawal schedule, whether assistance is unavailable or merely unused, evaluation timing, persistence substrate, identity assumptions, failure controls, and complete reported cost metrics.
-6. Update the comparison matrix and determine the minimum defensible Phase 3 experiment-design distinction.
-7. Do not design or implement live caregiver, memory, skill adoption, action adoption, training, model/API, network, or other Phase 3 runtime behavior until a separate reviewed scope and audit gate is accepted.
-8. Request human confirmation before changing the research question, contract/ADR intent, frozen behavior, authority/security, live capabilities, protected evidence, or material autonomy/resource scope.
+3. Read `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`, `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`, Issue #3, Issue #130, and Issue #132.
+4. Continue in Issue #132 with a design-only Withheld-Caregiver Evaluation Contract.
+5. Define W0–W3, identity and lineage binding, exhaustive runtime-substrate declarations, hidden-scaffold failure, caregiving-to-artifact evidence, protected evaluation, rollback, harmful-assistance controls, complete cost accounting, and mandatory substrate baselines.
+6. Record the design in a normative Phase 3 document or ADR package and define its evidence matrix before any implementation.
+7. Do not authorize or implement live caregiver, memory, skill learning, action adoption, training, model/API, network, new writer authority, or other Phase 3 runtime behavior merely by completing the design contract.
+8. Request explicit project-owner confirmation before accepting any design that changes the research question, contract/ADR intent, frozen behavior, authority/security, live capabilities, protected evidence, or material autonomy/resource scope.
