@@ -182,49 +182,35 @@ Tests-only run 611 exposed the rollback-retention temporal-skew defect. Issue #1
 
 Durable note: `docs/phase2/SLICE42B_ROLLBACK_LINEAGE.md`.
 
-## Open gate
+## Frozen Phase 2
 
-Issue #120 completed the first independent Phase 2 implementation audit at `44e363e874679537fef43d9f78e382ecf5dc5d3e` and found one high and three medium defects. Issue #121 owns those accepted repairs.
+Issue #127 completed the final independent read-only Phase 2 closure audit at exact candidate `12de7b7d7413f343b2e5a74df369c26a5896c865` and concluded **ready to freeze**. No blocker, high, medium, low, or documentation-only finding survived validation.
 
-Issue #122 completed the focused completion re-audit at `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`. It independently confirmed Findings 1–3 closed and found one remaining medium checkpoint-linkage defect in Finding 4. Issue #123 repaired the exact manifest, active-organism, request-row, and active/snapshot event-equality boundaries without changing the frozen Phase 1 validator.
+Independent closure evidence included:
 
-Issue #124 then began the final closure audit at `b0ac020dee450238b4267b76eb59addef036618c`. Its interim independent record confirmed:
+- complete protected suite: `395 passed`;
+- original Phase 1 control: `152 passed`;
+- all 47 original Phase 1 Python test/helper blobs byte-identical to `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`;
+- exactly 213 accepted matrix IDs and exactly the same 213 evidence-map IDs;
+- schema-v1 installed CLI behavior preserved;
+- Findings 1–4 resolved, including coherent active/checkpoint request-event semantic mutations;
+- explicit capability absence, writer authority, checkpoint, rollback, physical-limit, and no-partial-effect boundaries intact.
 
-- all prior demonstrated Finding 4 reproductions closed;
-- Findings 1–3 remained closed;
-- all 47 original Phase 1 Python test/helper blobs remained byte-identical;
-- the independent Phase 1 control passed 152 tests;
-- the complete candidate passed 385 tests;
-- the accepted matrix and evidence map each contained exactly 213 IDs;
-- schema-v1 installed CLI support and the explicit capability-absence boundary remained intact.
+PR #119 merged the audited candidate as `b0941a8ba2a178fc891839198cd5dd5bf6e87719`. Phase 2 is frozen at that merge. Issues #120/#122/#124/#127 retain the independent audit history; Issues #121/#123/#125 own the now-completed repair history.
 
-The interim audit found one additional medium implementation defect: the active and checkpoint `consultation_request_created` rows were required to equal each other but were not independently reconstructed from the validated request. Coherent active-and-snapshot mutations to payload, source, or lineage could therefore pass dispatch admission.
+The frozen Phase 2 boundary includes ADRs 0008–0016, Consultation Protocol v1, all accepted matrix amendments, the 213-ID evidence map, implemented Slice 36–42c behavior, and the protected tests merged through PR #119.
 
-Issue #125 owns the narrow Phase 2-only closure. `phase2_dispatch_runtime.py` now reconstructs the exact request-created event semantics before any dispatch clock read or mutation and independently requires both active and checkpoint rows to match:
+Do not reinterpret or change Phase 2 request, dispatch, charge, fixture, ingress, terminalization, disposition, finite-cycle, rollback-lineage, checkpoint, authority, physical-limit, or explicit-absence semantics without explicit project-owner authorization for one exact defect or a separately accepted future-phase design.
 
-- request event sequence, organism, lineage, and lifecycle;
-- event type `consultation_request_created`;
-- source `organism:consultation.request`;
-- exact canonical two-field request payload and canonical size;
-- schema version 2, environment `seed-garden-v1`, and budget version `phase1-v1`;
-- complete active/snapshot row equality, retaining exact wall-time evidence.
-
-Protected regressions coherently mutate both active and snapshot event payload, source, lineage, lifecycle, schema, environment, budget, type, or organism. A missing request-created event is rejected by canonical foreign-key validation. Every case rejects before clock read with zero dispatch, charge, admission event, terminal, completion, or fixture effect.
-
-Exact Issue #125 implementation head: `3ddf1116b0aecc4842d257131e3e62481729db58`. Strict isolated validation: `395 passed in 49.62s`, plus install and source/test compilation. The shared frozen Phase 1 checkpoint validator and all original Phase 1 test/helper files remain unchanged. Temporary repair infrastructure is absent after cleanup.
-
-PR #119 remains open and unmerged. Issues #61/#121/#123/#124/#125 remain open. Phase 2 is not frozen. Issue #124 is an interim record, not a final conclusion; one final independent read-only closure audit is still required at one exact ordinary-CI-green candidate.
+No live caregiver, model API, human chat, network, subprocess, arbitrary callable/code, memory, skill generation, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route is authorized by the Phase 2 freeze.
 
 ## Exact restart point
 
-1. Reconstruct from PR #119; Issues #61/#120/#121/#122/#123/#124/#125; `docs/phase2/PHASE2_IMPLEMENTATION_EVIDENCE_MAP.md`; and the Slice 42c notes.
-2. Treat `3ddf1116b0aecc4842d257131e3e62481729db58` as the request-event semantic repair implementation head and verify only durable documentation closeout follows it before the final audit candidate.
-3. Confirm all temporary repair scripts/workflows are absent and all 47 original Phase 1 test/helper blobs remain byte-identical to `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`.
-4. Confirm the final candidate is ordinary-CI green with all 395 protected tests and schema-v1 CLI smoke.
-5. Request one final focused read-only closure audit against the exact fixed PR #119 head. The reviewer must independently reproduce coherent active/snapshot request-event mutations rather than trusting the new tests.
-6. Do not modify or merge the candidate while the audit is running.
-7. If the conclusion is satisfactory, merge PR #119, close Issues #125/#123/#121/#61, update final handoff, and freeze Phase 2.
-8. Request human confirmation for any new finding that would change contract/ADR intent, frozen Phase 1, authority/security, capabilities, protected evidence, or material scope.
+1. Reconstruct from this file, `docs/HANDOFF.md`, `docs/phase2/SLICE42C_FINAL_CLOSURE_AUDIT.md`, PR #119, and Issue #127.
+2. Treat Phase 1 and Phase 2 as frozen controls. Repository and current GitHub state outrank conversation history.
+3. Begin any later research or implementation only through separately accepted scope; do not silently reopen Phase 2 under a cleanup, refactor, or capability request.
+4. Preserve all original Phase 1 blobs, the 213 accepted Phase 2 IDs, writer categories, resource limits, retained evidence, and explicit capability absence.
+5. Request human confirmation before changing contract/ADR intent, frozen behavior, authority/security, live capabilities, protected evidence, or material autonomy/resource scope.
 
 ## End-of-work protocol
 

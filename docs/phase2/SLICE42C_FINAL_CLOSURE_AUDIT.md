@@ -1,49 +1,45 @@
 # Slice 42c Final Closure-Audit Boundary
 
-Status: **request-event semantic repair complete; final independent closure audit pending**.
+Status: **complete; Phase 2 frozen**.
 
-## Audit history
+## Audit sequence
 
-Issue #120 audited `44e363e874679537fef43d9f78e382ecf5dc5d3e` and found one high and three medium defects. Issue #122 audited `6567ec96ecc139e3be1dd0255465e7ac5e8efae1`, confirmed Findings 1–3 closed, and found the remaining Finding 4 checkpoint-linkage defect. Issue #123 repaired exact manifest, active-organism, request-row, and active/snapshot event-equality boundaries.
+- Issue #120 found one high and three medium implementation defects at `44e363e874679537fef43d9f78e382ecf5dc5d3e`.
+- Issue #122 confirmed Findings 1–3 closed and found the remaining checkpoint-linkage defect.
+- Issue #123 repaired exact manifest, active-organism, request-row, and active/snapshot request-event row linkage.
+- Issue #124 independently confirmed those reproductions closed, then found the remaining coherent request-event semantic-linkage defect.
+- Issue #125 repaired exact request-created event reconstruction and independent active/snapshot semantic validation.
+- Issue #127 completed the final independent read-only closure audit at `12de7b7d7413f343b2e5a74df369c26a5896c865`.
 
-Issue #124 began the final closure audit at `b0ac020dee450238b4267b76eb59addef036618c`. Its interim independent record confirmed:
+## Final independent conclusion
 
-- prior demonstrated Finding 4 reproductions closed;
-- Findings 1–3 remained closed;
-- 47 original Phase 1 Python test/helper blobs byte-identical;
-- independent Phase 1 control: 152 passed;
-- independent complete candidate: 385 passed;
-- exactly 213 accepted and evidence-map IDs;
-- schema-v1 support and explicit capability absence intact.
+Issue #127 reported no surviving blocker, high, medium, low, or documentation-only finding and concluded:
 
-The interim audit did not issue a final conclusion. It found one additional medium implementation defect: complete active/snapshot request-created event equality did not prove that either event had the accepted semantics.
+**ready to freeze**
 
-## Issue #125 semantic closure
+Independent completion evidence included:
 
-Before any dispatch clock read or mutation, the Phase 2 admission boundary now reconstructs the exact expected `consultation_request_created` event from the validated request row and canonical envelope. It independently requires both active and checkpoint event rows to match:
+- complete protected suite: `395 passed`;
+- original Phase 1 control: `152 passed`;
+- all 47 original Phase 1 Python test/helper blobs byte-identical to `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`;
+- exactly 213 accepted matrix IDs and exactly 213 evidence-map IDs;
+- installed schema-v1 CLI behavior preserved;
+- coherent active/checkpoint mutations of request-event payload, source, lineage, lifecycle, schema, environment, budget, type, and organism rejected before clock read with zero partial effects;
+- prior Findings 1–4 independently rechecked and resolved;
+- authority, checkpoint, rollback, physical accounting, retained evidence, and explicit capability absence intact.
 
-- exact event sequence, organism, lineage, and lifecycle;
-- event type `consultation_request_created`;
-- source `organism:consultation.request`;
-- canonical payload containing exactly the canonical size and request envelope;
-- schema version 2, environment `seed-garden-v1`, and budget version `phase1-v1`.
+## Merge and freeze
 
-Complete active/snapshot row equality is retained afterward, including exact wall-time evidence. The shared frozen Phase 1 checkpoint validator is unchanged.
+PR #119 merged exact audited candidate `12de7b7d7413f343b2e5a74df369c26a5896c865` as `b0941a8ba2a178fc891839198cd5dd5bf6e87719`.
 
-Protected coherent mutations cover payload, source, lineage, lifecycle, schema, environment, budget, event type, and organism. A missing request-created event is rejected through canonical foreign-key validation. Every rejection occurs before clock read and leaves zero dispatch, charge, admission event, terminal, completion, or fixture effects.
+Phase 2 is frozen at that merge. The frozen boundary consists of:
 
-## Exact implementation evidence
+- ADRs 0008–0016;
+- Consultation Protocol v1 and accepted matrix amendments;
+- exactly 213 accepted evidence IDs;
+- implemented Slice 36–42c runtime behavior;
+- all protected tests and retained evidence merged through PR #119;
+- canonical writer categories exactly `organism` and `administration`;
+- no authorized live caregiver, model API, human chat, network, subprocess, arbitrary callable/code, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route.
 
-- Issue #125 implementation head: `3ddf1116b0aecc4842d257131e3e62481729db58`;
-- strict isolated verification: `395 passed in 49.62s`;
-- ordinary pre-finalization verification at the synchronized evidence boundary: run 665 (`30409919523`), `395 passed in 49.90s`;
-- package installation, source/test compilation, protected artifact upload, and schema-v1 genesis CLI smoke: passed;
-- shared frozen Phase 1 validator: unchanged;
-- original Phase 1 tests/helpers: unchanged;
-- temporary repair infrastructure: absent;
-- PR #119: open and unmerged;
-- Phase 2: not frozen.
-
-## Candidate finalization
-
-The exact final audit candidate and its ordinary GitHub Actions run are fixed in PR #119 and the final audit Issue after all checks pass. Do not modify or merge that fixed candidate, close completion Issues, or declare Phase 2 frozen while the final independent audit is running.
+Any later change to frozen Phase 2 semantics requires explicit project-owner authorization for one exact defect or a separately accepted future-phase design and audit gate.
