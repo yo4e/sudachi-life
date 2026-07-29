@@ -43,3 +43,5 @@ Phase 2 is frozen at that merge. The frozen boundary consists of:
 - no authorized live caregiver, model API, human chat, network, subprocess, arbitrary callable/code, memory, skill, training, continuous loop, personality/emotion state, action adoption, or proposal-to-Phase-1-selector route.
 
 Any later change to frozen Phase 2 semantics requires explicit project-owner authorization for one exact defect or a separately accepted future-phase design and audit gate.
+
+The docs-only freeze synchronization and its final protected verification are recorded in PR #128.
