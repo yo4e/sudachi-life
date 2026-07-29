@@ -15,9 +15,9 @@ This contract defines the evidence required to claim that one bounded SUDACHI or
 
 It does not define a live caregiver transport, model provider, training algorithm, memory system, skill implementation, action-adoption route, or schema migration.
 
-The contract protects one question:
+It protects one question:
 
-> Did the same declared developmental lineage retain a capability after the caregiver channel became unavailable, without relying on an undeclared caregiver-derived runtime scaffold, weakening the evaluator, rewriting failed history, or hiding cost in local work?
+> Did one declared developmental lineage retain capability after the caregiver channel became technically unavailable, without an undeclared caregiver-derived runtime scaffold, evaluator weakening, rewritten failure history, cross-lineage evidence substitution, or hidden cost displacement?
 
 A system may satisfy a narrower control condition without satisfying the candidate SUDACHI condition.
 
@@ -40,30 +40,31 @@ It must not reinterpret or change:
 
 A later implementation requires a separate accepted ADR package and explicit project-owner confirmation for every new live or mutable capability.
 
-## 3. Versions and exact terms
+## 3. Proposed versions and terms
 
 Proposed versions:
 
 - evaluation contract: `sudachi.withheld_caregiver_evaluation/v1`;
-- assistance-availability taxonomy: `sudachi.assistance_availability/v1`;
-- developmental episode manifest: `sudachi.developmental_episode/v1`;
+- assistance taxonomy: `sudachi.assistance_availability/v1`;
+- developmental episode: `sudachi.developmental_episode/v1`;
 - runtime-substrate declaration: `sudachi.runtime_substrate_declaration/v1`;
-- evaluation-point manifest: `sudachi.evaluation_point/v1`;
-- developmental cost ledger: `sudachi.developmental_cost_ledger/v1`;
+- evaluation point: `sudachi.evaluation_point/v1`;
+- cost ledger: `sudachi.developmental_cost_ledger/v1`;
 - capability result bundle: `sudachi.capability_result_bundle/v1`.
 
 Terms:
 
 - **caregiver** — a human or artificial source of developmental assistance;
-- **caregiving event** — one recorded request, response, correction, demonstration, explanation, constraint, preference, question, deferment, abstention, or other later-accepted typed assistance operation;
-- **runtime substrate** — every state, artifact, model, prompt element, tool, router, trace, or external dependency visible to or callable by the evaluated organism;
-- **caregiver-derived substrate** — runtime substrate whose content, selection, parameters, or existence depends materially on a caregiving event;
-- **withheld-caregiver evaluation** — an evaluation where the caregiver channel is technically unavailable, not merely unused;
-- **retained competence** — the same declared capability result remains satisfied at the withheld point after being established at the post-adoption point;
+- **caregiving event** — one later-accepted typed request, response, correction, demonstration, explanation, constraint, preference, question, deferment, abstention, or related operation;
+- **runtime substrate** — every state, artifact, model, prompt element, tool, router, trace, or external dependency visible to or callable by the evaluated execution path;
+- **caregiver-derived substrate** — runtime substrate whose content, selection, parameters, or existence materially depends on a caregiving event;
+- **externalized scaffold** — a caregiver-derived prompt, memory, skill, demonstration, trace, code/rule artifact, router, tool, or other separately addressable runtime dependency outside internalized policy/model parameters;
+- **withheld-caregiver evaluation** — evaluation where the caregiver route is technically unavailable, not merely unused;
+- **retained competence** — the same declared capability remains satisfied at E2 after being established at E1;
 - **developmental episode** — one immutable comparison unit bound to one organism, one lineage, one environment, one evaluator bundle, one capability suite, and three ordered evaluation points;
-- **hidden scaffold** — any undeclared, mismatched, or prohibited caregiver-derived runtime substrate available during evaluation.
+- **hidden scaffold** — any undeclared, mismatched, mislabeled, or W-class-prohibited caregiver-derived runtime substrate.
 
-Unknown versions and undeclared fields fail the future conformance gate. This document does not yet authorize their storage or runtime implementation.
+Unknown versions and undeclared fields fail a future conformance gate. This document does not authorize their storage or runtime implementation.
 
 ## 4. Assistance-availability classes
 
@@ -71,53 +72,46 @@ Every evaluation point declares exactly one class.
 
 ### W0 — assistance available
 
-The caregiver channel is available during evaluation, whether or not it is used.
+The caregiver route remains technically available during evaluation, whether or not it is used.
 
-W0 measures intervention-aided reliability or consultation efficiency. It does not demonstrate independence.
+W0 measures intervention-aided reliability or consultation efficiency. Zero calls under an available route do not demonstrate independence.
 
-### W1 — live source unavailable; source-derived runtime artifact remains
+### W1 — live source unavailable; externalized caregiver scaffold remains
 
-The caregiver cannot be contacted, but at least one caregiver-derived runtime artifact remains available, including any:
-
-- prompt example or explanation;
-- retrieved memory;
-- skill bank;
-- demonstration or action suffix;
-- recovery trace;
-- external router trained or configured from caregiver evidence;
-- tool, script, or code artifact derived from caregiving;
-- model parameters updated from caregiving.
+The caregiver route is unavailable, but at least one declared externalized caregiver-derived scaffold remains available at runtime, including a prompt example, explanation, retrieved memory, skill bank, demonstration, action suffix, recovery trace, code/rule artifact, router, or tool.
 
 W1 demonstrates independence from the live source only. It does not demonstrate scaffold-free operation.
 
-### W2 — runtime assistance channel and temporary scaffold unavailable
+### W2 — live source and externalized caregiver scaffold unavailable
 
-The caregiver channel is disabled and no caregiver-derived runtime artifact remains except an explicitly declared internalized policy or model-parameter update.
+The caregiver route is unavailable and no externalized caregiver-derived scaffold remains. Capability may remain only in an explicitly declared internalized policy or model-parameter update.
 
-W2 demonstrates assistance-independent policy performance. It does not by itself establish an auditable artifact lineage, protected adoption, rollback evidence, or complete cost accounting.
+W2 demonstrates assistance-independent policy performance. It does not by itself establish event-level provenance, inspectable artifact lineage, protected adoption, rollback evidence, or complete cost accounting.
 
 ### W3 — identity-bound verified local conversion under protected lineage
 
-W3 requires all of the following:
+W3 is not a stricter synonym for W2. It is the candidate SUDACHI condition in which the caregiver route is unavailable and every active caregiver-derived dependency, whether an inspectable local artifact or a declared model update, is governed by the complete protected conversion protocol.
+
+W3 requires:
 
 1. one identity-bound developmental episode;
 2. finite recorded caregiving events;
-3. an exhaustive runtime-substrate declaration at every evaluation point;
-4. provenance from each caregiver-derived substrate to exact caregiving events;
+3. an exhaustive runtime-substrate declaration at E0, E1, and E2;
+4. exact provenance from each caregiver-derived substrate to caregiving events;
 5. protected verification and adoption evidence;
-6. technical unavailability of the caregiver channel;
+6. technical unavailability of every caregiver route;
 7. no hidden scaffold;
-8. retained capability on the same fixed suite;
-9. protected evaluator and authority boundaries;
+8. retained capability on one fixed suite;
+9. protected evaluator and writer-authority boundaries;
 10. preserved rollback and negative-result lineage;
-11. complete required cost fields;
+11. complete mandatory cost fields;
 12. no cost displacement hidden as local work.
 
-Only W3 is a candidate SUDACHI maturity condition. Satisfying W3 is not itself proof of scientific novelty.
+Only W3 is a candidate SUDACHI maturity condition. Satisfying W3 is not proof of scientific novelty.
 
 ## 5. Developmental episode identity
 
-A developmental episode is identified by a digest over an exact identity object that contains:
+A developmental episode identity contains exactly:
 
 - contract version;
 - organism ID;
@@ -129,32 +123,32 @@ A developmental episode is identified by a digest over an exact identity object 
 - evaluator-bundle version and digest;
 - protected budget/configuration versions;
 - baseline checkpoint ID;
-- declared caregiver condition ID;
-- declared substrate-baseline condition ID;
-- experiment-seed or deterministic fixture-case ID where applicable.
+- caregiver-condition ID;
+- substrate-baseline-condition ID;
+- deterministic fixture-case or experiment-seed ID where applicable.
 
 It excludes later result IDs, wall time, and mutable status.
 
-### 5.1 Physical organism and developmental lineage
+### 5.1 Organism and lineage
 
-`organism_id` identifies the physical organism record.
+`organism_id` identifies the physical organism record. `lineage_generation` identifies one developmental lineage.
 
-`lineage_generation` identifies one developmental lineage. A W3 success claim attaches to exactly one lineage generation.
+A W3 success claim attaches to one lineage generation.
 
 Rollback:
 
 - preserves the abandoned future as evidence;
-- increments lineage according to frozen rollback semantics;
-- ends the current developmental episode without a success conclusion;
-- requires a new baseline evaluation and a new episode identity in the new lineage;
-- never permits post-rollback results to satisfy a pre-rollback episode;
-- never permits abandoned-lineage capability, cost, or substrate evidence to be substituted into the new lineage.
+- increments lineage according to frozen semantics;
+- ends the current episode without success;
+- requires a new E0 and episode identity in the new lineage;
+- forbids post-rollback results from satisfying the prior episode;
+- forbids abandoned-lineage capability, cost, conversion, or substrate evidence from satisfying the new lineage.
 
-A physical organism may contain multiple historical episode records, but one comparison never crosses lineage generations.
+A physical organism may contain multiple historical episodes. One retained-competence comparison never crosses lineage.
 
 ### 5.2 Fixed comparison identity
 
-Pre-development, post-adoption, and post-withdrawal points must share exactly:
+E0, E1, and E2 share exactly:
 
 - episode ID;
 - organism ID;
@@ -163,118 +157,111 @@ Pre-development, post-adoption, and post-withdrawal points must share exactly:
 - capability-suite version and digest;
 - evaluator-bundle version and digest;
 - protected budget/configuration versions;
-- substrate-baseline condition ID.
+- substrate-baseline-condition ID.
 
-Checkpoint IDs and declared runtime substrates may change only according to the contract.
+Point checkpoint IDs and declared active substrates may change only according to the contract.
 
-Any evaluator, suite, environment, authority, budget, or identity change creates a different episode and invalidates direct retained-competence comparison.
+Any environment, suite, evaluator, authority, budget, configuration, organism, or lineage change creates a different episode.
 
 ## 6. Required evaluation points
 
-Each developmental episode contains exactly three ordered required points.
+Every episode contains exactly three ordered points.
 
 ### E0 — pre-development baseline
 
-E0 occurs before episode caregiving or artifact adoption.
+E0 occurs before episode caregiving or artifact adoption and records:
 
-It records:
-
-- the fixed capability bundle;
-- all protected safety, abstention, transfer, and recovery outcomes;
+- every capability result;
+- protected safety, abstention, transfer, and recovery outcomes;
 - the complete runtime-substrate declaration;
-- caregiver availability class;
-- the baseline checkpoint;
-- zero or pre-existing episode costs as exact ledger entries.
+- availability class;
+- stable checkpoint;
+- initial cost ledger.
 
 A target acquisition claim requires at least one declared target capability not to pass at E0.
 
 ### E1 — post-adoption evaluation
 
-E1 occurs after all candidate caregiving and declared adoption operations for the episode are final.
+E1 occurs after all episode caregiving and adoption operations are final.
 
-No later caregiving event may contribute to the episode after E1 begins.
+No later caregiving event or substrate activation may contribute to the episode after E1 begins.
 
 E1 records:
 
 - exact adopted artifacts or declared model updates;
-- the complete substrate declaration;
-- capability results on the unchanged suite;
-- all protected outcomes;
-- the cumulative cost ledger;
-- the stable checkpoint used for E1.
+- complete substrate declaration;
+- results on the unchanged suite;
+- protected outcomes;
+- cumulative costs;
+- stable checkpoint.
 
-A target capability must pass at E1 before retention can be tested.
+A target capability must pass at E1 before retention is tested.
 
 ### E2 — withheld-caregiver evaluation
 
-E2 uses the same suite and evaluator bundle after caregiver disablement.
+E2 uses the same suite and evaluator bundle after checkpoint-stable caregiver disablement.
 
-Before the first evaluator action, protected administration must prove:
+Before scoring, protected administration must prove:
 
-- the caregiver adapter or channel is unavailable by configuration and capability guard;
-- no dispatch, human bridge, model call, live chat, network route, subprocess route, dynamic caregiver retrieval, or alternate caregiver path can execute;
+- every caregiver route is unavailable by configuration and capability guard;
+- no dispatch, human bridge, model call, live chat, network route, subprocess route, dynamic caregiver retrieval, or fallback caregiver path can execute;
 - every runtime substrate is declared and digest-matched;
-- every caregiver-derived substrate is permitted by the declared W class;
-- all prohibited temporary scaffolds are absent;
-- no post-E1 caregiving or adoption occurred;
-- the E2 checkpoint and lineage are exact.
+- every caregiver-derived substrate is permitted by W3 and has valid conversion evidence;
+- every W-class-prohibited scaffold is absent;
+- no post-E1 caregiving, adoption, activation, or model update occurred;
+- checkpoint and lineage are exact;
+- no queued response, cached live output, unresolved package, or stale proposal can affect scoring.
 
-Any failure invalidates E2 before capability scoring. It is not scored as an organism capability failure; it is an experiment-integrity failure.
+Failure invalidates E2 before capability scoring and retains a typed experiment-integrity record. It is not scored as organism capability failure.
 
 ## 7. Capability result semantics
 
-Capability results are per-capability typed records. Aggregate score alone is insufficient.
+Results are per-capability typed records. Aggregate score alone is insufficient.
 
-Each capability result declares:
+Each result declares:
 
 - capability ID and suite version;
-- result type;
 - exact evaluator IDs and versions;
-- deterministic input or scenario ID;
+- deterministic scenario ID;
 - ordered outcome evidence IDs;
 - required resource counters;
-- final status exactly `passed`, `failed`, `abstained`, `not_reached`, or `invalid`;
-- protected safety and recovery status;
+- status exactly `passed`, `failed`, `abstained`, `not_reached`, or `invalid`;
+- protected safety/recovery status;
 - checkpoint and episode linkage.
 
-### 7.1 Acquisition
+### Acquisition
 
 A target capability is acquired only when:
 
-- E0 status is not `passed`;
-- E1 status is `passed`;
-- the accepted caregiving-to-artifact chain is present;
-- no protected capability or safety invariant regresses beyond the suite's exact declared rule.
+- E0 is not `passed`;
+- E1 is `passed`;
+- an accepted caregiving-to-substrate chain exists;
+- no protected invariant regresses beyond a rule fixed before E0.
 
-### 7.2 Retention
+### Retention
 
 A target capability is retained only when:
 
-- E1 status is `passed`;
-- E2 status is `passed` under the declared withheld class;
-- E1 and E2 use the same capability and evaluator versions;
-- no hidden scaffold or integrity failure exists;
-- the complete cost ledger is valid.
+- E1 and E2 are `passed`;
+- E1 and E2 use exact suite/evaluator identity;
+- E2 integrity is valid;
+- mandatory cost completeness is valid.
 
-### 7.3 Existing-capability preservation
+### Existing capability preservation
 
-Every capability that passed at E0 and is marked protected for the episode must pass at E1 and E2, unless the suite explicitly declares a different typed expectation before E0.
+Every capability that passed at E0 and was marked protected before E0 must pass at E1 and E2 unless the suite predeclares another exact typed expectation.
 
 No post-hoc exclusion, reweighting, threshold change, or evaluator substitution is permitted.
 
-### 7.4 Abstention
+### Abstention
 
-Correct protected abstention may be a passing outcome only when the capability suite declares it before E0.
-
-Unplanned refusal, timeout, unavailability, or hidden caregiver fallback does not count as abstention competence.
+Protected abstention may pass only when predeclared by the suite. Timeout, unavailable service, tool failure, hidden fallback, or unplanned refusal is not abstention competence.
 
 ## 8. Runtime-substrate declaration
 
-Every evaluation point contains one exhaustive declaration of every runtime dependency available to the organism or evaluator-facing execution path.
+Every point declares every dependency available to the organism or evaluator-facing execution path.
 
-### 8.1 Required substrate classes
-
-The declaration must support at least:
+Required substrate classes include:
 
 - `model_weights`;
 - `prompt_example`;
@@ -294,64 +281,61 @@ The declaration must support at least:
 - `protected_runtime`;
 - `other_declared`.
 
-### 8.2 Exact entry requirements
-
 Each entry declares:
 
-- substrate ID;
-- class;
-- version;
-- canonical digest;
-- canonical or measured byte size;
-- active/inactive state;
-- executable/readable/callable flags as declared booleans;
-- authority owner exactly `organism`, `administration`, or protected external experiment infrastructure;
+- substrate ID, class, and version;
+- canonical digest and canonical/measured byte size;
+- active state and executable/readable/callable booleans;
+- **custodian** exactly `organism`, `administration`, `protected_experiment_infrastructure`, or `environment`;
 - origin exactly `genesis`, `caregiver_derived`, `organism_derived`, `administration_protected`, or `environment`;
-- exact source caregiving-event IDs when caregiver-derived;
-- exact adoption or update evidence ID;
+- source caregiving-event IDs when caregiver-derived;
+- adoption/update evidence ID;
 - checkpoint and lineage linkage;
-- whether permitted in W0, W1, W2, and W3;
-- whether required for the evaluated capability.
+- W-class permission;
+- capability dependency.
 
-An empty list is valid only when independent source and runtime inspection prove that no substrate of that class exists.
+`custodian` is inventory metadata. It never grants canonical writer authority, which remains exactly `organism` or `administration`.
 
-### 8.3 Hidden-scaffold prohibition
+An empty class list is valid only when independent source/runtime inspection proves absence.
 
-E2 is invalid if any of the following exists:
+### Hidden-scaffold prohibition
 
-- undeclared runtime substrate;
-- declaration/runtime digest mismatch;
-- caregiver-derived substrate with missing source-event provenance;
-- active prompt, memory, skill, demonstration, trace, router, tool, or code path prohibited by the declared W class;
-- alternate caregiver route not covered by the disablement guard;
-- dynamic retrieval from an undeclared store;
-- evaluator or environment modification derived from episode caregiving;
+E2 is invalid for any:
+
+- undeclared substrate;
+- declaration/runtime digest or size mismatch;
+- missing caregiver-event provenance;
+- missing accepted conversion/update record;
+- active substrate prohibited by the declared W class;
+- alternate caregiver route;
+- undeclared dynamic retrieval;
+- caregiver-derived evaluator/environment modification;
 - caregiver-derived content mislabeled as organism-derived or protected infrastructure;
-- a dependency used during scoring but marked inactive or not required;
-- a silent model or artifact update after E1.
+- used dependency declared inactive or not required;
+- silent model or artifact update after E1.
 
-The evaluation must retain the failure evidence and stop before capability scoring.
+The failure stops scoring and remains auditable.
 
-## 9. Caregiving evidence and typed outcomes
+## 9. Caregiving evidence and outcomes
 
-This contract does not authorize a live caregiver protocol. A later design must define the exact transport and schemas.
+This contract does not authorize a live caregiver protocol. A later ADR must define exact transport and schemas.
 
-Any future W3-conformant episode must nevertheless record typed evidence for:
+Any future W3-conformant episode must record typed evidence for:
 
 - assistance request;
-- response source and caregiver identity;
+- source and caregiver identity;
 - assistance class;
 - bounded content digest and size;
-- provenance and provider/product version where applicable;
+- provenance and product/version where applicable;
 - clarification relation;
-- declared confidence or abstention;
-- latency and cost evidence;
+- confidence or abstention;
+- latency and cost;
 - candidate transformation;
-- protected verification result;
+- protected verification;
 - final disposition;
-- adopted substrate or declared update.
+- adopted substrate or model update.
 
-Required assistance classes must be able to represent at least:
+Future assistance classes must represent at least:
 
 - demonstration;
 - correction;
@@ -362,7 +346,7 @@ Required assistance classes must be able to represent at least:
 - defer;
 - abstain.
 
-Required final outcomes must include:
+Future terminal outcomes must include:
 
 - `accepted`;
 - `rejected`;
@@ -378,34 +362,26 @@ Caregiver identity and content remain untrusted provenance. They never create ca
 
 ## 10. Verified local conversion
 
-Every caregiver-derived substrate active at E1 or E2 must have one explicit conversion record.
-
-The record declares:
+Every caregiver-derived substrate active at E1 or E2 has one explicit conversion record declaring:
 
 - source caregiving-event IDs;
-- candidate substrate ID/class/version/digest/size;
-- transformation method ID and version;
+- candidate substrate identity, class, version, digest, and size;
+- transformation method and version;
 - protected evaluator bundle;
 - verification inputs and outputs;
-- accepted or rejected result;
+- accepted/rejected result;
 - adopting writer category;
 - activation checkpoint;
 - deactivation, supersession, or rollback linkage;
 - exact cost contribution.
 
-### 10.1 Inspectable artifacts
+Inspectable artifacts are local, versioned, digest-bound, and attributable.
 
-Code, rules, tests, memories, prompts, skills, demonstrations, traces, and routers must be locally inspectable, versioned, digest-bound, and attributable.
+A model-parameter update is not exempt. It declares, where technically available:
 
-### 10.2 Model-parameter updates
-
-A weight update is not exempt from declaration.
-
-It must declare:
-
-- base model identity and digest where technically available;
+- base model identity/digest;
 - update method and training-data class;
-- exact permitted caregiver-output transformation class;
+- permitted caregiver-output transformation class;
 - resulting model identity/digest;
 - training compute and storage;
 - provider/legal review reference;
@@ -413,227 +389,187 @@ It must declare:
 
 This contract does not authorize model training or infer permission to train on provider output.
 
-### 10.3 No silent residue
-
-Caregiver content that affects runtime behavior but lacks an accepted conversion record is hidden scaffold and invalidates E2.
+Caregiver content that affects runtime behavior without an accepted conversion record is hidden scaffold.
 
 ## 11. Protected evaluator and authority
 
-The evaluator bundle and capability suite are protected experiment infrastructure.
+The evaluator bundle and capability suite are protected experiment infrastructure fixed and digest-bound before E0.
 
-They must be fixed and digest-bound before E0.
-
-The organism and caregiver must not:
+The organism and caregiver cannot:
 
 - write or replace evaluators;
 - modify capability definitions, thresholds, weights, scenarios, expected abstentions, or failure mappings;
-- select only favorable test cases after observing outcomes;
+- select only favorable cases after observing outcomes;
 - suppress, delete, or rewrite negative results;
 - alter budget or cost rules;
-- redefine substrate classes or permitted W-class dependencies;
+- redefine substrate classes or W-class permissions;
 - authorize adoption;
-- transfer canonical writer authority.
+- transfer writer authority.
 
 Canonical writer categories remain exactly `organism` and `administration`.
 
-Evaluator identity is not a writer category. Protected administration may record evaluator evidence; evaluator output does not directly mutate organism state.
+Evaluator identity and substrate custodian are not writer categories. Protected administration may record evaluator evidence; evaluator output does not directly mutate organism state.
 
-Any later implementation must preserve a proposal/verification/adoption separation at least as strict as the Phase 2 consultation boundary.
+A later implementation preserves proposal, verification, and adoption separation at least as strict as Phase 2.
 
 ## 12. Caregiver disablement proof
 
-A future E2 implementation must prove technical unavailability through all of:
+A future E2 implementation proves unavailability through all of:
 
-1. accepted configuration with caregiver allowance zero or disabled;
+1. accepted configuration with caregiver allowance zero/disabled;
 2. absence of live adapter capability handles;
 3. guarded imports and source inspection;
-4. zero dispatch, bridge, network, subprocess, model-call, or human-intervention events;
-5. zero caregiver cost after the E1 cutoff;
-6. fail-closed probes against every declared alternate path;
-7. exact runtime-substrate declaration;
-8. checkpoint-stable disablement before E2;
-9. no hidden queued response, cached live response, or unresolved pre-cutoff work usable during E2;
-10. an independent reconstruction of the disablement evidence.
+4. zero post-cutoff dispatch, bridge, network, subprocess, model-call, and human-intervention events;
+5. zero post-cutoff caregiver cost;
+6. fail-closed probes against alternate paths;
+7. exact substrate declaration;
+8. checkpoint-stable disablement;
+9. no usable queued/cached/unresolved caregiver output;
+10. independent reconstruction of disablement evidence.
 
-Choosing not to call an available caregiver is W0, not W2 or W3.
+Choosing not to call an available caregiver is W0.
 
-## 13. Rollback and negative developmental futures
+## 13. Rollback and negative futures
 
-Frozen ADR 0007 remains authoritative.
+ADR 0007 remains authoritative.
 
-The contract adds research interpretation only:
+Research interpretation:
 
-- a rollback archives the failed or abandoned developmental future;
-- harmful, misleading, inconsistent, or dependency-producing assistance remains visible in that lineage;
-- rollback never converts a failed episode into a successful one;
-- the new lineage starts a new episode with a new E0 baseline;
-- rejected candidate artifacts and failed verification records remain auditable;
-- no negative result may be deleted to reduce apparent caregiver burden or improve retention rate;
-- the single completed rollback limit remains exact unless a later owner-approved ADR changes it.
+- rollback archives the failed or abandoned future;
+- harmful, misleading, inconsistent, unrepresentable, dependency-producing, and rejected assistance remains visible;
+- rollback never converts a failed episode into success;
+- the new lineage starts a new episode/E0;
+- rejected substrates and failed verification remain auditable;
+- negative results cannot be deleted to reduce apparent caregiver burden or improve retention rate;
+- the one-completed-rollback limit remains exact.
 
-A W3 report must include unsuccessful episodes, not only the surviving lineage.
+A W3 report includes unsuccessful episodes, not only the surviving lineage.
 
 ## 14. Required failure controls
 
-A strong W3 research claim requires declared controls for:
+A strong W3 claim requires predeclared controls for:
 
 - misleading assistance;
-- internally inconsistent assistance;
-- correct advice outside the organism's representational or action capacity;
-- ambiguous advice requiring clarification;
-- premature caregiver withdrawal;
+- inconsistent assistance;
+- correct advice outside organism representation/action capacity;
+- ambiguous advice;
+- premature withdrawal;
 - delayed withdrawal and dependency persistence;
 - hidden-scaffold injection;
-- stale or wrong-lineage artifact reuse;
-- evaluator-targeting or test weakening;
+- stale/wrong-lineage artifact reuse;
+- evaluator targeting or test weakening;
 - cost displacement into retries, compute, storage, or experimenter labor;
-- caregiver outage;
-- caregiver abstention;
+- caregiver outage/abstention;
 - organism abstention;
 - rollback after harmful adoption.
 
-Each control has a predeclared expected typed outcome and cannot be omitted after observing results.
+Each control has a predeclared typed expectation and cannot be omitted after results are observed.
 
 ## 15. Developmental cost ledger
 
-The cost ledger uses exact integers and declared units. Unknown is never encoded as zero.
+The ledger uses exact integers and declared units. Unknown is never zero.
 
-Each field has status exactly:
+Every field status is exactly:
 
 - `measured`;
 - `not_applicable`;
 - `unmeasured`.
 
-A W3 success claim requires every mandatory field to be `measured` or `not_applicable` with a protected reason. Any mandatory `unmeasured` field invalidates the cost-completeness claim.
+W3 cost completeness requires every mandatory field to be `measured` or `not_applicable` with a protected reason. Any mandatory `unmeasured` field invalidates cost completeness.
 
-### 15.1 Mandatory human fields
+Mandatory human fields:
 
-- active caregiver time in integer milliseconds;
-- monitoring time in integer milliseconds;
-- intervention time in integer milliseconds;
-- artifact-review time in integer milliseconds;
-- maintenance time in integer milliseconds;
-- consultations;
-- demonstrations;
-- corrections;
-- clarifications;
-- abstentions;
-- rejected interventions.
+- active caregiver, monitoring, intervention, artifact-review, and maintenance time in integer milliseconds;
+- consultation, demonstration, correction, clarification, abstention, and rejection counts.
 
-### 15.2 Mandatory model/service fields
+Mandatory model/service fields:
 
-- model calls;
-- input tokens;
-- output tokens;
-- total measured latency in integer milliseconds;
-- retries;
-- failed calls;
-- monetary cost in integer minor currency units with currency code;
-- provider/product/model/version identity;
-- retained-data or external-service class where applicable.
+- calls, input/output tokens, total measured latency, retries, failures, monetary cost in integer minor units with currency code, provider/product/model/version, and retained-data/service class.
 
-### 15.3 Mandatory environment and experiment fields
+Mandatory environment/experiment fields:
 
-- environment interactions;
-- environment resets;
-- failed episodes;
-- evaluator invocations;
-- deterministic fixture invocations;
-- experimenter administrative operations;
-- wall-duration evidence as non-eligibility research metadata.
+- interactions, resets, failed episodes, evaluator calls, fixture calls, administrative operations, and wall-duration research metadata.
 
-### 15.4 Mandatory compute and storage fields
+Mandatory compute/storage fields:
 
-- training CPU time in integer milliseconds;
-- training accelerator time in integer milliseconds by declared device class;
-- inference CPU time in integer milliseconds;
-- inference accelerator time in integer milliseconds by declared device class;
+- training/inference CPU and accelerator time by declared device class;
 - peak working-set bytes;
 - active-state bytes;
 - checkpoint-store bytes;
-- caregiver-derived substrate bytes;
-- total runtime-substrate bytes;
-- artifact and log bytes retained for audit.
+- caregiver-derived and total runtime-substrate bytes;
+- retained artifact/log bytes.
 
-### 15.5 Cost displacement rule
+Reduced caregiver burden is not a developmental gain if protected capability is maintained only through an undeclared or unmeasured increase elsewhere.
 
-Reduced caregiver burden is not a developmental gain if protected capability is maintained only by an undeclared or unmeasured increase in another required cost field.
+Reports present the complete cost vector. No scalar maturity/efficiency score is permitted unless a later ADR fixes formula, units, weights, missing-data behavior, and target suite before E0.
 
-Reports must present the complete cost vector. A scalar maturity or efficiency score is prohibited unless its formula, units, weights, missing-data behavior, and target suite are fixed before E0 in a later accepted ADR.
+## 16. Controls and baselines
 
-## 16. Required conditions and baselines
+### Mandatory deterministic conformance controls
 
-The contract distinguishes conformance tests from scientific comparison.
-
-### 16.1 Mandatory conformance controls
-
-Any future implementation must first support without live capability:
+Before any live capability, a future implementation must support:
 
 - no-caregiver control;
 - deterministic-fixture control;
-- hidden-scaffold rejection control;
-- wrong-lineage evidence rejection;
-- evaluator mutation rejection;
-- incomplete cost-ledger rejection;
-- rollback/abandoned-future evidence preservation;
-- W0/W1/W2/W3 classification validation using synthetic declared substrates.
+- synthetic W0/W1/W2/W3 declarations;
+- hidden-scaffold rejection;
+- wrong-lineage rejection;
+- evaluator-mutation rejection;
+- incomplete-cost rejection;
+- rollback/abandoned-future preservation.
 
-### 16.2 Mandatory research baselines for a strong claim
+### Mandatory research baselines for a strong claim
 
-A later strong caregiver-withdrawal claim must compare, where technically and legally applicable:
+Where technically and legally applicable:
 
-- no-caregiver baseline;
-- deterministic-fixture baseline;
-- persistent prompt or skill-bank condition;
-- internalized-weight condition;
-- finite-demonstration policy condition;
+- no-caregiver;
+- deterministic fixture;
+- persistent prompt/skill bank;
+- internalized weights;
+- finite-demonstration policy;
 - W3 declared local-artifact condition;
-- misleading-caregiver condition;
-- inconsistent-caregiver condition;
-- premature-withdrawal condition.
+- misleading caregiver;
+- inconsistent caregiver;
+- premature withdrawal.
 
-A first implementation may build only deterministic conformance plumbing. It may not publish a W3 scientific result without the required comparison family.
+A first implementation may build only deterministic conformance plumbing. It cannot publish a W3 scientific result without the comparison family.
 
 ## 17. Reporting requirements
 
-Every reported developmental gain must include:
+Every developmental-gain report includes:
 
 1. episode and lineage identity;
-2. capability that did not pass at E0;
+2. capability not passed at E0;
 3. finite caregiving events;
-4. accepted and rejected conversion records;
-5. E0, E1, and E2 per-capability outcomes;
-6. complete substrate declarations for all three points;
-7. caregiver-disablement evidence;
+4. accepted and rejected conversions;
+5. E0/E1/E2 per-capability outcomes;
+6. complete substrate declarations;
+7. disablement evidence;
 8. hidden-scaffold validation;
 9. complete cost vectors;
-10. protected-capability regression results;
+10. protected-capability regressions;
 11. rollback and failed-episode history;
-12. comparison condition results;
-13. evidence limitations and unmeasured fields;
-14. exact repository commit and protected test/evidence-map versions.
+12. comparison conditions;
+13. limitations and unmeasured fields;
+14. repository commit and contract/matrix/suite/evaluator versions.
 
-A report may say “intervention efficiency improved” under W0 or “live-source independence” under W1. It must not call either result W3 maturity.
+W0 may report intervention efficiency. W1 may report live-source independence. W2 may report assistance-independent policy performance. Only valid W3 may use the candidate maturity framing.
 
 ## 18. Explicit exclusions
 
 This proposed contract does not authorize:
 
-- live human chat;
-- commercial or local model calls;
-- network access;
-- subprocess execution;
-- arbitrary code or callable execution;
-- credentials;
+- live human chat or model calls;
+- network or subprocess access;
+- arbitrary code/callable execution or credentials;
 - model training;
-- memory creation;
-- skill generation or adoption;
-- action adoption or execution from caregiver proposals;
+- memory/skill creation or adoption;
+- action adoption/execution from caregiver proposals;
 - continuous execution;
 - new writer categories;
 - schema migration;
 - repeated rollback;
-- increased budgets or resource ceilings;
+- increased budgets/resource ceilings;
 - personality, emotion, affection, or virtual-pet mechanics;
 - public novelty claims.
 
@@ -641,46 +577,40 @@ This proposed contract does not authorize:
 
 This contract becomes accepted only after:
 
-1. the proposed ADR and evidence matrix are complete;
+1. proposed ADR and evidence matrix are complete;
 2. one exact documentation candidate passes ordinary protected CI;
-3. one independent read-only design audit checks the contract against frozen Phase 1/2 and the research evidence;
-4. audit findings are resolved without private semantic interpretation;
-5. the project owner explicitly accepts any material new research or capability boundary;
-6. the accepted status, exact commit, audit conclusion, and next action are recorded in the repository and Issues.
+3. an independent read-only design audit checks the contract against frozen Phase 1/2 and the research evidence;
+4. findings are resolved without private semantic interpretation;
+5. the project owner explicitly accepts any material research-boundary change;
+6. accepted status, exact commit, audit conclusion, and next action are recorded.
 
-Acceptance of this contract still does not authorize runtime implementation.
+Acceptance still does not authorize runtime implementation.
 
-A later implementation requires:
-
-- separate scoped Issues and ADRs;
-- a protected Phase 3 implementation matrix;
-- deterministic synthetic/fixture plumbing before live sources;
-- current provider/legal/privacy/cost review where applicable;
-- explicit project-owner authorization for every live capability;
-- an independent implementation audit before any Phase 3 freeze.
+A later implementation requires separate scope/ADRs, a protected implementation matrix, deterministic controls before live sources, current provider/legal/privacy/cost review where applicable, explicit owner authorization for live capability, and independent implementation audit before freeze.
 
 ## 20. Open design questions
 
-The following remain deliberately unresolved and must not be decided in code:
+Code must not privately decide:
 
-- exact database schema and table names;
-- exact canonical digest domain and preimages;
-- exact transport for human or model caregiving;
-- exact artifact types supported by the first implementation;
-- whether any model-parameter update is allowed;
-- exact capability suite and evaluator bundle;
-- exact experiment duration and number of episodes;
-- exact provider and legal transformation classes;
-- exact local model or hardware environment;
-- whether repeated rollback is ever needed after the seed experiment;
-- whether a scalar maturity metric should ever exist.
+- database schema/table names;
+- canonical digest domain/preimages;
+- human/model caregiver transport;
+- first artifact types;
+- whether model updates are allowed;
+- capability suite/evaluator bundle;
+- experiment duration/episode count;
+- provider/legal transformation classes;
+- model/hardware environment;
+- repeated rollback after the seed experiment;
+- any scalar maturity metric.
 
 ## 21. Exact next gate
 
-Create and independently audit:
+Independently audit:
 
-- proposed ADR 0017 adopting this contract as a design-only research boundary;
-- `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md` mapping every contract invariant to required protected evidence;
-- an exact design-audit Issue naming the candidate commit and frozen controls.
+- proposed ADR 0017;
+- this contract;
+- `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`;
+- one exact CI-green documentation candidate.
 
 No implementation begins at this gate.
