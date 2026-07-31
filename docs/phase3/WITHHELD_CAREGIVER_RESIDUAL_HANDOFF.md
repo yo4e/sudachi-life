@@ -1,10 +1,10 @@
 # Phase 3 Withheld-Caregiver Residual Handoff
 
-Updated: **2026-07-30**
+Updated: **2026-07-31**
 
 Status: **Proposed design amendment; no implementation or live capability is authorized**
 
-This appendix supersedes the Phase 3 status and exact-restart portions of `docs/HANDOFF.md` until the base handoff is consolidated after satisfactory bounded verification.
+This appendix supersedes the Phase 3 status and exact-restart portions of `docs/HANDOFF.md` until the base handoff is consolidated after satisfactory bounded verification and final design acceptance.
 
 ## Frozen controls
 
@@ -30,48 +30,61 @@ First corrected candidate:
 
 - PR #134 head: `646459f0e9afac2bfa576ff8a0630dd4291dead4`;
 - CI run 684: success, `395 passed in 65.08s`, compile/upload/schema-v1 smoke success;
-- focused independent re-audit: independent `395 passed`, Phase 1 `152 passed`, 47/47 Phase 1 blobs unchanged, 90/90 frozen Phase 2 test/helper blobs unchanged, 213/213 Phase 2 IDs exact;
+- focused independent re-audit conclusion: **ready after specified documentation or matrix corrections**.
+
+Residual-amendment candidate:
+
+- PR #134 head: `4eb9e4816e067df8ae3a4fb6ca6c5b550646f12f`;
+- CI run 686: success, `395 passed in 53.63s`, compile/upload/schema-v1 smoke success;
+- bounded independent verification resolved `P3-D005`, `P3-D006`, `P3-D008`, `P3-D009`, and `P3-D011`;
+- `P3-D010` remained partially resolved because the effective 140-row matrix could not be reconstructed as one unique row/cell artifact;
 - conclusion: **ready after specified documentation or matrix corrections**.
 
-The focused re-audit marked `P3-D001`, `P3-D002`, `P3-D003`, `P3-D004`, and `P3-D007` resolved. It left bounded residuals in `P3-D005`, `P3-D006`, `P3-D008`, `P3-D009`, and `P3-D010`, and added `P3-D011`.
+## D010 literal closure
 
-## Residual amendment
+Issue #136 owns the sole remaining bounded correction.
 
-`docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1_RESIDUAL_AMENDMENT.md` is the controlling proposed amendment for the bounded residuals. It adds:
+`docs/phase3/WITHHELD_CAREGIVER_EFFECTIVE_MATRIX_LITERAL_REPLACEMENTS.md` controls the effective-matrix projection where it conflicts with Sections 7 and 8 of the residual amendment. It fixes:
 
-- absolute preterminal held-out outcome denial including the conversion verifier, with disjoint verifier/evaluator stores, paths, caches, outputs, and capability handles;
-- exact per-transition writers and source/terminal/replay/conflict/no-partial-effect/supersession/deactivation/rollback semantics;
-- exact attempt graph `scheduled → started → one terminal outcome`, with `scheduled` and `started` nonterminal;
-- two-stage reviewed-draft / external closure / one mechanical seal finalization;
-- exact 140-key atomic registry and deterministic `REQ:<row-ID>` effective matrix projection;
-- exact accepted-package blob binding;
-- an E1 gate requiring all current-attempt caregiving records and all four transitions terminal before cutoff.
+- base matrix Git blob `fb693094431b3f934b7e9eae4c5685324cc4a244`;
+- exact 140-row count, ordered ID set, five-cell parser, and canonical serialization;
+- deterministic `REQ:<row-ID>; ` prefixing for all 126 unamended rows while preserving their other cells byte-for-byte;
+- complete literal five-cell replacements for the 14 amended rows;
+- exactly one leading `REQ:<row-ID>` token per effective row;
+- canonical UTF-8/LF 140-row registry output, SHA-256 digest, and byte length;
+- exact accepted-package binding for the base matrix, residual amendment, literal replacement specification, handoff, accepted commit, CI, and bounded verification.
 
-The amendment changes no frozen Phase 1/2 behavior and authorizes no runtime implementation.
+The literal replacement document changes no research purpose, Phase 1/2 behavior, writer authority, runtime capability, provider, schema, budget, or resource ceiling.
 
-## Current candidate
+## Current proposed package
 
-- branch: `design/phase3-withheld-caregiver-contract`;
-- residual-amendment commit: `febbe3da8020595752f3e1fc9c91f79e05273e65`;
-- base remains: `6e4aeabbdd25dc8a04dc6118458ef8cb61fe102f`;
-- PR #134 remains Draft and unmerged;
-- ADR 0017, base contract, base matrix, residual amendment, and this appendix remain Proposed;
-- ordinary protected CI for the final appendix-synchronized head is pending.
+PR #134 contains proposed documentation only:
+
+- ADR 0017;
+- base withheld-caregiver contract;
+- base 140-ID matrix;
+- residual amendment;
+- D010 literal replacement specification;
+- this residual handoff;
+- existing base handoff synchronization.
+
+PR #134 remains Draft and unmerged. All Phase 3 documents remain Proposed.
 
 ## Exact restart
 
 1. Reconstruct frozen Phase 1/2 from `AGENTS.md`, `docs/HANDOFF.md`, PR #119, and Issue #127.
-2. Read both Issue #135 audits.
-3. Read proposed ADR 0017, the base contract, the base 140-ID matrix, the residual amendment, and this appendix.
+2. Read Issue #135 audit history and Issue #136.
+3. Read proposed ADR 0017, the base contract, base matrix, residual amendment, D010 literal replacement specification, and this appendix.
 4. Confirm PR #134 is Draft/unmerged and all Phase 3 documents remain Proposed.
-5. Synchronize Issue #135 and PR #134 to the final appendix-synchronized exact head and ordinary CI result.
-6. Run one independent bounded read-only verification limited to:
-   - absolute held-out outcome denial and disjoint data paths;
-   - all four transition semantics;
-   - exact attempt state graph and terminal subset;
-   - acyclic finalization;
-   - exact 140-key/`REQ:`/blob binding;
-   - E1 all-caregiving-terminal gate.
-7. Do not perform a new broad redesign unless bounded verification finds a material contradiction.
-8. Do not change Proposed to Accepted, merge PR #134, or begin implementation before satisfactory bounded verification and final project-owner acceptance.
+5. Bind the final D010 candidate to one exact branch head and protected CI result in Issue #135 and PR #134.
+6. Run one independent bounded read-only verification limited to `P3-D010`:
+   - exact base blob;
+   - exact 140-row count, set, and order;
+   - 14 literal five-cell replacements;
+   - byte-preserved unamended cells;
+   - exactly one leading `REQ:<row-ID>` per row;
+   - canonical serialization and independently reproduced SHA-256/byte length;
+   - accepted-package blob-binding requirements.
+7. Do not reopen resolved `P3-D005`, `P3-D006`, `P3-D008`, `P3-D009`, or `P3-D011` unless the D010 specification introduces a concrete contradiction.
+8. Do not change Proposed to Accepted, merge PR #134, close Issue #136 as completed, or begin implementation before satisfactory D010 verification and final project-owner acceptance.
 9. Design acceptance still does not authorize implementation.
