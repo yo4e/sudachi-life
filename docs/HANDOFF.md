@@ -1,12 +1,14 @@
 # SUDACHI Handoff
 
-Updated: **2026-07-29**
+Updated: **2026-08-06**
 
-Phase 1 and Phase 2 are frozen. Phase 3 research Issues #129 and #130 are complete. Issue #132 and draft PR #134 contain a **Proposed, design-only** withheld-caregiver evaluation package. The first independent audit in Issue #135 concluded **not ready; material design revision required**; the proposed package now contains a focused correction pass and awaits exact-head CI plus an independent focused re-audit.
+Phase 1 and Phase 2 are frozen. The Phase 3 withheld-caregiver evaluation contract is now an **Accepted design package** through `docs/phase3/WITHHELD_CAREGIVER_ACCEPTANCE.md`.
 
-No Phase 3 runtime or live caregiver capability is accepted or authorized.
+The accepted semantic and cryptographic design reference remains exact audited candidate `c543b429c00b5c0aa2d9aa0ed26f4f7f3218d29c`. The later acceptance-metadata commit and PR #134 merge commit are administrative wrappers and do not alter the audited package inputs.
 
-No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption, training, continuous loop, new writer category, repeated rollback, resource expansion, generic-agent behavior, personality, or emotion state is authorized.
+No Phase 3 implementation or live caregiver capability is accepted or authorized.
+
+No live caregiver, model API, human chat, network, subprocess, memory, skill generation, action adoption or execution, training, continuous loop, new writer category, repeated rollback, resource expansion, generic-agent behavior, personality, or emotion state is authorized.
 
 ## Cold start
 
@@ -26,12 +28,17 @@ Read, in order:
 12. implemented `docs/phase2/` notes, especially `docs/phase2/SLICE42C_FINAL_CLOSURE_AUDIT.md`
 13. `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md`
 14. `docs/research/WITHDRAWAL_PROTOCOL_EXTRACTION.md`
-15. proposed `docs/decisions/0017-withheld-caregiver-evaluation-contract.md`
-16. proposed `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`
-17. proposed `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`
-18. Issues #3, #132, #135, draft PR #134, and current GitHub state
+15. `docs/phase3/WITHHELD_CAREGIVER_ACCEPTANCE.md`
+16. the accepted audited inputs at candidate `c543b429c00b5c0aa2d9aa0ed26f4f7f3218d29c`:
+    - `docs/decisions/0017-withheld-caregiver-evaluation-contract.md`
+    - `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`
+    - `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`
+    - `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1_RESIDUAL_AMENDMENT.md`
+    - `docs/phase3/WITHHELD_CAREGIVER_EFFECTIVE_MATRIX_LITERAL_REPLACEMENTS.md`
+    - `docs/phase3/WITHHELD_CAREGIVER_RESIDUAL_HANDOFF.md`
+17. Issues #3, #132, #135, #136, PR #134, and current GitHub state
 
-Repository and current GitHub state outrank conversation history. An Issue #135 exact-head synchronization comment outranks an older candidate hash in prose.
+Repository and current GitHub state outrank conversation history. The acceptance manifest is the authoritative package-level status record. The embedded `Proposed` labels in the audited input blobs record their pre-acceptance audit state and are intentionally preserved byte-for-byte.
 
 ## Thesis
 
@@ -99,7 +106,7 @@ The project owner authorizes routine recommended clarifications under `docs/phas
 
 Every delegated adoption still requires a focused Issue, normative document change, protected CI, and durable handoff. Material changes to research purpose, contract intent, frozen behavior, authority/security, live external capability, protected evidence, autonomy/resources, or unresolved contradictions require explicit human confirmation.
 
-## Phase 3 research
+## Phase 3 research basis
 
 Issue #129 completed the first bounded evidence pass. PR #131 merged `docs/research/CAREGIVER_WITHDRAWAL_AND_RETAINED_COMPETENCE.md` after ordinary CI passed all 395 protected tests.
 
@@ -114,63 +121,63 @@ Research conclusion:
 
 No code, schema, writer category, authority boundary, budget, resource ceiling, or runtime capability changed in the research passes.
 
-## Proposed Phase 3 package
+## Accepted Phase 3 design package
 
-Issue #132 and draft PR #134 contain:
+### Accepted audited candidate
 
-- ADR 0017, status **Proposed**;
-- `docs/phase3/WITHHELD_CAREGIVER_EVALUATION_CONTRACT_V1.md`, status **Proposed**;
-- `docs/PHASE3_WITHHELD_CAREGIVER_TEST_MATRIX.md`, status **Proposed**.
+- exact audited candidate head: `c543b429c00b5c0aa2d9aa0ed26f4f7f3218d29c`;
+- exact base: `6e4aeabbdd25dc8a04dc6118458ef8cb61fe102f`;
+- range: seven documentation files only;
+- no `src/` or `tests/` change;
+- ordinary CI: Test run 689 / workflow run `30640978451`, success;
+- protected suite: `395 passed in 93.78s`;
+- independent protected suite: `395 passed in 17.39s`;
+- original Phase 1 protected subset: `152 passed in 3.32s`;
+- Phase 2 matrix/evidence-map sets: exactly `213/213` and set-equal.
 
-The original exact audit candidate was `932ff2ad8d99e8d9fb2e78a16cd12a5f1e8995c9`, with Test run 680 successful and `395 passed in 55.27s`. Issue #135 independently audited that exact head and concluded:
+Accepted package-input blobs:
 
-> not ready; material design revision required
+- ADR 0017: `72a6b1503f8ec0b6755bda77ecd649b9965cc442`;
+- base contract: `99fa9bbd061bdee30d4ee10d8315cf0d37cb90d1`;
+- base matrix: `fb693094431b3f934b7e9eae4c5685324cc4a244`;
+- residual amendment: `00809bd097238b55d53495a477e2308d271460d1`;
+- corrected literal specification: `2010516128d355c54c32f8422021abfc8fd58beb`;
+- residual handoff: `612adb974289e01a5d7c2b8203f7432be6ea5382`;
+- pre-acceptance handoff: `37e479342cfeceed3d868de0d5f91d7c06341939`.
 
-The audit findings were:
+### Canonical effective matrix registry
 
-1. `P3-D001` — W3 overlapped W1/W2;
-2. `P3-D002` — fixed configuration conflicted with E2 disablement;
-3. `P3-D003` — invalid or not-reached E0 could establish acquisition;
-4. `P3-D004` — same-lineage cross-episode evidence could be laundered;
-5. `P3-D005` — the outcome evaluator could become a development oracle;
-6. `P3-D006` — conversion, verification, adoption, and activation were not four protected transitions;
-7. `P3-D007` — opaque model updates had a fail-open exception;
-8. `P3-D008` — failed-attempt population and stopping rules were open;
-9. `P3-D009` — the cost ledger lacked a final closure boundary;
-10. `P3-D010` — the matrix could pass while contract clauses drifted.
+The final P3-D010 verification independently reconstructed the complete registry with Python and Ruby and obtained the same output:
 
-On 2026-07-29 the project owner authorized the focused correction pass, including the evaluator/information-flow redesign. That authorization permits proposed documentation repair only; it is not final contract acceptance or implementation authorization.
+- exactly 140 rows and 140 unique IDs in declared A01–L14 order;
+- exactly five nonempty cells per row;
+- 14 exact literal replacements;
+- 126 byte-preserved unamended rows except for the required cell-2 prefix;
+- exactly one `REQ:<row-ID>; ` token per row at the beginning of cell 2;
+- corrected `P3-L14` contains no additional literal `REQ:` occurrence;
+- canonical SHA-256: `12cd803c821f094b5292eb052c15dc99b8f08019c1950ffe506a6a44f228bab1`;
+- canonical byte length: `43179`.
 
-## Corrected proposed semantics
+The earlier diagnostic digest `77ed87159dc40444516a93d0f82041b15c35c9012d90bdc6ebac6e53cd641ff3` at `43154` bytes remains rejected and noncanonical.
 
-The focused correction pass now proposes:
+### Audit disposition and acceptance
 
-- W0/W1/W2 as the mutually exclusive point-local availability axis;
-- W3 as an orthogonal episode-level certification that preserves its E2 W1 or W2 subtype;
-- a pre-E0 study/run-set manifest with attempt ordinals, exact count or stopping rule, terminal statuses, and full-population reconciliation;
-- evidence binding across exact study, attempt, episode, organism, lineage, point/cutoff, and checkpoint identities;
-- a pre-E0 immutable protected schedule containing the sole legal E1 cutoff and E2 availability transition;
-- acquisition only from a valid, reachable, complete E0 with an explicitly eligible negative status;
-- separate immutable conversion, verification, adoption, and activation transitions with accepted-but-inactive state, authority, ordering, idempotence, conflict, and no-partial-effect rules;
-- a distinct conversion verifier and sequestered held-out outcome evaluator under a pre-E0 information-flow and probe/retry policy;
-- mandatory identity, digest, method, data-class, compute/storage, and verification evidence for any W2/W3 model update; opaque updates are unsupported rather than fail-open;
-- mandatory failure controls, failed-attempt retention, claim tiers, and stopping-rule reconciliation;
-- one immutable final cost closure after E2, integrity handling, evidence packaging, and report review;
-- an exact fourteen-group W3 report;
-- the original 140 matrix IDs retained, with normative clause references, explicit fail-closed outcomes, exact clause/report-set equality gates, and full Phase 1/2 collection/no-skip/assertion/blob integrity.
+Issue #135's audit chain identified and closed the original findings `P3-D001` through `P3-D010`; the later bounded `P3-D011` was also closed.
 
-No corrected document chooses a database schema, transport, live source, provider, artifact type, model-update permission, evaluator implementation, experiment count, hardware environment, or scalar maturity score.
+Final Issue #135 comment `5199730734` concluded:
 
-No corrected document authorizes live caregiver, memory, skills, training, model/API, network, subprocess, action adoption, new writer authority, repeated rollback, resource expansion, or other Phase 3 runtime capability.
+> ready to accept after audit metadata synchronization
+
+On 2026-08-06 the project owner explicitly accepted the Phase 3 withheld-caregiver evaluation contract design at the exact audited candidate and authorized acceptance metadata synchronization, completion of Issue #136, and PR #134 merge processing. Implementation and live capability remain separately gated and unauthorized.
+
+`docs/phase3/WITHHELD_CAREGIVER_ACCEPTANCE.md` is the authoritative package-level acceptance record. It changes the package status to **Accepted** without rewriting the independently audited input blobs.
 
 ## Exact restart
 
 1. Treat Phase 1 and Phase 2 as frozen controls.
-2. Read Issue #135's original independent audit and all findings `P3-D001` through `P3-D010`.
-3. Inspect the corrected proposed ADR 0017, contract, and 140-ID matrix in draft PR #134.
-4. Confirm the PR remains Draft and every Phase 3 document remains Proposed.
-5. Run ordinary protected CI on the final corrected PR #134 head and synchronize the exact head/run/results in PR #134 and Issue #135.
-6. Run one **independent focused read-only re-audit** against that exact CI-green head. The authoring assistant's review does not count as independent.
-7. Require the re-audit to map every original finding to exact corrected clauses and matrix IDs and conclude one of the required Issue #135 outcomes.
-8. Do not change Proposed to Accepted, merge PR #134, or begin implementation until the focused re-audit is satisfactory and final project-owner acceptance is recorded.
-9. Acceptance of the design package still does not authorize implementation; future capability work requires separately accepted scope, matrices, controls, provider/legal review where applicable, owner authorization, and independent implementation audit.
+2. Treat `docs/phase3/WITHHELD_CAREGIVER_ACCEPTANCE.md` as the authoritative acceptance status and package-binding record.
+3. Preserve exact audited candidate `c543b429c00b5c0aa2d9aa0ed26f4f7f3218d29c`, its six package-input blobs, and canonical registry digest/bytes.
+4. Consult PR #134 and Issues #132/#135/#136 for the acceptance-metadata commit and final merge state; GitHub state outranks stale prose.
+5. Do not begin Phase 3 implementation, provider selection, live caregiver integration, schema work, model updates, memory/skill work, or any new runtime capability without a separately accepted implementation scope and explicit project-owner authorization.
+6. Any future implementation must have its own ADR package, protected matrix, deterministic controls, current provider/legal/privacy/cost review where applicable, protected CI, and independent implementation audit before freeze.
+7. Keep canonical writer categories exactly `organism` and `administration` unless the project owner explicitly authorizes a new design change.
