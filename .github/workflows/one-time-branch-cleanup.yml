@@ -85,13 +85,15 @@ jobs:
             fi
           done
 
-          # These four branches were independently reviewed before this workflow was
-          # merged. They are superseded/duplicate remnants with no open PR:
+          # These branches were independently reviewed before deletion. They are
+          # superseded/duplicate remnants with no open PR:
+          # - early Phase 1 foundation prototype superseded by the repaired genesis foundation
           # - Slice 36 draft superseded by the accepted Slice 36a implementation
           # - Slice 32 stale-head PRs superseded by the final merged replacement PR
           # - noop test content already present byte-identically on main
           # - early caregiver-research integration content already integrated later
           explicitly_superseded=(
+            'agent/phase1-foundation'
             'agent/slice36-schema-v2-genesis'
             'agent/slice-32-pending-second-wake'
             'noop-test'
