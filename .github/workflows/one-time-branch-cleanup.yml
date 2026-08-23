@@ -1,0 +1,130 @@
+name: One-time stale branch cleanup
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  cleanup:
+    if: >-
+      github.run_attempt == 1 &&
+      github.event.issue.state == 'open' &&
+      github.event.issue.title == 'Maintenance: prune stale branches 2026-08-23' &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Delete merged and explicitly superseded branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPOSITORY: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          default_branch="$(gh api "repos/${REPOSITORY}" --jq '.default_branch')"
+          deleted_file="$(mktemp)"
+          skipped_file="$(mktemp)"
+
+          branch_exists() {
+            gh api "repos/${REPOSITORY}/git/ref/heads/$1" >/dev/null 2>&1
+          }
+
+          open_pr_count() {
+            gh api --method GET "repos/${REPOSITORY}/pulls" \
+              -f state=open \
+              -f "head=${OWNER}:$1" \
+              -f per_page=100 \
+              --jq 'length'
+          }
+
+          merged_pr_count() {
+            gh api --method GET "repos/${REPOSITORY}/pulls" \
+              -f state=closed \
+              -f "head=${OWNER}:$1" \
+              -f "base=${default_branch}" \
+              -f per_page=100 \
+              --jq '[.[] | select(.merged_at != null)] | length'
+          }
+
+          delete_branch() {
+            local branch="$1"
+            if [[ "$branch" == "$default_branch" ]]; then
+              printf '%s\n' "$branch (default branch)" >> "$skipped_file"
+              return
+            fi
+            if ! branch_exists "$branch"; then
+              return
+            fi
+            if [[ "$(open_pr_count "$branch")" != "0" ]]; then
+              printf '%s\n' "$branch (open PR)" >> "$skipped_file"
+              return
+            fi
+            gh api --method DELETE "repos/${REPOSITORY}/git/refs/heads/${branch}"
+            printf '%s\n' "$branch" >> "$deleted_file"
+          }
+
+          # First remove every surviving head branch that GitHub records as merged
+          # into the current default branch. This works for merge, squash, and rebase
+          # PRs because it relies on PR state rather than commit ancestry.
+          mapfile -t branches < <(
+            gh api --paginate "repos/${REPOSITORY}/branches?per_page=100" --jq '.[].name'
+          )
+
+          for branch in "${branches[@]}"; do
+            [[ "$branch" == "$default_branch" ]] && continue
+            if [[ "$(merged_pr_count "$branch")" != "0" ]]; then
+              delete_branch "$branch"
+            fi
+          done
+
+          # These four branches were independently reviewed before this workflow was
+          # merged. They are superseded/duplicate remnants with no open PR:
+          # - Slice 36 draft superseded by the accepted Slice 36a implementation
+          # - Slice 32 stale-head PRs superseded by the final merged replacement PR
+          # - noop test content already present byte-identically on main
+          # - early caregiver-research integration content already integrated later
+          explicitly_superseded=(
+            'agent/slice36-schema-v2-genesis'
+            'agent/slice-32-pending-second-wake'
+            'noop-test'
+            'agent/integrate-caregiver-research'
+          )
+
+          for branch in "${explicitly_superseded[@]}"; do
+            delete_branch "$branch"
+          done
+
+          deleted_count="$(wc -l < "$deleted_file" | tr -d ' ')"
+          skipped_count="$(wc -l < "$skipped_file" | tr -d ' ')"
+
+          {
+            echo "Deleted ${deleted_count} stale branch(es)."
+            if [[ "$deleted_count" != "0" ]]; then
+              echo
+              echo '<details><summary>Deleted branches</summary>'
+              echo
+              sed 's/^/- `/' "$deleted_file" | sed 's/$/`/'
+              echo
+              echo '</details>'
+            fi
+            if [[ "$skipped_count" != "0" ]]; then
+              echo
+              echo '<details><summary>Skipped branches</summary>'
+              echo
+              sed 's/^/- `/' "$skipped_file" | sed 's/$/`/'
+              echo
+              echo '</details>'
+            fi
+          } > /tmp/branch-cleanup-summary.md
+
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPOSITORY" --body-file /tmp/branch-cleanup-summary.md
+          gh issue close "$ISSUE_NUMBER" --repo "$REPOSITORY" --reason completed
