@@ -13,13 +13,17 @@ from .model import (
     WRITER_ADMINISTRATION,
     digest_record,
 )
+from ._fixture_helpers import _report_groups
 from ._validation_base import classify_availability, _substrate_errors, _validate_cost_vector
+
 
 def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, EvaluationPointRecord]]:
     errors: list[str] = []
+    if any(not isinstance(point.point, Point) for point in evidence.points):
+        errors.append("points.point_type")
     if tuple(point.point for point in evidence.points) != (Point.E0, Point.E1, Point.E2):
         errors.append("points.order_or_set")
-    by_point = {point.point: point for point in evidence.points}
+    by_point = {point.point: point for point in evidence.points if isinstance(point.point, Point)}
     if len(by_point) != 3:
         errors.append("points.cardinality")
         return errors, by_point
@@ -41,6 +45,8 @@ def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, 
     if e2.availability != evidence.schedule.after_availability:
         errors.append("points.e2_availability")
     for point in evidence.points:
+        if not isinstance(point.availability, Availability):
+            errors.append(f"points.{point.point}.availability_type")
         if not (point.integrity_valid and point.infrastructure_valid and point.reachable and point.suite_complete):
             errors.append(f"points.{point.point}.integrity")
         if not point.evaluator_sequestered:
@@ -49,6 +55,8 @@ def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, 
         if len(ids) != len(set(ids)):
             errors.append(f"points.{point.point}.duplicate_capability")
         for result in point.capability_results:
+            if not isinstance(result.status, CapabilityStatus):
+                errors.append(f"result.{point.point}.{result.capability_id}.status_type")
             if result.point != point.point or result.checkpoint_id != point.checkpoint_id:
                 errors.append(f"result.{point.point}.{result.capability_id}.binding")
             if result.evaluator_digest != evidence.binding.outcome_evaluator_digest:
@@ -71,6 +79,12 @@ def _validate_availability(evidence: EpisodeEvidence, by_point: dict[Point, Eval
     errors: list[str] = []
     schedule = evidence.schedule
     transition = evidence.availability_transition
+    schedule_types_valid = isinstance(schedule.before_availability, Availability) and isinstance(schedule.after_availability, Availability)
+    transition_types_valid = isinstance(transition.before, Availability) and isinstance(transition.after, Availability)
+    if not schedule_types_valid:
+        errors.append("schedule.availability_type")
+    if not transition_types_valid:
+        errors.append("availability_transition.value_type")
     if schedule.writer != WRITER_ADMINISTRATION:
         errors.append("schedule.writer")
     if schedule.before_availability != Availability.W0:
@@ -87,19 +101,20 @@ def _validate_availability(evidence: EpisodeEvidence, by_point: dict[Point, Eval
         errors.append("availability_transition.values")
     if transition.source_checkpoint_id != schedule.e1_checkpoint_id or transition.destination_checkpoint_id != schedule.e2_checkpoint_id:
         errors.append("availability_transition.checkpoints")
-    expected_transition_digest = digest_record(
-        "sudachi.phase3.availability_transition/v1",
-        {
-            "before": transition.before.value,
-            "after": transition.after.value,
-            "source": transition.source_checkpoint_id,
-            "destination": transition.destination_checkpoint_id,
-            "writer": transition.writer,
-            "ordinal": transition.ordinal,
-        },
-    )
-    if transition.payload_digest != expected_transition_digest:
-        errors.append("availability_transition.payload_digest")
+    if transition_types_valid:
+        expected_transition_digest = digest_record(
+            "sudachi.phase3.availability_transition/v1",
+            {
+                "before": transition.before.value,
+                "after": transition.after.value,
+                "source": transition.source_checkpoint_id,
+                "destination": transition.destination_checkpoint_id,
+                "writer": transition.writer,
+                "ordinal": transition.ordinal,
+            },
+        )
+        if transition.payload_digest != expected_transition_digest:
+            errors.append("availability_transition.payload_digest")
     if Point.E1 in by_point and transition.ordinal <= by_point[Point.E1].ordinal:
         errors.append("availability_transition.before_e1_complete")
 
@@ -217,6 +232,27 @@ def _validate_report_finalization(evidence: EpisodeEvidence) -> list[str]:
             errors.append("report.contract_version")
         if provenance.get("repository_commit") != evidence.repository_commit:
             errors.append("report.repository_commit")
+
+    try:
+        expected_groups = dict(
+            _report_groups(
+                binding=evidence.binding,
+                study=evidence.study,
+                caregiving_records=evidence.caregiving_records,
+                transitions=evidence.transitions,
+                points=evidence.points,
+                disablement=evidence.disablement,
+                information_flow=evidence.information_flow,
+                final_cost=evidence.final_cost,
+                terminal_state=evidence.terminal_attempt_state,
+                repository_commit=evidence.repository_commit,
+            )
+        )
+    except (AttributeError, KeyError, StopIteration, TypeError, ValueError):
+        errors.append("report.semantic_projection_invalid")
+    else:
+        if groups != expected_groups:
+            errors.append("report.semantic_binding")
 
     closure = evidence.cost_closure
     if closure.draft_digest != draft.canonical_digest():
