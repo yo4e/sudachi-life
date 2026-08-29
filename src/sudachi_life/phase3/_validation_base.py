@@ -1,34 +1,28 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any, Iterable
+from typing import Iterable
 
 from .model import (
-    ACCEPTED_PHASE3_REGISTRY_BYTES,
-    ACCEPTED_PHASE3_REGISTRY_SHA256,
     ALLOWED_CUSTODIANS,
     ALLOWED_ORIGINS,
     ALLOWED_SUBSTRATE_CLASSES,
     CONTRACT_VERSION,
     MANDATORY_COST_FIELDS,
-    REPORT_GROUPS,
     TERMINAL_ATTEMPT_STATES,
     Availability,
     AttemptState,
-    CapabilityStatus,
-    ConformanceResult,
     CostStatus,
     CostVector,
     EpisodeBinding,
     EpisodeEvidence,
     EvaluationPointRecord,
-    Point,
     SubstrateEntry,
     TransitionKind,
     TransitionRecord,
     WRITER_ADMINISTRATION,
     WRITER_ORGANISM,
-    digest_record,
+    digest_bytes,
 )
 
 
@@ -48,6 +42,18 @@ _ALLOWED_CAREGIVER_OUTCOMES = frozenset(
         "invalid",
     }
 )
+
+# This first implementation is fixture-only. Its substrate byte corpus is
+# intentionally closed so digest/size evidence can be independently rebuilt
+# rather than accepted from self-attested metadata. Future authorized fixture
+# cases may extend this registry together with protected tests.
+_FIXTURE_SUBSTRATE_PAYLOADS: dict[str, bytes] = {
+    "substrate:protected-runtime": b"phase3-protected-runtime-v1",
+    "substrate:heldout-evaluator": b"heldout-evaluator-v1",
+    "substrate:conversion-verifier": b"conversion-verifier-v1",
+    "substrate:environment-state": b"fixture-environment-state-v1",
+    "substrate:fixture-rule": b"fixture-rule-v1: marker-alpha -> pass",
+}
 
 
 def _is_sha256(value: str) -> bool:
@@ -120,6 +126,9 @@ def _validate_cost_vector(vector: CostVector, *, complete: bool, prefix: str) ->
         field = mapping[key]
         if not field.unit:
             errors.append(f"{prefix}.{key}.unit")
+        if not isinstance(field.status, CostStatus):
+            errors.append(f"{prefix}.{key}.status")
+            continue
         if field.status == CostStatus.MEASURED:
             if not isinstance(field.value, int) or isinstance(field.value, bool) or field.value < 0:
                 errors.append(f"{prefix}.{key}.measured_value")
@@ -133,28 +142,26 @@ def _validate_cost_vector(vector: CostVector, *, complete: bool, prefix: str) ->
                 errors.append(f"{prefix}.{key}.unmeasured")
             if complete:
                 errors.append(f"{prefix}.{key}.incomplete")
-        else:
-            errors.append(f"{prefix}.{key}.status")
     return errors
 
 
 def _validate_cost_monotonic(vectors: list[CostVector]) -> list[str]:
     errors: list[str] = []
     for key in MANDATORY_COST_FIELDS:
-        previous: int | None = None
-        previous_status = None
+        previous_value: int | None = None
+        previous_status: CostStatus | None = None
         for index, vector in enumerate(vectors):
             field = vector.as_mapping().get(key)
-            if field is None:
+            if field is None or not isinstance(field.status, CostStatus):
                 continue
-            if field.status == CostStatus.MEASURED:
-                if previous_status == CostStatus.NOT_APPLICABLE:
-                    errors.append(f"cost_monotonic.{key}.status_changed")
-                if previous is not None and field.value is not None and field.value < previous:
-                    errors.append(f"cost_monotonic.{key}.decreased_at_{index}")
-                previous = field.value
-            elif field.status == CostStatus.NOT_APPLICABLE and previous_status == CostStatus.MEASURED:
+            if previous_status == CostStatus.MEASURED and field.status != CostStatus.MEASURED:
                 errors.append(f"cost_monotonic.{key}.status_changed")
+            if previous_status == CostStatus.NOT_APPLICABLE and field.status != CostStatus.NOT_APPLICABLE:
+                errors.append(f"cost_monotonic.{key}.status_changed")
+            if field.status == CostStatus.MEASURED:
+                if previous_value is not None and field.value is not None and field.value < previous_value:
+                    errors.append(f"cost_monotonic.{key}.decreased_at_{index}")
+                previous_value = field.value
             previous_status = field.status
     return errors
 
@@ -169,6 +176,8 @@ def _validate_study(evidence: EpisodeEvidence) -> list[str]:
         errors.append("study.exact_attempt_count")
     if len(set(study.planned_attempt_ordinals)) != len(study.planned_attempt_ordinals):
         errors.append("study.duplicate_ordinal")
+    if binding.attempt_ordinal not in study.planned_attempt_ordinals:
+        errors.append("study.current_attempt.planned_ordinal")
     if len(study.attempt_records) != study.exact_attempt_count:
         errors.append("study.population_size")
     by_ordinal = {record.ordinal: record for record in study.attempt_records}
@@ -177,12 +186,19 @@ def _validate_study(evidence: EpisodeEvidence) -> list[str]:
     if len(by_ordinal) != len(study.attempt_records):
         errors.append("study.population_duplicate")
     for ordinal, record in by_ordinal.items():
+        if not isinstance(record.state, AttemptState) or any(
+            not isinstance(state, AttemptState) for state in record.state_history
+        ):
+            errors.append(f"study.attempt.{ordinal}.state_type")
+            continue
         expected_history = (AttemptState.SCHEDULED, AttemptState.STARTED, record.state)
         if record.state not in TERMINAL_ATTEMPT_STATES:
             errors.append(f"study.attempt.{ordinal}.nonterminal")
         if record.state_history != expected_history:
             errors.append(f"study.attempt.{ordinal}.state_graph")
         if record.attempt_id == binding.attempt_id:
+            if record.ordinal != binding.attempt_ordinal:
+                errors.append("study.current_attempt.ordinal")
             if record.episode_id != binding.episode_id:
                 errors.append("study.current_attempt.episode")
             if record.organism_id != binding.organism_id or record.lineage_generation != binding.lineage_generation:
@@ -192,6 +208,10 @@ def _validate_study(evidence: EpisodeEvidence) -> list[str]:
     current = [r for r in study.attempt_records if r.attempt_id == binding.attempt_id]
     if len(current) != 1:
         errors.append("study.current_attempt.cardinality")
+    if not isinstance(evidence.terminal_attempt_state, AttemptState):
+        errors.append("study.current_attempt.terminal_state_type")
+    elif evidence.terminal_attempt_state != AttemptState.COMPLETED_SUCCESSFUL:
+        errors.append("study.current_attempt.not_successful")
     if study.suite_digest != binding.capability_suite_digest:
         errors.append("study.suite_digest")
     if study.evaluator_digest != binding.outcome_evaluator_digest:
@@ -236,8 +256,14 @@ def _validate_caregiving(evidence: EpisodeEvidence, e0_ordinal: int) -> list[str
 def _validate_transitions(evidence: EpisodeEvidence) -> list[str]:
     errors: list[str] = []
     records = evidence.transitions
+    transition_ids = [record.transition_id for record in records]
+    if len(transition_ids) != len(set(transition_ids)):
+        errors.append("transitions.duplicate_id")
     by_kind: dict[TransitionKind, TransitionRecord] = {}
     for record in records:
+        if not isinstance(record.kind, TransitionKind):
+            errors.append(f"transitions.{record.transition_id}.kind_type")
+            continue
         if record.kind in by_kind:
             errors.append(f"transitions.{record.kind}.duplicate")
         by_kind[record.kind] = record
@@ -293,6 +319,15 @@ def _substrate_errors(entry: SubstrateEntry, evidence: EpisodeEvidence, point: E
         errors.append(f"{prefix}.origin")
     if not _is_sha256(entry.canonical_digest):
         errors.append(f"{prefix}.digest")
+    expected_payload = _FIXTURE_SUBSTRATE_PAYLOADS.get(entry.substrate_id)
+    if expected_payload is None:
+        errors.append(f"{prefix}.unregistered_fixture_payload")
+    else:
+        if entry.canonical_digest != digest_bytes(expected_payload):
+            errors.append(f"{prefix}.digest_mismatch")
+        expected_size = len(expected_payload)
+        if entry.canonical_size_bytes != expected_size or entry.measured_size_bytes != expected_size:
+            errors.append(f"{prefix}.size_mismatch")
     if entry.canonical_size_bytes < 0 or entry.measured_size_bytes < 0:
         errors.append(f"{prefix}.size_negative")
     if entry.canonical_size_bytes != entry.measured_size_bytes:
@@ -318,7 +353,11 @@ def _substrate_errors(entry: SubstrateEntry, evidence: EpisodeEvidence, point: E
         if any(value is None for value in required):
             errors.append(f"{prefix}.transition_provenance")
         else:
-            transitions_by_kind = {record.kind: record for record in evidence.transitions}
+            transitions_by_kind = {
+                record.kind: record
+                for record in evidence.transitions
+                if isinstance(record.kind, TransitionKind)
+            }
             if set(transitions_by_kind) == set(TransitionKind):
                 expected = tuple(
                     transitions_by_kind[kind].transition_id
