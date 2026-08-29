@@ -52,7 +52,7 @@ Before recommending rollover:
 5. verify open pull requests and the current `main` state
 6. provide the user with a compact restart phrase naming the exact next boundary
 
-A new chat must begin by reading `AGENTS.md` and following its cold-start order. Conversation summaries are useful orientation but never outrank repository and GitHub state.
+A new ordinary implementation or research chat must begin by reading `AGENTS.md` and following its cold-start order. A new **read-only independent phase-gate audit** instead follows the bounded audit exception in `AGENTS.md` and `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`: start from the audit packet and exact candidate, then expand only when the risk or evidence requires it. Conversation summaries are useful orientation but never outrank repository and GitHub state.
 
 ## 3. Cost awareness
 
@@ -60,6 +60,10 @@ Do not introduce paid runners, larger runners, GPU runners, private-repository A
 
 When a proposed change could create a charge, stop before enabling it and explain the cost surface, free allowance if known, and a no-cost alternative. Re-verify current pricing from first-party sources because pricing and quotas can change.
 
+Review capacity is also a project resource. Do not consume model context, rate limits, or review quotas on ritual reconstruction that is unrelated to the gate question. Independent audits should use a compact audit packet and risk-scoped reading. Existing trustworthy exact-candidate CI may be verified rather than rerun solely for duplication; run targeted or full checks when the evidence is missing, stale, implicated by a finding, or materially relevant to the boundary under review.
+
+Cost reduction must never be used to skip a materially affected frozen invariant, authority/security boundary, evaluator boundary, resource limit, or other substantive gate condition.
+
 ## 4. Scope preservation
 
-Safety caution, rollover, and cost awareness are operational controls. They must not be used to weaken protected tests, reduce research rigor, skip difficult evaluations, anthropomorphize the organism, or alter the accepted research question without an explicit project decision.
+Safety caution, rollover, cost awareness, and audit scoping are operational controls. They must not be used to weaken protected tests, reduce research rigor, skip difficult evaluations, anthropomorphize the organism, or alter the accepted research question without an explicit project decision.
