@@ -11,7 +11,7 @@ from sudachi_life.phase3 import (
     classify_availability,
     validate_episode,
 )
-from sudachi_life.phase3.model import REPORT_GROUPS, TransitionKind
+from sudachi_life.phase3.model import AttemptState, REPORT_GROUPS, TransitionKind
 
 
 def test_valid_fixture_episode_is_w1_conformant_and_retains_acquired_capability() -> None:
@@ -194,7 +194,6 @@ def test_attempt_state_helper_enforces_exact_graph_and_terminal_idempotence() ->
     import pytest
 
     from sudachi_life.phase3 import ReplayConflict, advance_attempt_history
-    from sudachi_life.phase3.model import AttemptState
 
     history = advance_attempt_history((), AttemptState.SCHEDULED)
     history = advance_attempt_history(history, AttemptState.STARTED)
@@ -246,3 +245,136 @@ def test_availability_transition_digest_is_reconstructed_not_self_attested() -> 
     result = validate_episode(replace(evidence, availability_transition=bad_transition))
     assert result.valid is False
     assert "availability_transition.payload_digest" in result.errors
+
+
+def test_failed_terminal_attempt_cannot_receive_w3_conformance() -> None:
+    evidence = build_valid_fixture_episode()
+    attempt = evidence.study.attempt_records[0]
+    failed_attempt = replace(
+        attempt,
+        state=AttemptState.ROLLED_BACK,
+        state_history=(AttemptState.SCHEDULED, AttemptState.STARTED, AttemptState.ROLLED_BACK),
+    )
+    failed_study = replace(evidence.study, attempt_records=(failed_attempt,))
+
+    result = validate_episode(
+        replace(
+            evidence,
+            study=failed_study,
+            terminal_attempt_state=AttemptState.ROLLED_BACK,
+        )
+    )
+    assert result.valid is False
+    assert "study.current_attempt.not_successful" in result.errors
+
+
+def test_current_attempt_ordinal_must_match_episode_binding() -> None:
+    evidence = build_valid_fixture_episode()
+    attempt = evidence.study.attempt_records[0]
+    moved_attempt = replace(attempt, ordinal=2)
+    moved_study = replace(
+        evidence.study,
+        planned_attempt_ordinals=(2,),
+        attempt_records=(moved_attempt,),
+    )
+
+    result = validate_episode(replace(evidence, study=moved_study))
+    assert result.valid is False
+    assert "study.current_attempt.ordinal" in result.errors
+    assert "study.current_attempt.planned_ordinal" in result.errors
+
+
+def test_four_transition_records_require_distinct_identities() -> None:
+    evidence = build_valid_fixture_episode()
+    shared_id = "transition:shared"
+    conversion, verification, adoption, activation = evidence.transitions
+    transitions = (
+        replace(conversion, transition_id=shared_id),
+        replace(verification, transition_id=shared_id, input_id=shared_id),
+        replace(adoption, transition_id=shared_id, input_id=shared_id),
+        replace(activation, transition_id=shared_id, input_id=shared_id),
+    )
+
+    result = validate_episode(replace(evidence, transitions=transitions))
+    assert result.valid is False
+    assert "transitions.duplicate_id" in result.errors
+
+
+def test_fixture_substrate_digest_is_reconstructed_from_registered_payload() -> None:
+    evidence = build_valid_fixture_episode()
+    points = list(evidence.points)
+    e2 = points[2]
+    rule = e2.substrates[-1]
+    points[2] = replace(
+        e2,
+        substrates=e2.substrates[:-1] + (replace(rule, canonical_digest="0" * 64),),
+    )
+
+    result = validate_episode(replace(evidence, points=tuple(points)))
+    assert result.valid is False
+    assert "substrate.E2.substrate:fixture-rule.digest_mismatch" in result.errors
+
+
+def test_report_semantics_are_bound_even_when_closure_digests_are_recomputed() -> None:
+    evidence = build_valid_fixture_episode()
+    groups = list(evidence.reviewed_draft.groups)
+    index = next(i for i, (key, _) in enumerate(groups) if key == "limitations")
+    limitations = dict(groups[index][1])
+    limitations["developmental_gain_claimed"] = True
+    groups[index] = ("limitations", limitations)
+    bad_draft = replace(evidence.reviewed_draft, groups=tuple(groups))
+    bad_closure = replace(evidence.cost_closure, draft_digest=bad_draft.canonical_digest())
+    bad_seal = replace(
+        evidence.publication_seal,
+        draft_digest=bad_draft.canonical_digest(),
+        closure_digest=bad_closure.canonical_digest(),
+    )
+
+    result = validate_episode(
+        replace(
+            evidence,
+            reviewed_draft=bad_draft,
+            cost_closure=bad_closure,
+            publication_seal=bad_seal,
+        )
+    )
+    assert result.valid is False
+    assert "report.semantic_binding" in result.errors
+
+
+def test_measured_cumulative_cost_cannot_revert_to_unmeasured() -> None:
+    evidence = build_valid_fixture_episode()
+    points = list(evidence.points)
+    e2 = points[2]
+    fields = dict(e2.cumulative_cost.fields)
+    original = fields["human.report_review_ms"]
+    fields["human.report_review_ms"] = CostField(
+        status=CostStatus.UNMEASURED,
+        value=None,
+        unit=original.unit,
+        reason="measurement lost",
+    )
+    points[2] = replace(
+        e2,
+        cumulative_cost=replace(
+            e2.cumulative_cost,
+            fields=tuple((key, fields[key]) for key, _ in e2.cumulative_cost.fields),
+        ),
+    )
+
+    result = validate_episode(replace(evidence, points=tuple(points)))
+    assert result.valid is False
+    assert "cost_monotonic.human.report_review_ms.status_changed" in result.errors
+
+
+def test_raw_string_status_cannot_masquerade_as_capability_enum() -> None:
+    evidence = build_valid_fixture_episode()
+    points = list(evidence.points)
+    e1 = points[1]
+    results = list(e1.capability_results)
+    results[0] = replace(results[0], status="passed")
+    points[1] = replace(e1, capability_results=tuple(results))
+
+    result = validate_episode(replace(evidence, points=tuple(points)))
+    assert result.valid is False
+    assert "result.E1.capability:fixture-transform.status_type" in result.errors
