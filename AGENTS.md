@@ -6,6 +6,14 @@ This file is the continuity contract for AI collaborators working on SUDACHI.
 
 Assume you remember nothing about SUDACHI. Reconstruct the project from repository and current GitHub state before proposing or changing anything. Repository and GitHub state outrank conversation history.
 
+### Read-only independent audit exception
+
+A bounded read-only phase-gate audit does **not** begin with the full repository-wide read order below. Follow `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md` and the gate Issue's audit packet first, then inspect the exact candidate diff, directly governing requirements, frozen invariants plausibly affected by the change, and relevant test/CI evidence.
+
+Open broader historical ADRs, slice notes, old audits, research notes, or obsolete handoffs only when the candidate touches that boundary, authoritative sources conflict, provenance cannot otherwise be established, or a concrete finding requires historical reconstruction. This exception reduces irrelevant reconstruction cost; it does not permit skipping a materially affected authority, security, persistence, checkpoint, rollback, resource, evaluator, frozen-control, or other gate-critical boundary.
+
+Independence is role-based, not tool-specific. A reviewer must not have authored or materially implemented the exact candidate, must start from a fresh review context, audit one exact commit read-only, and record the result durably. A separate fresh ChatGPT conversation may be an eligible independent reviewer under those conditions.
+
 ## Read order
 
 1. `README.md`
