@@ -28,6 +28,8 @@ from .human_pilot import (
 HUMAN_PILOT_LIVE_BRIDGE_VERSION = "sudachi.phase3.human_caregiver_live_bridge/v1"
 SELF_HUMAN_PILOT_ID = "pilot:human-caregiver-v1-self"
 LOCAL_STRUCTURED_HUMAN_TRANSPORT = "local_structured_manual"
+SELF_HUMAN_AUTHORIZATION_RECORD = "github:yo4e/sudachi-life/issues/158"
+SELF_HUMAN_CONSENT_NOTICE_VERSION = "sudachi.phase3.self_human_consent/v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +40,8 @@ class SelfHumanPilotAuthorization:
     caregiver_id: str
     source_kind: CaregiverSourceKind
     transport: str
+    authorization_record: str
+    consent_notice_version: str
     project_owner_is_caregiver: bool
     self_only: bool
     ethics_review_status: EthicsReviewStatus
@@ -57,6 +61,8 @@ class HumanPilotAttemptState:
     attempt_elapsed_ms: int = 0
     live_enabled: bool = True
     disabled_at_elapsed_ms: int | None = None
+    accepted_request_ids: tuple[str, ...] = ()
+    accepted_proposal_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +100,48 @@ def _is_offset_timestamp(value: str) -> bool:
     return parsed.tzinfo is not None and parsed.utcoffset() is not None
 
 
+def _validate_attempt_state(state: HumanPilotAttemptState) -> tuple[str, ...]:
+    errors: list[str] = []
+
+    integer_fields = (
+        ("consultations_used", state.consultations_used, PROPOSED_MAX_CONSULTATIONS_PER_ATTEMPT),
+        ("clarifications_used", state.clarifications_used, PROPOSED_MAX_CLARIFICATIONS_PER_ATTEMPT),
+        ("caregiver_active_ms_used", state.caregiver_active_ms_used, PROPOSED_MAX_CAREGIVER_ACTIVE_MS_PER_ATTEMPT),
+        ("attempt_elapsed_ms", state.attempt_elapsed_ms, PROPOSED_MAX_ATTEMPT_WALL_MS),
+    )
+    for name, value, maximum in integer_fields:
+        if type(value) is not int or value < 0 or value > maximum:
+            errors.append(f"state.{name}")
+
+    if type(state.live_enabled) is not bool:
+        errors.append("state.live_enabled")
+    if state.clarifications_used > state.consultations_used:
+        errors.append("state.clarifications_exceed_consultations")
+    if len(state.accepted_request_ids) != state.consultations_used:
+        errors.append("state.request_count")
+    if len(state.accepted_proposal_ids) != state.consultations_used:
+        errors.append("state.proposal_count")
+    if len(set(state.accepted_request_ids)) != len(state.accepted_request_ids):
+        errors.append("state.request_ids_duplicate")
+    if len(set(state.accepted_proposal_ids)) != len(state.accepted_proposal_ids):
+        errors.append("state.proposal_ids_duplicate")
+    if any(not value for value in state.accepted_request_ids):
+        errors.append("state.request_id_empty")
+    if any(not value.startswith("proposal:") for value in state.accepted_proposal_ids):
+        errors.append("state.proposal_id_shape")
+
+    if state.live_enabled:
+        if state.disabled_at_elapsed_ms is not None:
+            errors.append("state.enabled_with_disablement")
+    else:
+        if type(state.disabled_at_elapsed_ms) is not int:
+            errors.append("state.disabled_without_timestamp")
+        elif state.disabled_at_elapsed_ms != state.attempt_elapsed_ms:
+            errors.append("state.disablement_timestamp")
+
+    return tuple(errors)
+
+
 def accepted_self_human_pilot_v1_authorization(
     *,
     attempt_id: str,
@@ -103,7 +151,8 @@ def accepted_self_human_pilot_v1_authorization(
 
     This function does not perform I/O or contact any external service. The only
     live source it authorizes is the project owner supplying a structured draft
-    locally for the single bound attempt.
+    locally for the single bound attempt. The approval/ethics/consent decision is
+    durably bound to GitHub Issue #158.
     """
     return SelfHumanPilotAuthorization(
         protocol_version=HUMAN_PILOT_LIVE_BRIDGE_VERSION,
@@ -112,6 +161,8 @@ def accepted_self_human_pilot_v1_authorization(
         caregiver_id=caregiver_id,
         source_kind=CaregiverSourceKind.HUMAN,
         transport=LOCAL_STRUCTURED_HUMAN_TRANSPORT,
+        authorization_record=SELF_HUMAN_AUTHORIZATION_RECORD,
+        consent_notice_version=SELF_HUMAN_CONSENT_NOTICE_VERSION,
         project_owner_is_caregiver=True,
         self_only=True,
         ethics_review_status=EthicsReviewStatus.NOT_REQUIRED_DECLARED,
@@ -141,6 +192,10 @@ def validate_self_human_pilot_authorization(
         errors.append("authorization.source_kind")
     if authorization.transport != LOCAL_STRUCTURED_HUMAN_TRANSPORT:
         errors.append("authorization.transport")
+    if authorization.authorization_record != SELF_HUMAN_AUTHORIZATION_RECORD:
+        errors.append("authorization.record")
+    if authorization.consent_notice_version != SELF_HUMAN_CONSENT_NOTICE_VERSION:
+        errors.append("authorization.consent_notice_version")
     if not authorization.project_owner_is_caregiver:
         errors.append("authorization.owner_is_caregiver")
     if not authorization.self_only:
@@ -172,6 +227,13 @@ def disable_self_human_bridge(
     *,
     attempt_elapsed_ms: int,
 ) -> HumanPilotAttemptState:
+    state_errors = _validate_attempt_state(state)
+    if state_errors:
+        raise ValueError(f"invalid attempt state: {state_errors}")
+    if not state.live_enabled:
+        raise ValueError("bridge is already disabled")
+    if type(attempt_elapsed_ms) is not int:
+        raise TypeError("disablement elapsed time must be int")
     if attempt_elapsed_ms < state.attempt_elapsed_ms:
         raise ValueError("disablement elapsed time cannot move backwards")
     if attempt_elapsed_ms > PROPOSED_MAX_ATTEMPT_WALL_MS:
@@ -202,13 +264,14 @@ def accept_self_human_proposal(
     structured draft and measured timing values locally.
     """
     errors = list(validate_self_human_pilot_authorization(authorization))
+    errors.extend(f"bridge.{error}" for error in _validate_attempt_state(state))
 
     if not state.live_enabled:
         errors.append("bridge.disabled")
-    if state.disabled_at_elapsed_ms is not None:
-        errors.append("bridge.disablement_state")
     if request.attempt_id != authorization.attempt_id:
         errors.append("bridge.attempt_binding")
+    if request.request_id in state.accepted_request_ids:
+        errors.append("bridge.request_replay")
     if draft.caregiver_id != authorization.caregiver_id:
         errors.append("bridge.caregiver_binding")
 
@@ -221,26 +284,54 @@ def accept_self_human_proposal(
     )
     errors.extend(f"bridge.{error}" for error in draft_validation.errors)
 
-    if measurement.latency_ms < 0:
-        errors.append("bridge.latency_negative")
-    elif measurement.latency_ms > PROPOSED_MAX_RESPONSE_LATENCY_MS:
-        errors.append("bridge.latency_budget")
-    if measurement.caregiver_active_ms < 0:
-        errors.append("bridge.active_ms_negative")
-    if measurement.attempt_elapsed_ms < state.attempt_elapsed_ms:
-        errors.append("bridge.elapsed_time_regression")
-    elif measurement.attempt_elapsed_ms > PROPOSED_MAX_ATTEMPT_WALL_MS:
-        errors.append("bridge.attempt_wall_budget")
+    measurement_ints = (
+        ("latency_ms", measurement.latency_ms),
+        ("caregiver_active_ms", measurement.caregiver_active_ms),
+        ("attempt_elapsed_ms", measurement.attempt_elapsed_ms),
+    )
+    for name, value in measurement_ints:
+        if type(value) is not int:
+            errors.append(f"bridge.{name}_type")
+    if type(measurement.is_clarification) is not bool:
+        errors.append("bridge.is_clarification_type")
+
+    elapsed_delta: int | None = None
+    if type(measurement.attempt_elapsed_ms) is int:
+        if measurement.attempt_elapsed_ms < state.attempt_elapsed_ms:
+            errors.append("bridge.elapsed_time_regression")
+        elif measurement.attempt_elapsed_ms > PROPOSED_MAX_ATTEMPT_WALL_MS:
+            errors.append("bridge.attempt_wall_budget")
+        else:
+            elapsed_delta = measurement.attempt_elapsed_ms - state.attempt_elapsed_ms
+
+    if type(measurement.latency_ms) is int:
+        if measurement.latency_ms < 0:
+            errors.append("bridge.latency_negative")
+        elif measurement.latency_ms > PROPOSED_MAX_RESPONSE_LATENCY_MS:
+            errors.append("bridge.latency_budget")
+        elif elapsed_delta is not None and measurement.latency_ms > elapsed_delta:
+            errors.append("bridge.latency_exceeds_elapsed")
+    if type(measurement.caregiver_active_ms) is int:
+        if measurement.caregiver_active_ms < 0:
+            errors.append("bridge.active_ms_negative")
+        elif elapsed_delta is not None and measurement.caregiver_active_ms > elapsed_delta:
+            errors.append("bridge.active_ms_exceeds_elapsed")
     if not _is_offset_timestamp(measurement.source_timestamp):
         errors.append("bridge.source_timestamp")
 
     is_linked_clarification = draft.clarification_of_proposal_id is not None
-    if measurement.is_clarification != is_linked_clarification:
+    if type(measurement.is_clarification) is bool and measurement.is_clarification != is_linked_clarification:
         errors.append("bridge.clarification_binding")
+    if is_linked_clarification and draft.clarification_of_proposal_id not in state.accepted_proposal_ids:
+        errors.append("bridge.clarification_source")
 
     next_consultations = state.consultations_used + 1
-    next_clarifications = state.clarifications_used + int(measurement.is_clarification)
-    next_active_ms = state.caregiver_active_ms_used + measurement.caregiver_active_ms
+    next_clarifications = state.clarifications_used + int(measurement.is_clarification is True)
+    next_active_ms = (
+        state.caregiver_active_ms_used + measurement.caregiver_active_ms
+        if type(measurement.caregiver_active_ms) is int
+        else state.caregiver_active_ms_used
+    )
 
     if next_consultations > PROPOSED_MAX_CONSULTATIONS_PER_ATTEMPT:
         errors.append("bridge.consultation_budget")
@@ -289,6 +380,8 @@ def accept_self_human_proposal(
     )
     if "proposal.live_source_not_authorized" not in generic_validation.errors:
         unexpected_generic_errors += ("proposal.expected_global_rejection_missing",)
+    if proposal.proposal_id in state.accepted_proposal_ids:
+        unexpected_generic_errors += ("proposal.replay",)
     if unexpected_generic_errors:
         return HumanBridgeResult(
             accepted=False,
@@ -326,6 +419,8 @@ def accept_self_human_proposal(
         attempt_elapsed_ms=measurement.attempt_elapsed_ms,
         live_enabled=True,
         disabled_at_elapsed_ms=None,
+        accepted_request_ids=state.accepted_request_ids + (request.request_id,),
+        accepted_proposal_ids=state.accepted_proposal_ids + (proposal.proposal_id,),
     )
     return HumanBridgeResult(
         accepted=True,
