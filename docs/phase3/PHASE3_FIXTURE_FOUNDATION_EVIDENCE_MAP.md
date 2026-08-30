@@ -92,6 +92,24 @@ Protected test count after these code repairs, before this documentation synchro
 
 This self-audit is not the independent freeze audit because the reviewer participated in implementation. It is pre-audit hardening evidence only.
 
+## 2026-08-30 independent-audit repair pass
+
+Issue #147 independently audited exact candidate `8c14d6acaa76c5c523ff42e48e7498b6c1b24b2a` and concluded **not ready to freeze; specified implementation repairs required**. The accepted repair scope comprised the four independent-audit findings plus two bounded residuals recovered from the earlier incomplete Codex audit. The source/test repair commit is `003cf4fe40f8d2355dc81acb67169a8cc9ea1341`; GitHub Actions Test run **708** / workflow run `33288494461` passed **438 tests in 59.64s** before this documentation synchronization.
+
+The repaired implementation strengthens only protected Phase 3 evidence and tests:
+
+- **Study preregistration / `P3-B01`, `P3IF-12`:** the fixture-relevant `StudyManifest` now carries and validates manifest version, study purpose, deterministic run-generation rule, stopping/count rule, attempt-assignment rule, full-population reconciliation rule, mandatory failure controls, comparison-family scope, exact cost-policy identity, and a pre-E0 publication policy. Post-hoc cost-policy or study-purpose mutation fails closed.
+- **Information flow / `P3-G01`, `P3-G03`–`P3-G05`, `P3-G10`, `P3IF-09`:** a digest-bound `InformationFlowPolicy` fixes verifier/evaluator identities, disjoint store/path/cache domains, allowed feedback fields/recipients/timing/cardinality, and probe/retry budgets. Immutable invocation records carry exact identity, role, input/output digests, recipients, disclosures, held-out access, derivative-leak, targeting, probe, and retry evidence. The validator reconstructs and reconciles this ledger to the final verifier/evaluator cost counters; summary booleans are no longer sufficient evidence.
+- **Publication finalization / `P3-K14`, `P3IF-17`:** a pre-E0 `PublicationPolicy` fixes the only allowed closure/seal operation and its byte/operation limits. Closure and seal byte usage is reconstructed from deterministic serialized payloads and checked against the fixed policy, with zero retry/edit semantics preserved.
+- **Point and nested identity / `P3-B01`, `P3-B04`, `P3-D03`, `P3-D12`:** E0 must use the exact baseline checkpoint. Nested capability results, cost vectors, point integrity evidence, disablement, information-flow evidence, reviewed draft, closure, and seal bind an exact `EvidenceIdentity`; foreign episode, lineage, point, cutoff, or checkpoint evidence fails closed.
+- **Version provenance / `P3-L13`, `P3-L14`:** repository provenance must be an exact 40- or 64-hex commit identifier. The report also projects study-manifest, information-flow-policy, and publication-policy digests.
+
+Protected adversarial coverage now includes post-hoc study/cost-policy mutation, information-flow policy and invocation-ledger mutation, undeclared recipients, publication-policy and byte-counter mutation, foreign E0/nested identities, and invalid repository commit provenance.
+
+These repairs do **not** change the research purpose, frozen Phase 1/2 behavior, canonical writer categories, live/external capability boundary, or resource scope. PR #146 still compares to `main` as exactly the same 12 additive Phase 3 files.
+
+This repair pass is implementation work, not an independent re-audit. A fresh reviewer must audit the final documentation-synchronized exact candidate before freeze/merge.
+
 ## Deliberately absent capabilities
 
 The package contains no implementation of:
