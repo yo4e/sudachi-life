@@ -87,8 +87,13 @@ def validate_integrated_caregiver_rehearsal(
     evidence = rehearsal.evidence
     binding = evidence.binding
 
-    proposal_validation = validate_proposal(request, proposal)
-    errors.extend(f"proposal_bridge.{error}" for error in proposal_validation.errors)
+    try:
+        proposal_validation = validate_proposal(request, proposal)
+    except (AttributeError, TypeError, ValueError):
+        proposal_validation = None
+        errors.append("proposal_bridge.validation_exception")
+    if proposal_validation is not None:
+        errors.extend(f"proposal_bridge.{error}" for error in proposal_validation.errors)
 
     request_bindings = (
         ("study_id", binding.study_id),
@@ -115,11 +120,15 @@ def validate_integrated_caregiver_rehearsal(
             errors.append("rehearsal.request_sequence")
         if proposal.sequence_ordinal != caregiving.ordinal:
             errors.append("rehearsal.proposal_sequence")
-        if proposal.kind.value != caregiving.assistance_class:
+        if type(proposal.kind) is not ProposalKind:
+            errors.append("rehearsal.proposal_kind_type")
+        elif proposal.kind.value != caregiving.assistance_class:
             errors.append("rehearsal.assistance_class")
         if proposal.payload_sha256 != caregiving.content_digest:
             errors.append("rehearsal.payload_digest")
-        if len(proposal.payload.encode("utf-8")) != caregiving.content_size_bytes:
+        if not isinstance(proposal.payload, str):
+            errors.append("rehearsal.payload_type")
+        elif len(proposal.payload.encode("utf-8")) != caregiving.content_size_bytes:
             errors.append("rehearsal.payload_size")
         if caregiving.source != "deterministic_fixture":
             errors.append("rehearsal.caregiving_source")
@@ -163,13 +172,6 @@ def validate_integrated_caregiver_rehearsal(
         candidate = candidates[0]
         if caregiving is not None and caregiving.record_id not in candidate.source_caregiving_event_ids:
             errors.append(f"rehearsal.{point.value.lower()}_caregiver_provenance")
-        if conversion is not None and conversion.transition_id not in candidate.source_caregiving_event_ids and conversion.transition_id not in (
-            candidate.conversion_id,
-            *(),
-        ):
-            # `source_caregiving_event_ids` is for caregiving IDs; conversion provenance
-            # is represented separately by `conversion_id`.
-            pass
         if conversion is not None and candidate.conversion_id != conversion.transition_id:
             errors.append(f"rehearsal.{point.value.lower()}_conversion_provenance")
         if candidate.origin != "caregiver_derived":
