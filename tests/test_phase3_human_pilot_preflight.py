@@ -9,10 +9,9 @@ from sudachi_life.phase3.caregiver import (
     ProposalKind,
 )
 from sudachi_life.phase3.human_pilot import (
-    EthicsReviewStatus,
-    HumanCaregiverPilotPreflight,
-    HumanProposalDraft,
     CaregiverConfidence,
+    EthicsReviewStatus,
+    HumanProposalDraft,
     PROPOSED_MAX_PROPOSAL_BYTES,
     proposed_human_caregiver_pilot_v1,
     validate_human_pilot_preflight,
@@ -37,7 +36,7 @@ def _draft(**changes: object) -> HumanProposalDraft:
     values: dict[str, object] = {
         "draft_id": "draft:human-pilot-001",
         "request_id": "request:human-pilot-preflight-001",
-        "caregiver_id": "caregiver:pseudonymous-001",
+        "caregiver_id": "caregiver:pseudo:0123456789abcdef0123456789abcdef",
         "sequence_ordinal": 2,
         "kind": ProposalKind.EXPLANATION,
         "text": "The visible marker suggests using action:inspect before action:move.",
@@ -50,9 +49,9 @@ def _draft(**changes: object) -> HumanProposalDraft:
     return HumanProposalDraft(**values)  # type: ignore[arg-type]
 
 
-def _validate(draft: HumanProposalDraft):
+def _validate(draft: HumanProposalDraft, *, request: CaregiverRequest | None = None):
     return validate_human_proposal_draft(
-        _request(),
+        request or _request(),
         draft,
         allowed_observation_ids=frozenset({"observation:marker-visible"}),
         allowed_objective_ids=frozenset({"objective:reach-marker"}),
@@ -166,6 +165,21 @@ def test_structured_human_draft_accepts_only_explicitly_allowed_visible_ids() ->
     assert len(result.payload_sha256) == 64
 
 
+def test_raw_string_allowed_kind_masquerading_fails_closed() -> None:
+    request = replace(_request(), allowed_kinds=("explanation",))  # type: ignore[arg-type]
+    result = _validate(_draft(), request=request)
+
+    assert "request.allowed_kinds" in result.errors
+
+
+def test_pseudonymous_caregiver_id_has_closed_opaque_shape() -> None:
+    named = _validate(_draft(caregiver_id="caregiver:alice"))
+    short = _validate(_draft(caregiver_id="caregiver:pseudo:abc"))
+
+    assert "draft.caregiver_id" in named.errors
+    assert "draft.caregiver_id" in short.errors
+
+
 def test_human_draft_rejects_unregistered_references_and_duplicate_ids() -> None:
     draft = _draft(
         observation_ids=("observation:heldout",),
@@ -191,7 +205,7 @@ def test_human_draft_rejects_personal_secret_and_confidential_data_flags() -> No
     assert "draft.third_party_confidential_data_forbidden" in result.errors
 
 
-def test_human_draft_payload_is_bounded_by_utf8_bytes() -> None:
+def test_human_draft_payload_is_bounded_by_fixed_utf8_bytes() -> None:
     exact = "a" * PROPOSED_MAX_PROPOSAL_BYTES
     too_large = "a" * (PROPOSED_MAX_PROPOSAL_BYTES + 1)
 
