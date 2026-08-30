@@ -130,6 +130,14 @@ class HumanProposalDraftValidation:
     payload_sha256: str | None
 
 
+def _is_pseudonymous_caregiver_id(value: str) -> bool:
+    prefix = "caregiver:pseudo:"
+    if not value.startswith(prefix):
+        return False
+    token = value[len(prefix) :]
+    return len(token) == 32 and all(ch in "0123456789abcdef" for ch in token)
+
+
 def proposed_human_caregiver_pilot_v1() -> HumanCaregiverPilotPreflight:
     """Return the proposed pre-live Pilot v1 review packet.
 
@@ -286,18 +294,28 @@ def validate_human_proposal_draft(
     allowed_observation_ids: frozenset[str] = frozenset(),
     allowed_objective_ids: frozenset[str] = frozenset(),
     allowed_action_ids: frozenset[str] = frozenset(),
-    max_payload_bytes: int = PROPOSED_MAX_PROPOSAL_BYTES,
 ) -> HumanProposalDraftValidation:
     """Validate a human-authored draft without creating a live proposal.
 
     Only explicitly supplied development-visible identifiers may be referenced.
     Protected evaluator contents are therefore not part of this validation input.
+    The Pilot v1 proposal-size limit is fixed and cannot be overridden by callers.
     """
     errors: list[str] = []
 
+    if not request.request_id:
+        errors.append("request.request_id")
+    if request.sequence_ordinal < 0:
+        errors.append("request.sequence_ordinal")
+    allowed_kinds_valid = bool(request.allowed_kinds) and all(
+        type(item) is ProposalKind for item in request.allowed_kinds
+    )
+    if not allowed_kinds_valid or len(set(request.allowed_kinds)) != len(request.allowed_kinds):
+        errors.append("request.allowed_kinds")
+
     if not draft.draft_id:
         errors.append("draft.draft_id")
-    if not draft.caregiver_id or not draft.caregiver_id.startswith("caregiver:"):
+    if not _is_pseudonymous_caregiver_id(draft.caregiver_id):
         errors.append("draft.caregiver_id")
     if draft.request_id != request.request_id:
         errors.append("draft.request_id")
@@ -305,7 +323,7 @@ def validate_human_proposal_draft(
         errors.append("draft.sequence_ordinal")
     if type(draft.kind) is not ProposalKind:
         errors.append("draft.kind")
-    elif draft.kind not in request.allowed_kinds:
+    elif allowed_kinds_valid and draft.kind not in request.allowed_kinds:
         errors.append("draft.kind_not_allowed")
     if type(draft.confidence) is not CaregiverConfidence:
         errors.append("draft.confidence")
@@ -314,7 +332,7 @@ def validate_human_proposal_draft(
     payload_bytes = payload.encode("utf-8")
     if not payload:
         errors.append("draft.payload_empty")
-    if len(payload_bytes) > max_payload_bytes:
+    if len(payload_bytes) > PROPOSED_MAX_PROPOSAL_BYTES:
         errors.append("draft.payload_too_large")
 
     for name, values, allowed in (
