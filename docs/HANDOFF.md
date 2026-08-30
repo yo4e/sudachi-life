@@ -2,83 +2,70 @@
 
 Updated: **2026-08-30**
 
-This file records only the current durable restart state. Historical details remain in merged ADRs, Issues, PRs, and audit records.
+This file records the current restart state only. Repository and current GitHub state outrank stale prose or conversation memory.
 
-## Current project state
+## Frozen controls
 
-- Phase 1 is frozen at audited reference `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`; the original 152 protected tests remain the schema-v1 control.
-- Phase 2 is frozen at merge `b0941a8ba2a178fc891839198cd5dd5bf6e87719`; the accepted Phase 2 package has 213 matrix/evidence IDs and a 395-test protected baseline.
+- Phase 1 remains frozen at audited reference `62c9e0c6ba7e33eee85e1687b8bf6a3978a25338`; the original 152 protected tests remain the schema-v1 control.
+- Phase 2 remains frozen at merge `b0941a8ba2a178fc891839198cd5dd5bf6e87719`; the accepted Phase 2 package has 213 matrix/evidence IDs and a 395-test protected baseline.
 - Canonical writer categories remain exactly `organism` and `administration`.
-- The Phase 3 withheld-caregiver design is accepted through `docs/phase3/WITHHELD_CAREGIVER_ACCEPTANCE.md`, bound to design reference `c543b429c00b5c0aa2d9aa0ed26f4f7f3218d29c` and the canonical 140-row registry SHA-256 `12cd803c821f094b5292eb052c15dc99b8f08019c1950ffe506a6a44f228bab1` / byte length `43179`.
-
-Repository and current GitHub state outrank stale prose or conversation memory.
+- The accepted Phase 3 withheld-caregiver design remains bound through `docs/phase3/WITHHELD_CAREGIVER_ACCEPTANCE.md` to design reference `c543b429c00b5c0aa2d9aa0ed26f4f7f3218d29c` and the canonical 140-row registry SHA-256 `12cd803c821f094b5292eb052c15dc99b8f08019c1950ffe506a6a44f228bab1`, byte length `43179`.
 
 ## Current Phase 3 implementation baseline
 
-Four bounded implementation slices are merged on `main`:
+The implemented Phase 3 path now includes:
 
-1. **Deterministic evaluation foundation** — PR #151, merge `6e8aa28c8a620248afd59e3a7f81c37aa7c07cf7`.
-   - Implements deterministic E0/E1/E2 fixture evidence, fail-closed validation, W0/W1/W2 classification, W3 evidence, and adversarial tests.
-   - Issue #147 is the historical independent audit record for an earlier candidate; its findings were repaired before merge.
+1. PR #151 — deterministic withheld-caregiver evaluation foundation;
+2. PR #153 — typed caregiver proposal protocol and source-neutral interface;
+3. PR #155 — deterministic caregiver-proposal-to-retention rehearsal;
+4. PR #157 — Human Caregiver Pilot v1 preflight;
+5. PR #160 — bounded self-only local/manual live-human bridge, merged as `056f9e4dad4b8a5f85e6b64abef18ce37951f7fb`.
 
-2. **Caregiver proposal protocol / source-neutral interface** — PR #153, merge `298d1e3b9e3d5b2c3f553259c0568955fbd7781d`.
-   - Adds typed proposal classes, immutable request/proposal binding, proposal-only authority, deterministic fixture adapter, payload/proposal integrity checks, and explicit absence accounting.
-   - The active source set remains exactly the deterministic fixture source. Human/model source kinds are representable identifiers only and fail validation.
+PR #160 was independently audited at prior head `bb0639796...`, repaired as one coherent batch, then received a focused independent closure audit at exact head `74966468a8672b123c3440dbebb6cc008ed08c9f`. Closure comment `5468053185` records Finding 1 and Finding 2 as resolved, non-regression PASS, and the conclusion **ready to merge as the bounded self-only live-human bridge**.
 
-3. **Integrated caregiver-to-retention rehearsal** — PR #155, merge `596c9e184d1592f350dcc504c03a4dd31556e4ec`.
-   - Connects the typed fixture proposal to the existing caregiving record, conversion provenance, caregiver-derived local substrate, withdrawal evidence, and retained W1 capability.
-   - This is a mechanics/conformance rehearsal only; the report remains explicitly non-developmental-claiming.
+Exact repaired candidate CI before merge: Test run 733 / workflow `33305237822`, **495 passed in 57.64s**, with install, compilation, protected-output upload, and schema-v1 genesis smoke passing.
 
-4. **Human Caregiver Pilot v1 preflight** — PR #157, merge `276d28e2205f375439a2e975f28d89f9449a2786`.
-   - Adds a disabled preflight model, `HumanProposalDraft`, closed pseudonymous caregiver IDs, visible-reference validation, proposed fixed pilot limits, privacy/data-minimization defaults, hidden-labor controls, failure/stop handling, and the research packet `docs/research/HUMAN_CAREGIVER_PILOT_V1_PREFLIGHT.md`.
-   - Pilot v1 is proposed as a one-caregiver, one-attempt **operational protocol pilot**, not a scientific developmental-gain/effectiveness/novelty study.
-   - Proposed review defaults: max 3 consultations, max 2 clarifications, max 10 minutes active caregiver time, max 5 minutes response latency, max 30 minutes attempt wall time, max 2,048 UTF-8 bytes per proposal; no separate raw chat transcript; proposed 365-day local proposal-payload retention; no raw proposal publication by default; zero off-channel semantic help and zero in-attempt code edits.
-   - `CaregiverSourceKind.HUMAN` remains outside `ACTIVE_SOURCE_KINDS`; no live transport or live draft-to-proposal bridge exists.
-   - PR-head Test run 725: **475 passed in 45.54s**; main Test run 726: **475 passed in 149.12s**. Install, compilation, protected-output upload, and schema-v1 genesis smoke passed.
+The merged live bridge is intentionally narrow:
 
-These slices do **not** add live human/model caregiving, network/subprocess access, credentials/provider selection, arbitrary executable caregiver output, direct caregiver-triggered organism actions, memory/skill generation, training/model updates, live action execution, repeated rollback, continuous execution, new writer categories, or material resource expansion.
+- exactly one authorized attempt: `attempt:self-human-pilot-v1-001`;
+- exactly one closed pseudonymous caregiver identity;
+- project owner is the sole caregiver/participant;
+- local/manual structured input only;
+- caregiver authority remains proposal-only;
+- one-way process-authoritative attempt state with replay/fork resistance and terminal disablement;
+- fixed Pilot v1 limits and privacy/data-minimization rules from #158;
+- no model/provider, network, subprocess, browser automation, credentials, third-party participant, external mutable writer, new writer category, or direct caregiver-triggered organism action.
 
-## Research and live-capability boundary
-
-Issue #3 is the active research/gate record. The pre-live human-caregiver mechanics are prepared, but live activation still requires one consolidated project-owner decision.
-
-Before live human implementation begins, resolve:
-
-- accept/change the proposed Pilot v1 limits;
-- select the first caregiver: project owner or another consenting adult;
-- declare the actual institutional/research ethics-review context; if uncertain, keep it unresolved;
-- accept/change the proposed 365-day proposal-payload retention period;
-- accept/change the no-separate-raw-chat and no-public-raw-payload defaults;
-- authorize implementation of the bounded live human bridge.
-
-Do not infer whether ethics/IRB review is legally required. That depends on the actual research environment and participant context.
-
-If the live bridge is authorized, create a new explicitly bounded live-integration scope. The exact live candidate must pass protected tests/CI and then receive one independent read-only audit because live human access is a high-risk capability boundary. The independent reviewer need not be Codex specifically, but must not materially implement the exact candidate being certified.
+No actual human pilot attempt has been executed merely by merging PR #160.
 
 ## Review process
 
-PR #150 merged the compact review/audit policy:
+PR #150 is the active compact review/audit policy:
 
 - ordinary authorized work uses bounded diff review, relevant protected tests, CI, and durable Issue/PR state;
-- same-conversation read-only audit mode is optional for concentrated adversarial checking;
-- independent audit is reserved for actual phase freeze or another explicitly high-risk boundary;
+- same-conversation read-only audit mode is optional;
+- independent audit is reserved for actual freeze or another explicitly high-risk boundary;
 - repairs do not automatically trigger a full independent re-audit.
 
-The accepted Phase 3 design still requires an independent implementation audit before **Phase 3 freeze**. The merged slices above do not freeze Phase 3.
+PR #160 completed the independent gate required for introducing this first live human source. Phase 3 itself is **not frozen**; the accepted Phase 3 design still requires an independent implementation audit before a later Phase 3 freeze.
 
-## Restart
+## Exact next action
 
-1. Read `AGENTS.md` and this file.
-2. Inspect current `main` and Issue #3.
-3. Treat Phase 1 and Phase 2 as frozen controls.
-4. Treat merge `276d28e2205f375439a2e975f28d89f9449a2786` as the current Phase 3 **pre-live implementation baseline**; later HANDOFF-only commits do not change that implementation baseline.
-5. Read `docs/research/HUMAN_CAREGIVER_PILOT_V1_PREFLIGHT.md` before any live-human design work.
-6. The next material gate is the consolidated project-owner Pilot v1 decision above. Do not add more pre-live plumbing unless it resolves a concrete blocker.
-7. Do not enable `CaregiverSourceKind.HUMAN`, add a live transport, or create a live draft-to-proposal bridge before that authorization.
-8. After authorization, implement the smallest live bridge, run protected tests/CI, and perform one independent audit on the exact live candidate.
+The next material step is **not more bridge plumbing**. It is to prepare and execute the one already-authorized self-only Human Caregiver Pilot v1 operational attempt using the merged local/manual bridge.
+
+At the next session:
+
+1. read `AGENTS.md`, this file, Issue #3, Issue #158, and `docs/research/HUMAN_CAREGIVER_PILOT_V1_PREFLIGHT.md`;
+2. inspect current `main` and confirm PR #160 remains the live-human baseline;
+3. define the concrete local/manual run procedure for the single authorized attempt without broadening the scope;
+4. run the attempt only under the fixed #158 limits, with no off-channel semantic help and no in-attempt code edits;
+5. preserve proposal, timing, provenance, disablement, validation, and negative-outcome evidence;
+6. after the attempt, evaluate the protocol evidence before deciding whether the next step is protocol repair, a later preregistered developmental study, prior-work/novelty work, or another caregiver condition.
+
+Do **not** silently add another human participant, another authorized attempt, adaptive fading, a model/provider route, networked transport, or scientific developmental/effectiveness claims while running this operational pilot.
 
 ## Human confirmation boundary
 
-Request explicit project-owner confirmation before changing the research question or accepted contract intent, frozen behavior, authority/security boundaries, checkpoint/rollback semantics, live external capabilities, destructive migration, protected evidence, writer categories, or material autonomy/resource/data-retention scope.
+Request explicit project-owner confirmation before changing the research question or accepted contract intent, frozen behavior, authority/security boundaries, checkpoint/rollback semantics, protected evidence, writer categories, another live participant or attempt, any model/provider capability, or material autonomy/resource/data-retention scope.
 
 No critical project decision should exist only in chat.
