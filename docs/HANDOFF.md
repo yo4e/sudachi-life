@@ -15,18 +15,22 @@ Repository and current GitHub state outrank stale prose or conversation memory.
 
 ## Current Phase 3 implementation baseline
 
-Two bounded fixture-only implementation slices are merged on `main`:
+Three bounded fixture-only implementation slices are merged on `main`:
 
 1. **Deterministic evaluation foundation** — PR #151, merge `6e8aa28c8a620248afd59e3a7f81c37aa7c07cf7`.
-   - Implements ADR 0018, deterministic E0/E1/E2 fixture evidence, fail-closed validation, W0/W1/W2 classification, W3 evidence, and adversarial tests.
+   - Implements deterministic E0/E1/E2 fixture evidence, fail-closed validation, W0/W1/W2 classification, W3 evidence, and adversarial tests.
    - Issue #147 is the historical independent audit record for an earlier candidate; its findings were repaired before merge.
 
 2. **Caregiver proposal protocol / source-neutral interface** — PR #153, merge `298d1e3b9e3d5b2c3f553259c0568955fbd7781d`.
    - Adds typed proposal classes, immutable request/proposal binding, proposal-only authority, deterministic fixture adapter, payload/proposal integrity checks, and explicit absence accounting.
-   - The active source set remains exactly the deterministic fixture source. Human/model source kinds are representable identifiers only and fail validation in this slice.
-   - PR-head Test run 717: **449 passed in 53.76s**; main Test run 718: success. Install, compilation, protected-output upload, and schema-v1 genesis smoke passed.
+   - The active source set remains exactly the deterministic fixture source. Human/model source kinds are representable identifiers only and fail validation.
 
-Neither slice adds live human/model caregiving, network/subprocess access, credentials/provider selection, arbitrary executable caregiver output, direct caregiver-triggered organism actions, memory/skill generation, training/model updates, live action execution, repeated rollback, continuous execution, new writer categories, or material resource expansion.
+3. **Integrated caregiver-to-retention rehearsal** — PR #155, merge `596c9e184d1592f350dcc504c03a4dd31556e4ec`.
+   - Connects the typed fixture proposal to the existing caregiving record, conversion provenance, caregiver-derived local substrate, withdrawal evidence, and retained W1 capability.
+   - This is a mechanics/conformance rehearsal only; the report remains explicitly non-developmental-claiming.
+   - PR-head Test run 720: **461 passed in 56.31s**; main Test run 721: success. Install, compilation, protected-output upload, and schema-v1 genesis smoke passed.
+
+These slices do **not** add live human/model caregiving, network/subprocess access, credentials/provider selection, arbitrary executable caregiver output, direct caregiver-triggered organism actions, memory/skill generation, training/model updates, live action execution, repeated rollback, continuous execution, new writer categories, or material resource expansion.
 
 ## Research and live-capability boundary
 
@@ -50,9 +54,10 @@ The accepted Phase 3 design still requires an independent implementation audit b
 1. Read `AGENTS.md` and this file.
 2. Inspect current `main` and open Issues/PRs relevant to the next Phase 3 scope.
 3. Treat Phase 1 and Phase 2 as frozen controls.
-4. Treat merge `298d1e3b9e3d5b2c3f553259c0568955fbd7781d` as the current Phase 3 implementation baseline.
-5. Define the next bounded Phase 3 scope before implementation; do not drift directly into live caregiver/provider capability.
-6. Use ordinary review + relevant protected tests + CI for ordinary work; reserve independent audit for freeze/high-risk gates.
+4. Treat merge `596c9e184d1592f350dcc504c03a4dd31556e4ec` as the current Phase 3 implementation baseline.
+5. The deterministic proposal-to-retention mechanics now run end to end; choose the next research/implementation scope before adding more plumbing.
+6. Do not drift directly into live caregiver/provider capability. Use Issue #3 and explicit project-owner authorization before crossing that boundary.
+7. Use ordinary review + relevant protected tests + CI for ordinary work; reserve independent audit for freeze/high-risk gates.
 
 ## Human confirmation boundary
 
