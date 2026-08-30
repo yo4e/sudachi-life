@@ -1,4 +1,4 @@
-"""Deterministic, fixture-only Phase 3 evaluation foundation.
+"""Deterministic Phase 3 evaluation and bounded caregiver protocol surfaces.
 
 This package is intentionally additive and does not write the Phase 1/2 organism body.
 """
@@ -22,6 +22,20 @@ from .caregiver import (
     validate_proposal,
 )
 from .fixtures import build_valid_fixture_episode
+from .human_live import (
+    HUMAN_PILOT_LIVE_BRIDGE_VERSION,
+    LOCAL_STRUCTURED_HUMAN_TRANSPORT,
+    SELF_HUMAN_PILOT_ID,
+    HumanBridgeResult,
+    HumanConsultationMeasurement,
+    HumanPilotAttemptState,
+    SelfHumanPilotAuthorization,
+    accept_self_human_proposal,
+    accepted_self_human_pilot_v1_authorization,
+    disable_self_human_bridge,
+    start_self_human_pilot_attempt,
+    validate_self_human_pilot_authorization,
+)
 from .human_pilot import (
     HUMAN_PILOT_PREFLIGHT_VERSION,
     PROPOSED_MAX_ATTEMPT_WALL_MS,
@@ -80,8 +94,10 @@ __all__ = [
     "ACTIVE_SOURCE_KINDS",
     "CAREGIVER_PROTOCOL_VERSION",
     "CONTRACT_VERSION",
+    "HUMAN_PILOT_LIVE_BRIDGE_VERSION",
     "HUMAN_PILOT_PREFLIGHT_VERSION",
     "IMPLEMENTATION_VERSION",
+    "LOCAL_STRUCTURED_HUMAN_TRANSPORT",
     "PROPOSED_MAX_ATTEMPT_WALL_MS",
     "PROPOSED_MAX_CAREGIVER_ACTIVE_MS_PER_ATTEMPT",
     "PROPOSED_MAX_CLARIFICATIONS_PER_ATTEMPT",
@@ -90,6 +106,7 @@ __all__ = [
     "PROPOSED_MAX_RESPONSE_LATENCY_MS",
     "PROPOSED_PILOT_ATTEMPTS",
     "PROPOSED_PROPOSAL_PAYLOAD_RETENTION_DAYS",
+    "SELF_HUMAN_PILOT_ID",
     "AccountingStatus",
     "Availability",
     "AttemptState",
@@ -108,7 +125,10 @@ __all__ = [
     "FixtureCaregiverAdapter",
     "FixtureResponse",
     "HiddenLaborPolicy",
+    "HumanBridgeResult",
     "HumanCaregiverPilotPreflight",
+    "HumanConsultationMeasurement",
+    "HumanPilotAttemptState",
     "HumanPilotBudget",
     "HumanPilotDataPolicy",
     "HumanPilotPreflightResult",
@@ -121,18 +141,24 @@ __all__ = [
     "ProposalKind",
     "ProposalValidation",
     "ReplayConflict",
+    "SelfHumanPilotAuthorization",
+    "accept_self_human_proposal",
     "accepted_phase3_requirement_ids",
+    "accepted_self_human_pilot_v1_authorization",
     "advance_attempt_history",
     "build_integrated_caregiver_rehearsal",
     "build_valid_fixture_episode",
     "classify_availability",
+    "disable_self_human_bridge",
     "proposal_data_fields",
     "proposal_from_text",
     "proposed_human_caregiver_pilot_v1",
     "reconcile_immutable_replay",
+    "start_self_human_pilot_attempt",
     "validate_episode",
     "validate_human_pilot_preflight",
     "validate_human_proposal_draft",
     "validate_integrated_caregiver_rehearsal",
     "validate_proposal",
+    "validate_self_human_pilot_authorization",
 ]
