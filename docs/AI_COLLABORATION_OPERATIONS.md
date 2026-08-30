@@ -2,64 +2,42 @@
 
 Status: **Active operational guidance**
 
-This document governs how AI collaborators conduct repository work. It does not change the organism contract, runtime capabilities, evaluation criteria, or research scope.
+This document governs collaboration mechanics. It does not change SUDACHI's organism contract, runtime capabilities, evaluation criteria, or research scope.
 
-## 1. Safety context
+## 1. Repository-first continuity
 
-SUDACHI uses biological metaphors such as organism, body, metabolism, lineage, growth, and caregiver. In the current repository these terms describe a deterministic local software system built from Python, SQLite, synthetic garden state, immutable checkpoints, and explicit administrative operations.
+Repository state and current GitHub state are the continuity authority. Chat is a working surface, not a canonical record.
 
-Phase 1 contains no wet-lab biology, pathogen work, genetic engineering, medical intervention, weapons work, offensive cybersecurity, credential access, external-system exploitation, network access, or subprocess execution.
+Do not create a new conversation merely because several slices or pull requests have accumulated. Continue while current state can be reconstructed reliably from the repository and active GitHub work.
 
-Repository requests should state the concrete software context when biological or security-sensitive vocabulary could be misread. Relevant context includes:
+Start a new conversation when context is materially confusing, stale, contradictory, or difficult to separate from current repository evidence. A new conversation is a reliability tool, not a mandatory phase boundary.
 
-- local deterministic software research
-- synthetic data and synthetic environment only
-- defensive integrity, audit, rollback, and failure-recovery goals
-- no access to third-party systems
-- no request to bypass product safeguards
+Before a rollover, only synchronize durable records that have materially changed. Do not update every continuity document as ritual if it would merely repeat already-canonical state.
 
-Do not disguise, euphemize, fragment, or rephrase a request for the purpose of evading a safety check. If a product safety check delays, blocks, or refuses a request, accept that outcome. Narrow a later request only by removing irrelevant material and making the legitimate software objective clearer, never by concealing material intent.
+## 2. Review and audit cost
 
-Do not include secrets, credentials, private keys, authentication codes, proprietary data, or unrelated sensitive information in support requests or safety-check reports.
+Use ordinary diff review, relevant protected tests, CI, and Issue/PR tracking for normal work.
 
-If an obviously benign repository task is repeatedly blocked, record only the minimum useful diagnostic facts outside canonical organism state: the exact safety message, product surface, date and time with time zone, available request identifier, and a short non-sensitive task description.
+A same-conversation audit mode is allowed for concentrated read-only checking. Independent review is reserved for actual phase freeze or another explicitly high-risk gate under `docs/CODEX_INDEPENDENT_AUDIT_POLICY.md`.
 
-## 2. Conversation rollover
+Do not consume independent-review capacity on every slice, pull request, documentation update, ordinary repair, or intermediate commit.
 
-Repository state is the continuity authority. A chat is a temporary working surface and must never be the only location of a decision, test result, failure, or restart instruction.
+## 3. Safety context
 
-Exact context-window usage is not visible or reliably inferable from character count. Therefore rollover uses structural and reliability signals rather than a guessed token threshold or an automatic slice count.
+SUDACHI uses biological metaphors such as organism, body, lineage, growth, and caregiver. In the repository these describe a bounded software research system using Python, SQLite, synthetic environments, checkpoints, and explicit administrative operations.
 
-Two merged slices or pull requests are not, by themselves, a reason to end a clear and reliable working chat. In ordinary steady work, continue through multiple bounded slices while the assistant can still reconstruct decisions directly from current repository state, distinguish active branches and CI evidence, and respond without relying on compressed summaries.
+When a request could be misread, state the concrete software context. Do not disguise intent or attempt to evade safety checks. Do not include secrets, credentials, private keys, authentication codes, proprietary data, or unrelated sensitive information in support requests or diagnostics.
 
-At each clean boundary after several substantial slices, reassess rollover. Recommend a new chat when one or more material context-risk signals are present:
+## 4. Cost awareness
 
-- the chat has accumulated roughly eight to twelve substantial merged slices or pull requests
-- one slice required a long debugging trail, repeated CI repair, or several abandoned implementation paths
-- the current chat spans a major decision plus enough implementation that the decision context is becoming difficult to inspect directly
-- responses begin relying on large summaries instead of fresh repository reconstruction
-- branch, pull-request, CI, or restart state becomes easy to confuse
-- the user or assistant notices omitted, stale, or contradictory context
+Do not introduce paid runners, larger runners, GPU runners, paid external services, model/API calls, expanded artifact retention, or another chargeable surface without explicit project-owner approval.
 
-A long debugging trail may justify rolling over earlier, but only after the current unit is merged or safely parked. Conversely, a series of small, clean slices may continue beyond the review point when context remains precise. Do not deliberately approach the scale of a roughly twenty-slice chat that is likely to hit the conversation limit.
+When a proposed change could create a charge, identify the cost surface and a no-cost alternative before enabling it.
 
-Before recommending rollover:
+## 5. Scope preservation
 
-1. merge or safely leave the current pull request in an explicit state
-2. update `AGENTS.md`, `docs/HANDOFF.md`, and the relevant durable note or ADR
-3. update the protected test matrix when coverage changed
-4. update the relevant issue with tests, CI, failures, and exact next action
-5. verify open pull requests and the current `main` state
-6. provide the user with a compact restart phrase naming the exact next boundary
+Operational caution must not silently change the research question or weaken protected evidence.
 
-A new chat must begin by reading `AGENTS.md` and following its cold-start order. Conversation summaries are useful orientation but never outrank repository and GitHub state.
+Human confirmation remains required for material changes to frozen behavior, accepted contract/ADR intent, authority/security boundaries, live external capabilities, destructive migration, protected evidence, or material autonomy/resource scope.
 
-## 3. Cost awareness
-
-Do not introduce paid runners, larger runners, GPU runners, private-repository Actions usage, expanded artifact retention, paid external services, or model/API calls without explicit project-owner approval.
-
-When a proposed change could create a charge, stop before enabling it and explain the cost surface, free allowance if known, and a no-cost alternative. Re-verify current pricing from first-party sources because pricing and quotas can change.
-
-## 4. Scope preservation
-
-Safety caution, rollover, and cost awareness are operational controls. They must not be used to weaken protected tests, reduce research rigor, skip difficult evaluations, anthropomorphize the organism, or alter the accepted research question without an explicit project decision.
+Routine implementation work inside already accepted scope should stay routine: make the bounded change, test it, run CI, record material state, and merge when green.
