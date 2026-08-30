@@ -25,6 +25,8 @@ from .fixtures import build_valid_fixture_episode
 from .human_live import (
     HUMAN_PILOT_LIVE_BRIDGE_VERSION,
     LOCAL_STRUCTURED_HUMAN_TRANSPORT,
+    SELF_HUMAN_AUTHORIZATION_RECORD,
+    SELF_HUMAN_CONSENT_NOTICE_VERSION,
     SELF_HUMAN_PILOT_ID,
     HumanBridgeResult,
     HumanConsultationMeasurement,
@@ -106,6 +108,8 @@ __all__ = [
     "PROPOSED_MAX_RESPONSE_LATENCY_MS",
     "PROPOSED_PILOT_ATTEMPTS",
     "PROPOSED_PROPOSAL_PAYLOAD_RETENTION_DAYS",
+    "SELF_HUMAN_AUTHORIZATION_RECORD",
+    "SELF_HUMAN_CONSENT_NOTICE_VERSION",
     "SELF_HUMAN_PILOT_ID",
     "AccountingStatus",
     "Availability",
