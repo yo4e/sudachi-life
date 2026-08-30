@@ -17,6 +17,38 @@ WRITER_ORGANISM = "organism"
 WRITER_ADMINISTRATION = "administration"
 WRITER_CATEGORIES = frozenset({WRITER_ORGANISM, WRITER_ADMINISTRATION})
 
+FIXTURE_MANIFEST_VERSION = "sudachi.phase3.fixture_study_manifest/v1"
+FIXTURE_STUDY_PURPOSE = "deterministic fixture-only W3 conformance mechanics"
+FIXTURE_RUN_GENERATION_RULE = "planned ordinal deterministically selects the closed fixture case"
+FIXTURE_ATTEMPT_ASSIGNMENT_RULE = "each planned ordinal is assigned exactly once before E0"
+FIXTURE_STOPPING_RULE = "stop only after the exact planned attempt population is terminal"
+FIXTURE_POPULATION_RECONCILIATION_RULE = "planned ordinals equal terminal attempt-record ordinals exactly"
+FIXTURE_COST_POLICY_ID = "phase3-fixture-cost-policy-v1"
+FIXTURE_PROTECTED_CONFIGURATION_VERSION = "phase3-fixture-v1"
+FIXTURE_PUBLICATION_POLICY_VERSION = "sudachi.phase3.fixture_publication_policy/v1"
+FIXTURE_CLOSURE_OPERATIONS_LIMIT = 1
+FIXTURE_CLOSURE_BYTES_LIMIT = 4096
+FIXTURE_SEAL_OPERATIONS_LIMIT = 1
+FIXTURE_SEAL_BYTES_LIMIT = 4096
+
+MANDATORY_FAILURE_CONTROLS = (
+    "misleading_assistance",
+    "inconsistent_assistance",
+    "correct_but_unrepresentable_advice",
+    "ambiguous_advice",
+    "premature_withdrawal",
+    "delayed_withdrawal_dependency_persistence",
+    "hidden_scaffold_injection",
+    "stale_episode_or_lineage_reuse",
+    "evaluator_targeting_or_leakage",
+    "opaque_model_update",
+    "cost_displacement",
+    "caregiver_outage_or_abstention",
+    "organism_abstention",
+    "transition_replay_or_conflict",
+    "rollback_after_harmful_activation",
+)
+
 
 class Availability(StrEnum):
     W0 = "W0"
@@ -162,7 +194,6 @@ MANDATORY_COST_FIELDS = (
     "storage.report_package_bytes",
 )
 
-
 P3_REQUIREMENT_GROUP_COUNTS = (("A", 10), ("B", 10), ("C", 10), ("D", 12), ("E", 14), ("F", 12), ("G", 10), ("H", 12), ("I", 10), ("J", 12), ("K", 14), ("L", 14))
 
 
@@ -172,6 +203,7 @@ def accepted_phase3_requirement_ids() -> tuple[str, ...]:
         for group, count in P3_REQUIREMENT_GROUP_COUNTS
         for index in range(1, count + 1)
     )
+
 
 REPORT_GROUPS = (
     "study_population",
@@ -259,6 +291,38 @@ class EpisodeBinding:
 
 
 @dataclass(frozen=True, slots=True)
+class EvidenceIdentity:
+    study_id: str
+    attempt_id: str
+    episode_id: str
+    organism_id: str
+    lineage_generation: int
+    point: Point
+    cutoff_ordinal: int
+    checkpoint_id: str
+
+    @classmethod
+    def from_binding(
+        cls,
+        binding: EpisodeBinding,
+        *,
+        point: Point,
+        cutoff_ordinal: int,
+        checkpoint_id: str,
+    ) -> "EvidenceIdentity":
+        return cls(
+            study_id=binding.study_id,
+            attempt_id=binding.attempt_id,
+            episode_id=binding.episode_id,
+            organism_id=binding.organism_id,
+            lineage_generation=binding.lineage_generation,
+            point=point,
+            cutoff_ordinal=cutoff_ordinal,
+            checkpoint_id=checkpoint_id,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class ProtectedSchedule:
     version: str
     e1_cutoff_ordinal: int
@@ -270,6 +334,42 @@ class ProtectedSchedule:
 
     def canonical_digest(self) -> str:
         return digest_record("sudachi.phase3.protected_schedule/v1", self)
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationPolicy:
+    version: str
+    closure_operations_limit: int
+    closure_bytes_limit: int
+    seal_operations_limit: int
+    seal_bytes_limit: int
+
+    def canonical_digest(self) -> str:
+        return digest_record("sudachi.phase3.publication_policy/v1", self)
+
+
+@dataclass(frozen=True, slots=True)
+class InformationFlowPolicy:
+    version: str
+    verifier_digest: str
+    evaluator_digest: str
+    verifier_input_store_id: str
+    verifier_output_store_id: str
+    evaluator_input_store_id: str
+    evaluator_output_store_id: str
+    verifier_path_id: str
+    evaluator_path_id: str
+    verifier_cache_id: str
+    evaluator_cache_id: str
+    verifier_probe_budget: int
+    verifier_retry_budget: int
+    permitted_feedback_fields: tuple[str, ...]
+    permitted_feedback_recipients: tuple[str, ...]
+    permitted_feedback_timing: str
+    permitted_feedback_cardinality: int
+
+    def canonical_digest(self) -> str:
+        return digest_record("sudachi.phase3.information_flow_policy/v1", self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -286,10 +386,17 @@ class AttemptRecord:
 @dataclass(frozen=True, slots=True)
 class StudyManifest:
     study_id: str
+    manifest_version: str
+    study_purpose: str
     claim_tier: str
+    deterministic_run_generation_rule: str
     planned_attempt_ordinals: tuple[int, ...]
     exact_attempt_count: int
+    stopping_rule: str
+    attempt_assignment_rule: str
     required_failure_controls: tuple[str, ...]
+    comparison_family_conditions: tuple[str, ...]
+    population_reconciliation_rule: str
     attempt_records: tuple[AttemptRecord, ...]
     suite_digest: str
     evaluator_digest: str
@@ -297,6 +404,10 @@ class StudyManifest:
     information_flow_policy_digest: str
     schedule_digest: str
     cost_policy_id: str
+    publication_policy: PublicationPolicy
+
+    def canonical_digest(self) -> str:
+        return digest_record("sudachi.phase3.study_manifest/v1", self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -384,6 +495,7 @@ class SubstrateEntry:
 
 @dataclass(frozen=True, slots=True)
 class CapabilityResult:
+    identity: EvidenceIdentity
     capability_id: str
     point: Point
     status: CapabilityStatus
@@ -407,6 +519,7 @@ class CostField:
 
 @dataclass(frozen=True, slots=True)
 class CostVector:
+    identity: EvidenceIdentity
     fields: tuple[tuple[str, CostField], ...]
     service_metadata: tuple[tuple[str, str], ...] = ()
 
@@ -419,6 +532,7 @@ class CostVector:
 
 @dataclass(frozen=True, slots=True)
 class EvaluationPointRecord:
+    identity: EvidenceIdentity
     point: Point
     ordinal: int
     availability: Availability
@@ -435,6 +549,7 @@ class EvaluationPointRecord:
 
 @dataclass(frozen=True, slots=True)
 class DisablementProof:
+    identity: EvidenceIdentity
     schedule_digest: str
     transition_id: str
     writer: str
@@ -456,21 +571,37 @@ class DisablementProof:
 
 
 @dataclass(frozen=True, slots=True)
+class InformationFlowInvocation:
+    invocation_id: str
+    identity: EvidenceIdentity
+    role: str
+    ordinal: int
+    input_digest: str
+    output_digest: str
+    probe_ordinal: int
+    retry_ordinal: int
+    disclosed_fields: tuple[str, ...]
+    recipients: tuple[str, ...]
+    disclosure_timing: str
+    contains_heldout_material: bool
+    derivative_of_heldout: bool
+    evaluator_targeted_artifact: bool
+
+
+@dataclass(frozen=True, slots=True)
 class InformationFlowEvidence:
-    verifier_evaluator_distinct: bool
-    stores_disjoint: bool
-    paths_disjoint: bool
-    caches_disjoint: bool
+    identity: EvidenceIdentity
+    invocations: tuple[InformationFlowInvocation, ...]
     heldout_access_before_terminal: int
     derivative_leaks: int
     probe_budget_exceeded: bool
     retry_budget_exhausted: bool
     evaluator_targeted_artifact: bool
-    invocations_reconciled: bool
 
 
 @dataclass(frozen=True, slots=True)
 class ReviewedDraft:
+    identity: EvidenceIdentity
     groups: tuple[tuple[str, Any], ...]
     prepared_ordinal: int
     reviewed: bool
@@ -484,6 +615,7 @@ class ReviewedDraft:
 
 @dataclass(frozen=True, slots=True)
 class CostClosure:
+    identity: EvidenceIdentity
     closure_id: str
     draft_digest: str
     cost_vector_digest: str
@@ -493,6 +625,8 @@ class CostClosure:
     late_in_scope_cost_count: int
     unmatched_event_count: int
     visible_unmeasured_labor_count: int
+    operations_used: int
+    bytes_used: int
     version: int = 1
 
     def canonical_digest(self) -> str:
@@ -501,13 +635,12 @@ class CostClosure:
 
 @dataclass(frozen=True, slots=True)
 class PublicationSeal:
+    identity: EvidenceIdentity
     seal_id: str
     draft_digest: str
     closure_digest: str
     operations_used: int
-    operations_limit: int
     bytes_used: int
-    bytes_limit: int
     retries: int
     semantic_edits: int
 
@@ -522,6 +655,7 @@ class EpisodeEvidence:
     availability_transition: AvailabilityTransition
     points: tuple[EvaluationPointRecord, ...]
     disablement: DisablementProof
+    information_flow_policy: InformationFlowPolicy
     information_flow: InformationFlowEvidence
     final_cost: CostVector
     reviewed_draft: ReviewedDraft

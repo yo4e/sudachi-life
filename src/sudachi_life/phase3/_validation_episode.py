@@ -13,8 +13,15 @@ from .model import (
     WRITER_ADMINISTRATION,
     digest_record,
 )
-from ._fixture_helpers import _report_groups
-from ._validation_base import classify_availability, _substrate_errors, _validate_cost_vector
+from ._fixture_helpers import _closure_payload_bytes, _report_groups, _seal_payload_bytes
+from ._validation_base import (
+    _expected_identity,
+    _is_commit_sha,
+    _is_sha256,
+    _substrate_errors,
+    _validate_cost_vector,
+    classify_availability,
+)
 
 
 def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, EvaluationPointRecord]]:
@@ -32,6 +39,8 @@ def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, 
         errors.append("points.ordinal_order")
     if e0.ordinal >= min((r.ordinal for r in evidence.caregiving_records), default=evidence.schedule.e1_cutoff_ordinal):
         errors.append("points.e0_after_caregiving")
+    if e0.checkpoint_id != evidence.binding.baseline_checkpoint_id:
+        errors.append("points.e0_checkpoint")
     if e1.ordinal <= evidence.schedule.e1_cutoff_ordinal:
         errors.append("points.e1_before_cutoff")
     if e1.checkpoint_id != evidence.schedule.e1_checkpoint_id:
@@ -45,6 +54,9 @@ def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, 
     if e2.availability != evidence.schedule.after_availability:
         errors.append("points.e2_availability")
     for point in evidence.points:
+        expected_identity = _expected_identity(evidence, point=point.point, checkpoint_id=point.checkpoint_id)
+        if point.identity != expected_identity:
+            errors.append(f"points.{point.point}.identity")
         if not isinstance(point.availability, Availability):
             errors.append(f"points.{point.point}.availability_type")
         if not (point.integrity_valid and point.infrastructure_valid and point.reachable and point.suite_complete):
@@ -55,6 +67,8 @@ def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, 
         if len(ids) != len(set(ids)):
             errors.append(f"points.{point.point}.duplicate_capability")
         for result in point.capability_results:
+            if result.identity != expected_identity:
+                errors.append(f"result.{point.point}.{result.capability_id}.identity")
             if not isinstance(result.status, CapabilityStatus):
                 errors.append(f"result.{point.point}.{result.capability_id}.status_type")
             if result.point != point.point or result.checkpoint_id != point.checkpoint_id:
@@ -68,7 +82,14 @@ def _validate_points(evidence: EpisodeEvidence) -> tuple[list[str], dict[Point, 
             errors.append(f"points.{point.point}.duplicate_substrate")
         for entry in point.substrates:
             errors.extend(_substrate_errors(entry, evidence, point))
-        errors.extend(_validate_cost_vector(point.cumulative_cost, complete=False, prefix=f"points.{point.point}"))
+        errors.extend(
+            _validate_cost_vector(
+                point.cumulative_cost,
+                complete=False,
+                prefix=f"points.{point.point}",
+                expected_identity=expected_identity,
+            )
+        )
     capability_sets = [set(r.capability_id for r in point.capability_results) for point in evidence.points]
     if not (capability_sets[0] == capability_sets[1] == capability_sets[2]):
         errors.append("points.capability_set_drift")
@@ -119,6 +140,9 @@ def _validate_availability(evidence: EpisodeEvidence, by_point: dict[Point, Eval
         errors.append("availability_transition.before_e1_complete")
 
     proof = evidence.disablement
+    expected_e2_identity = _expected_identity(evidence, point=Point.E2, checkpoint_id=schedule.e2_checkpoint_id)
+    if proof.identity != expected_e2_identity:
+        errors.append("disablement.identity")
     if proof.schedule_digest != evidence.binding.schedule_digest or proof.transition_id != transition.transition_id:
         errors.append("disablement.binding")
     if proof.writer != WRITER_ADMINISTRATION:
@@ -165,18 +189,139 @@ def _validate_availability(evidence: EpisodeEvidence, by_point: dict[Point, Eval
 
 
 def _validate_information_flow(evidence: EpisodeEvidence) -> list[str]:
+    policy = evidence.information_flow_policy
     info = evidence.information_flow
     errors: list[str] = []
-    if not info.verifier_evaluator_distinct:
+
+    if policy.version != evidence.binding.information_flow_policy_version:
+        errors.append("information_flow.policy_version")
+    policy_digest = policy.canonical_digest()
+    if policy_digest != evidence.binding.information_flow_policy_digest or policy_digest != evidence.study.information_flow_policy_digest:
+        errors.append("information_flow.policy_digest")
+    if policy.verifier_digest != evidence.binding.conversion_verifier_digest:
+        errors.append("information_flow.verifier_identity")
+    if policy.evaluator_digest != evidence.binding.outcome_evaluator_digest:
+        errors.append("information_flow.evaluator_identity")
+    if policy.verifier_digest == policy.evaluator_digest:
         errors.append("information_flow.aliasing")
-    if not (info.stores_disjoint and info.paths_disjoint and info.caches_disjoint):
+
+    verifier_domain = {
+        policy.verifier_input_store_id,
+        policy.verifier_output_store_id,
+        policy.verifier_path_id,
+        policy.verifier_cache_id,
+    }
+    evaluator_domain = {
+        policy.evaluator_input_store_id,
+        policy.evaluator_output_store_id,
+        policy.evaluator_path_id,
+        policy.evaluator_cache_id,
+    }
+    if "" in verifier_domain | evaluator_domain or verifier_domain & evaluator_domain:
         errors.append("information_flow.shared_domain")
-    if info.heldout_access_before_terminal != 0 or info.derivative_leaks != 0:
+    if policy.verifier_probe_budget < 0 or policy.verifier_retry_budget < 0 or policy.permitted_feedback_cardinality < 0:
+        errors.append("information_flow.policy_budget")
+    if not policy.permitted_feedback_timing:
+        errors.append("information_flow.policy_timing")
+
+    expected_e2_identity = _expected_identity(evidence, point=Point.E2, checkpoint_id=evidence.schedule.e2_checkpoint_id)
+    if info.identity != expected_e2_identity:
+        errors.append("information_flow.identity")
+
+    invocation_ids = [record.invocation_id for record in info.invocations]
+    if len(invocation_ids) != len(set(invocation_ids)):
+        errors.append("information_flow.duplicate_invocation")
+
+    computed_heldout_access = 0
+    computed_derivative_leaks = 0
+    computed_probe_exceeded = False
+    computed_retry_exhausted = False
+    computed_targeted = False
+    disclosed_count = 0
+    verifier_calls = 0
+    evaluator_calls = 0
+
+    point_checkpoints = {
+        Point.E0: evidence.binding.baseline_checkpoint_id,
+        Point.E1: evidence.schedule.e1_checkpoint_id,
+        Point.E2: evidence.schedule.e2_checkpoint_id,
+    }
+    for record in info.invocations:
+        if record.role not in {"verifier", "evaluator"}:
+            errors.append(f"information_flow.{record.invocation_id}.role")
+            continue
+        if record.identity.point not in point_checkpoints:
+            errors.append(f"information_flow.{record.invocation_id}.point")
+        else:
+            expected_identity = _expected_identity(
+                evidence,
+                point=record.identity.point,
+                checkpoint_id=point_checkpoints[record.identity.point],
+            )
+            if record.identity != expected_identity:
+                errors.append(f"information_flow.{record.invocation_id}.identity")
+        if record.ordinal < 1:
+            errors.append(f"information_flow.{record.invocation_id}.ordinal")
+        if not _is_sha256(record.input_digest) or not _is_sha256(record.output_digest):
+            errors.append(f"information_flow.{record.invocation_id}.digest")
+        if record.probe_ordinal < 0 or record.retry_ordinal < 0:
+            errors.append(f"information_flow.{record.invocation_id}.probe_or_retry")
+
+        computed_targeted = computed_targeted or record.evaluator_targeted_artifact
+        if record.derivative_of_heldout and any(recipient != "protected_evidence_store" for recipient in record.recipients):
+            computed_derivative_leaks += 1
+
+        if record.role == "verifier":
+            verifier_calls += 1
+            if record.contains_heldout_material or record.derivative_of_heldout:
+                computed_heldout_access += 1
+            if record.probe_ordinal > policy.verifier_probe_budget:
+                computed_probe_exceeded = True
+            if record.retry_ordinal > policy.verifier_retry_budget:
+                computed_retry_exhausted = True
+            if not set(record.disclosed_fields) <= set(policy.permitted_feedback_fields):
+                errors.append(f"information_flow.{record.invocation_id}.disclosed_fields")
+            if not set(record.recipients) <= set(policy.permitted_feedback_recipients):
+                errors.append(f"information_flow.{record.invocation_id}.recipients")
+            if record.disclosure_timing != policy.permitted_feedback_timing:
+                errors.append(f"information_flow.{record.invocation_id}.timing")
+            if record.disclosed_fields or record.recipients:
+                disclosed_count += 1
+        else:
+            evaluator_calls += 1
+            if record.recipients != ("protected_evidence_store",):
+                computed_heldout_access += 1
+                errors.append(f"information_flow.{record.invocation_id}.evaluator_recipient")
+            if record.disclosed_fields:
+                computed_heldout_access += 1
+                errors.append(f"information_flow.{record.invocation_id}.evaluator_disclosure")
+            if record.disclosure_timing != "protected_only":
+                computed_heldout_access += 1
+                errors.append(f"information_flow.{record.invocation_id}.evaluator_timing")
+            if not record.contains_heldout_material:
+                errors.append(f"information_flow.{record.invocation_id}.evaluator_scope")
+
+    if disclosed_count > policy.permitted_feedback_cardinality:
+        errors.append("information_flow.feedback_cardinality")
+
+    final_cost = evidence.final_cost.as_mapping()
+    expected_verifier_calls = final_cost.get("experiment.verifier_calls")
+    expected_evaluator_calls = final_cost.get("experiment.evaluator_calls")
+    if expected_verifier_calls is None or expected_verifier_calls.value != verifier_calls:
+        errors.append("information_flow.verifier_call_reconciliation")
+    if expected_evaluator_calls is None or expected_evaluator_calls.value != evaluator_calls:
+        errors.append("information_flow.evaluator_call_reconciliation")
+
+    if info.heldout_access_before_terminal != computed_heldout_access or computed_heldout_access != 0:
         errors.append("information_flow.leakage")
-    if info.probe_budget_exceeded or info.retry_budget_exhausted or info.evaluator_targeted_artifact:
-        errors.append("information_flow.invalid_development_feedback")
-    if not info.invocations_reconciled:
-        errors.append("information_flow.invocations")
+    if info.derivative_leaks != computed_derivative_leaks or computed_derivative_leaks != 0:
+        errors.append("information_flow.derivative_leakage")
+    if info.probe_budget_exceeded != computed_probe_exceeded or computed_probe_exceeded:
+        errors.append("information_flow.probe_budget")
+    if info.retry_budget_exhausted != computed_retry_exhausted or computed_retry_exhausted:
+        errors.append("information_flow.retry_budget")
+    if info.evaluator_targeted_artifact != computed_targeted or computed_targeted:
+        errors.append("information_flow.evaluator_targeting")
     return errors
 
 
@@ -214,12 +359,17 @@ def _validate_report_finalization(evidence: EpisodeEvidence) -> list[str]:
     errors: list[str] = []
     draft = evidence.reviewed_draft
     groups = draft.as_mapping()
+    expected_final_identity = _expected_identity(evidence, point=Point.E2, checkpoint_id=evidence.schedule.e2_checkpoint_id)
+    if draft.identity != expected_final_identity:
+        errors.append("report.identity")
     if tuple(key for key, _ in draft.groups) != REPORT_GROUPS or set(groups) != set(REPORT_GROUPS):
         errors.append("report.exact_14_groups")
     if len(draft.groups) != len(groups):
         errors.append("report.duplicate_group")
     if not draft.reviewed:
         errors.append("report.not_reviewed")
+    if not _is_commit_sha(evidence.repository_commit):
+        errors.append("report.repository_commit_format")
     provenance = groups.get("version_provenance")
     if not isinstance(provenance, dict):
         errors.append("report.version_provenance")
@@ -232,6 +382,12 @@ def _validate_report_finalization(evidence: EpisodeEvidence) -> list[str]:
             errors.append("report.contract_version")
         if provenance.get("repository_commit") != evidence.repository_commit:
             errors.append("report.repository_commit")
+        if provenance.get("study_manifest_digest") != evidence.study.canonical_digest():
+            errors.append("report.study_manifest_digest")
+        if provenance.get("information_flow_policy_digest") != evidence.information_flow_policy.canonical_digest():
+            errors.append("report.information_flow_policy_digest")
+        if provenance.get("publication_policy_digest") != evidence.study.publication_policy.canonical_digest():
+            errors.append("report.publication_policy_digest")
 
     try:
         expected_groups = dict(
@@ -242,6 +398,7 @@ def _validate_report_finalization(evidence: EpisodeEvidence) -> list[str]:
                 transitions=evidence.transitions,
                 points=evidence.points,
                 disablement=evidence.disablement,
+                information_flow_policy=evidence.information_flow_policy,
                 information_flow=evidence.information_flow,
                 final_cost=evidence.final_cost,
                 terminal_state=evidence.terminal_attempt_state,
@@ -254,7 +411,10 @@ def _validate_report_finalization(evidence: EpisodeEvidence) -> list[str]:
         if groups != expected_groups:
             errors.append("report.semantic_binding")
 
+    policy = evidence.study.publication_policy
     closure = evidence.cost_closure
+    if closure.identity != expected_final_identity:
+        errors.append("closure.identity")
     if closure.draft_digest != draft.canonical_digest():
         errors.append("closure.draft_digest")
     if closure.cost_vector_digest != evidence.final_cost.canonical_digest():
@@ -265,13 +425,21 @@ def _validate_report_finalization(evidence: EpisodeEvidence) -> list[str]:
         errors.append("closure.reconciliation")
     if closure.late_in_scope_cost_count or closure.unmatched_event_count or closure.visible_unmeasured_labor_count:
         errors.append("closure.late_or_unmatched_work")
+    expected_closure_bytes = _closure_payload_bytes(draft_digest=closure.draft_digest, cost_vector_digest=closure.cost_vector_digest)
+    if closure.operations_used != 1 or closure.operations_used > policy.closure_operations_limit:
+        errors.append("closure.operations")
+    if closure.bytes_used != expected_closure_bytes or closure.bytes_used > policy.closure_bytes_limit:
+        errors.append("closure.bytes")
 
     seal = evidence.publication_seal
+    if seal.identity != expected_final_identity:
+        errors.append("seal.identity")
     if seal.draft_digest != closure.draft_digest or seal.closure_digest != closure.canonical_digest():
         errors.append("seal.binding")
-    if seal.operations_used != 1 or seal.operations_used > seal.operations_limit:
+    expected_seal_bytes = _seal_payload_bytes(draft_digest=seal.draft_digest, closure_digest=seal.closure_digest)
+    if seal.operations_used != 1 or seal.operations_used > policy.seal_operations_limit:
         errors.append("seal.operations")
-    if seal.bytes_used < 0 or seal.bytes_used > seal.bytes_limit:
+    if seal.bytes_used != expected_seal_bytes or seal.bytes_used > policy.seal_bytes_limit:
         errors.append("seal.bytes")
     if seal.retries != 0 or seal.semantic_edits != 0:
         errors.append("seal.retry_or_edit")

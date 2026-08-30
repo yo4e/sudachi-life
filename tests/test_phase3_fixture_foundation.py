@@ -15,7 +15,7 @@ from sudachi_life.phase3.model import AttemptState, REPORT_GROUPS, TransitionKin
 
 
 def test_valid_fixture_episode_is_w1_conformant_and_retains_acquired_capability() -> None:
-    evidence = build_valid_fixture_episode(repository_commit="candidate:fixture")
+    evidence = build_valid_fixture_episode(repository_commit="1" * 40)
     result = validate_episode(evidence)
 
     assert result.valid is True
@@ -378,3 +378,110 @@ def test_raw_string_status_cannot_masquerade_as_capability_enum() -> None:
     result = validate_episode(replace(evidence, points=tuple(points)))
     assert result.valid is False
     assert "result.E1.capability:fixture-transform.status_type" in result.errors
+
+
+# Independent-audit repair regressions (Issue #147)
+def test_study_cost_policy_is_preregistered_and_bound():
+    evidence = build_valid_fixture_episode()
+    changed = replace(evidence, study=replace(evidence.study, cost_policy_id="posthoc:changed"))
+    result = validate_episode(changed)
+    assert result.valid is False
+    assert "study.cost_policy_id" in result.errors
+
+
+def test_study_purpose_is_preregistered_and_bound():
+    evidence = build_valid_fixture_episode()
+    changed = replace(evidence, study=replace(evidence.study, study_purpose="posthoc purpose"))
+    result = validate_episode(changed)
+    assert result.valid is False
+    assert "study.study_purpose" in result.errors
+
+
+def test_information_flow_policy_digest_is_bound():
+    evidence = build_valid_fixture_episode()
+    changed_policy = replace(evidence.information_flow_policy, permitted_feedback_recipients=("organism",))
+    result = validate_episode(replace(evidence, information_flow_policy=changed_policy))
+    assert result.valid is False
+    assert "information_flow.policy_digest" in result.errors
+
+
+def test_information_flow_ledger_reconciles_invocation_counts():
+    evidence = build_valid_fixture_episode()
+    verifier = next(i for i in evidence.information_flow.invocations if i.role == "verifier")
+    changed = replace(
+        evidence,
+        information_flow=replace(
+            evidence.information_flow,
+            invocations=tuple(i for i in evidence.information_flow.invocations if i != verifier),
+        ),
+    )
+    result = validate_episode(changed)
+    assert result.valid is False
+    assert "information_flow.verifier_call_reconciliation" in result.errors
+
+
+def test_information_flow_rejects_undeclared_recipient():
+    evidence = build_valid_fixture_episode()
+    invocations = list(evidence.information_flow.invocations)
+    index = next(i for i, invocation in enumerate(invocations) if invocation.role == "verifier")
+    invocations[index] = replace(invocations[index], recipients=("organism",))
+    changed = replace(evidence, information_flow=replace(evidence.information_flow, invocations=tuple(invocations)))
+    result = validate_episode(changed)
+    assert result.valid is False
+    assert f"information_flow.{invocations[index].invocation_id}.recipients" in result.errors
+
+
+def test_publication_limits_are_pre_e0_policy():
+    evidence = build_valid_fixture_episode()
+    changed_policy = replace(evidence.study.publication_policy, seal_bytes_limit=10**12)
+    changed = replace(evidence, study=replace(evidence.study, publication_policy=changed_policy))
+    result = validate_episode(changed)
+    assert result.valid is False
+    assert "study.publication_policy.seal_bytes_limit" in result.errors
+
+
+def test_publication_seal_bytes_are_reconstructed():
+    evidence = build_valid_fixture_episode()
+    changed = replace(evidence, publication_seal=replace(evidence.publication_seal, bytes_used=evidence.publication_seal.bytes_used + 1))
+    result = validate_episode(changed)
+    assert result.valid is False
+    assert "seal.bytes" in result.errors
+
+
+def test_e0_checkpoint_is_bound_to_episode_baseline():
+    evidence = build_valid_fixture_episode()
+    points = list(evidence.points)
+    points[0] = replace(points[0], checkpoint_id="checkpoint:foreign")
+    result = validate_episode(replace(evidence, points=tuple(points)))
+    assert result.valid is False
+    assert "points.e0_checkpoint" in result.errors
+
+
+def test_nested_result_rejects_foreign_episode_identity():
+    evidence = build_valid_fixture_episode()
+    points = list(evidence.points)
+    e0 = points[0]
+    results = list(e0.capability_results)
+    results[0] = replace(results[0], identity=replace(results[0].identity, episode_id="episode:foreign"))
+    points[0] = replace(e0, capability_results=tuple(results))
+    result = validate_episode(replace(evidence, points=tuple(points)))
+    assert result.valid is False
+    assert "result.E0.capability:fixture-transform.identity" in result.errors
+
+
+def test_cost_vector_rejects_foreign_lineage_identity():
+    evidence = build_valid_fixture_episode()
+    points = list(evidence.points)
+    e1 = points[1]
+    bad_cost = replace(e1.cumulative_cost, identity=replace(e1.cumulative_cost.identity, lineage_generation=99))
+    points[1] = replace(e1, cumulative_cost=bad_cost)
+    result = validate_episode(replace(evidence, points=tuple(points)))
+    assert result.valid is False
+    assert "point_cost.1.identity" in result.errors
+
+
+def test_repository_commit_must_be_exact_sha_even_when_report_is_consistent():
+    evidence = build_valid_fixture_episode(repository_commit="not-a-sha")
+    result = validate_episode(evidence)
+    assert result.valid is False
+    assert "report.repository_commit_format" in result.errors

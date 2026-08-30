@@ -8,54 +8,27 @@ from .model import (
     CONTRACT_VERSION,
     IMPLEMENTATION_VERSION,
     Availability,
-    AttemptRecord,
     AttemptState,
-    AvailabilityTransition,
     CapabilityResult,
     CapabilityStatus,
     CaregivingRecord,
-    CostClosure,
     CostField,
     CostStatus,
     CostVector,
     DisablementProof,
     EpisodeBinding,
-    EpisodeEvidence,
     EvaluationPointRecord,
+    EvidenceIdentity,
     InformationFlowEvidence,
+    InformationFlowPolicy,
     MANDATORY_COST_FIELDS,
     Point,
-    ProtectedSchedule,
-    PublicationSeal,
     REPORT_GROUPS,
-    ReviewedDraft,
     StudyManifest,
     SubstrateEntry,
-    TransitionKind,
     TransitionRecord,
-    WRITER_ADMINISTRATION,
-    WRITER_ORGANISM,
     canonical_json,
     digest_bytes,
-    digest_record,
-)
-
-_FAILURE_CONTROLS = (
-    "misleading_assistance",
-    "inconsistent_assistance",
-    "correct_but_unrepresentable_advice",
-    "ambiguous_advice",
-    "premature_withdrawal",
-    "delayed_withdrawal_dependency_persistence",
-    "hidden_scaffold_injection",
-    "stale_episode_or_lineage_reuse",
-    "evaluator_targeting_or_leakage",
-    "opaque_model_update",
-    "cost_displacement",
-    "caregiver_outage_or_abstention",
-    "organism_abstention",
-    "transition_replay_or_conflict",
-    "rollback_after_harmful_activation",
 )
 
 
@@ -67,7 +40,7 @@ def _cost_field(status: CostStatus, value: int | None, unit: str, reason: str | 
     return CostField(status=status, value=value, unit=unit, reason=reason)
 
 
-def _cost_vector(stage: str) -> CostVector:
+def _cost_vector(stage: str, identity: EvidenceIdentity) -> CostVector:
     if stage not in {"e0", "e1", "e2", "final"}:
         raise ValueError(stage)
     index = {"e0": 0, "e1": 1, "e2": 2, "final": 3}[stage]
@@ -87,11 +60,8 @@ def _cost_vector(stage: str) -> CostVector:
             unit = "ms"
         elif key.endswith("_bytes"):
             unit = "bytes"
-        value = 0
-        fields[key] = _cost_field(CostStatus.MEASURED, value, unit)
+        fields[key] = _cost_field(CostStatus.MEASURED, 0, unit)
 
-    # Deterministic cumulative synthetic accounting. These values are evidence
-    # for the mechanics only and are not a developmental-efficiency claim.
     measured = {
         "human.experimenter_development_ms": (1000, 1100, 1150, 1300),
         "human.artifact_review_ms": (0, 50, 50, 50),
@@ -117,7 +87,7 @@ def _cost_vector(stage: str) -> CostVector:
     for key, values in measured.items():
         old = fields[key]
         fields[key] = _cost_field(CostStatus.MEASURED, values[index], old.unit)
-    return CostVector(fields=tuple((key, fields[key]) for key in MANDATORY_COST_FIELDS))
+    return CostVector(identity=identity, fields=tuple((key, fields[key]) for key in MANDATORY_COST_FIELDS))
 
 
 def _substrate(
@@ -225,14 +195,26 @@ def _base_substrates(binding: EpisodeBinding, point: Point, checkpoint_id: str) 
     )
 
 
-def _capability_results(binding: EpisodeBinding, point: Point, checkpoint_id: str) -> tuple[CapabilityResult, ...]:
+def _capability_results(
+    binding: EpisodeBinding,
+    point: Point,
+    checkpoint_id: str,
+    cutoff_ordinal: int,
+) -> tuple[CapabilityResult, ...]:
     target_status = {
         Point.E0: CapabilityStatus.FAILED,
         Point.E1: CapabilityStatus.PASSED,
         Point.E2: CapabilityStatus.PASSED,
     }[point]
+    identity = EvidenceIdentity.from_binding(
+        binding,
+        point=point,
+        cutoff_ordinal=cutoff_ordinal,
+        checkpoint_id=checkpoint_id,
+    )
     return (
         CapabilityResult(
+            identity=identity,
             capability_id="capability:fixture-transform",
             point=point,
             status=target_status,
@@ -244,6 +226,7 @@ def _capability_results(binding: EpisodeBinding, point: Point, checkpoint_id: st
             resource_counters=(("semantic_steps", 1),),
         ),
         CapabilityResult(
+            identity=identity,
             capability_id="capability:protected-safety-abstention",
             point=point,
             status=CapabilityStatus.PASSED,
@@ -258,6 +241,28 @@ def _capability_results(binding: EpisodeBinding, point: Point, checkpoint_id: st
     )
 
 
+def _closure_payload_bytes(*, draft_digest: str, cost_vector_digest: str) -> int:
+    return len(
+        canonical_json(
+            {
+                "draft_digest": draft_digest,
+                "cost_vector_digest": cost_vector_digest,
+            }
+        ).encode("utf-8")
+    )
+
+
+def _seal_payload_bytes(*, draft_digest: str, closure_digest: str) -> int:
+    return len(
+        canonical_json(
+            {
+                "draft_digest": draft_digest,
+                "closure_digest": closure_digest,
+            }
+        ).encode("utf-8")
+    )
+
+
 def _report_groups(
     *,
     binding: EpisodeBinding,
@@ -266,6 +271,7 @@ def _report_groups(
     transitions: tuple[TransitionRecord, ...],
     points: tuple[EvaluationPointRecord, ...],
     disablement: DisablementProof,
+    information_flow_policy: InformationFlowPolicy,
     information_flow: InformationFlowEvidence,
     final_cost: CostVector,
     terminal_state: AttemptState,
@@ -275,16 +281,30 @@ def _report_groups(
     groups: dict[str, object] = {
         "study_population": {
             "study_id": study.study_id,
+            "manifest_version": study.manifest_version,
+            "study_purpose": study.study_purpose,
+            "claim_tier": study.claim_tier,
+            "deterministic_run_generation_rule": study.deterministic_run_generation_rule,
             "planned_attempt_ordinals": list(study.planned_attempt_ordinals),
+            "exact_attempt_count": study.exact_attempt_count,
+            "stopping_rule": study.stopping_rule,
+            "attempt_assignment_rule": study.attempt_assignment_rule,
+            "required_failure_controls": list(study.required_failure_controls),
+            "comparison_family_conditions": list(study.comparison_family_conditions),
+            "population_reconciliation_rule": study.population_reconciliation_rule,
             "terminal_states": [record.state.value for record in study.attempt_records],
+            "cost_policy_id": study.cost_policy_id,
+            "publication_policy_digest": study.publication_policy.canonical_digest(),
             "population_reconciled": True,
         },
         "identity": {
             "study_id": binding.study_id,
             "attempt_id": binding.attempt_id,
+            "attempt_ordinal": binding.attempt_ordinal,
             "episode_id": binding.episode_id,
             "organism_id": binding.organism_id,
             "lineage_generation": binding.lineage_generation,
+            "baseline_checkpoint_id": binding.baseline_checkpoint_id,
         },
         "e0_baseline": {
             "checkpoint_id": by_point["E0"].checkpoint_id,
@@ -297,6 +317,7 @@ def _report_groups(
             "all_terminal": all(record.terminal for record in caregiving_records),
         },
         "lifecycle_transitions": {
+            "ids": [record.transition_id for record in transitions],
             "kinds": [record.kind.value for record in transitions],
             "statuses": [record.status for record in transitions],
         },
@@ -308,16 +329,25 @@ def _report_groups(
             point.point.value: [entry.substrate_id for entry in point.substrates] for point in points
         },
         "caregiver_disablement": {
+            "identity": asdict(disablement.identity),
             "transition_id": disablement.transition_id,
             "live_adapter_handles": disablement.live_adapter_handles,
             "post_cutoff_dispatches": disablement.post_cutoff_dispatches,
+            "post_cutoff_model_calls": disablement.post_cutoff_model_calls,
+            "post_cutoff_network_calls": disablement.post_cutoff_network_calls,
+            "post_cutoff_subprocess_calls": disablement.post_cutoff_subprocess_calls,
+            "queued_or_cached_usable_outputs": disablement.queued_or_cached_usable_outputs,
+            "independently_reconstructed": disablement.independently_reconstructed,
         },
         "integrity": {
+            "information_flow_policy_digest": information_flow_policy.canonical_digest(),
             "information_flow": asdict(information_flow),
             "e2_integrity_valid": by_point["E2"].integrity_valid,
         },
         "cost_vectors": {
             "final_cost_vector_digest": final_cost.canonical_digest(),
+            "cost_policy_id": study.cost_policy_id,
+            "publication_policy_digest": study.publication_policy.canonical_digest(),
             "external_closure_attestation": "pending",
         },
         "protected_outcomes": {
@@ -335,8 +365,11 @@ def _report_groups(
             ),
         },
         "limitations": {
-            "claim_tier": "deterministic_conformance",
+            "claim_tier": study.claim_tier,
             "developmental_gain_claimed": False,
+            "maturity_claimed": False,
+            "scientific_effectiveness_claimed": False,
+            "novelty_claimed": False,
             "live_caregiver_used": False,
             "model_update_used": False,
         },
@@ -346,10 +379,15 @@ def _report_groups(
             "implementation_version": IMPLEMENTATION_VERSION,
             "accepted_phase3_registry_sha256": ACCEPTED_PHASE3_REGISTRY_SHA256,
             "accepted_phase3_registry_bytes": ACCEPTED_PHASE3_REGISTRY_BYTES,
+            "study_manifest_version": study.manifest_version,
+            "study_manifest_digest": study.canonical_digest(),
             "suite_digest": binding.capability_suite_digest,
             "evaluator_digest": binding.outcome_evaluator_digest,
             "verifier_digest": binding.conversion_verifier_digest,
+            "information_flow_policy_digest": information_flow_policy.canonical_digest(),
             "schedule_digest": binding.schedule_digest,
+            "cost_policy_id": study.cost_policy_id,
+            "publication_policy_digest": study.publication_policy.canonical_digest(),
         },
     }
     return tuple((key, groups[key]) for key in REPORT_GROUPS)

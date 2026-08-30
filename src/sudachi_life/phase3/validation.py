@@ -10,13 +10,14 @@ from .model import (
     TERMINAL_ATTEMPT_STATES,
 )
 from ._validation_base import (
-    classify_availability,
     _binding_errors,
+    _expected_identity,
     _validate_caregiving,
     _validate_cost_monotonic,
     _validate_cost_vector,
     _validate_study,
     _validate_transitions,
+    classify_availability,
 )
 from ._validation_episode import (
     _capability_semantics,
@@ -25,6 +26,7 @@ from ._validation_episode import (
     _validate_points,
     _validate_report_finalization,
 )
+
 
 def validate_episode(evidence: EpisodeEvidence) -> ConformanceResult:
     """Validate a fixture-only Phase 3 episode and return fail-closed W3 conformance.
@@ -44,18 +46,30 @@ def validate_episode(evidence: EpisodeEvidence) -> ConformanceResult:
     errors.extend(_validate_information_flow(evidence))
 
     for index, point in enumerate(evidence.points):
-        errors.extend(_validate_cost_vector(point.cumulative_cost, complete=False, prefix=f"point_cost.{index}"))
-    errors.extend(_validate_cost_vector(evidence.final_cost, complete=True, prefix="final_cost"))
+        expected_identity = _expected_identity(evidence, point=point.point, checkpoint_id=point.checkpoint_id)
+        errors.extend(
+            _validate_cost_vector(
+                point.cumulative_cost,
+                complete=False,
+                prefix=f"point_cost.{index}",
+                expected_identity=expected_identity,
+            )
+        )
+    final_identity = _expected_identity(evidence, point=Point.E2, checkpoint_id=evidence.schedule.e2_checkpoint_id)
+    errors.extend(
+        _validate_cost_vector(
+            evidence.final_cost,
+            complete=True,
+            prefix="final_cost",
+            expected_identity=final_identity,
+        )
+    )
     errors.extend(_validate_cost_monotonic([p.cumulative_cost for p in evidence.points] + [evidence.final_cost]))
     errors.extend(_validate_report_finalization(evidence))
 
-    # The deterministic foundation is explicitly fixture-only. A fixture call
-    # is evidence-generation work, not a live human/model caregiver route.
     if any(record.source != "deterministic_fixture" for record in evidence.caregiving_records):
         errors.append("fixture_only.live_caregiver_forbidden")
 
-    # Compute acquisition before final W3 status, then retention only if every
-    # conformance gate above is clean.
     capability_errors, acquired, _ = _capability_semantics(evidence, by_point, conformance_clean=False)
     errors.extend(capability_errors)
     clean = not errors
@@ -81,11 +95,6 @@ class ReplayConflict(ValueError):
 
 
 def reconcile_immutable_replay(existing: Any, incoming: Any, *, identity_attr: str) -> Any:
-    """Return the original object for exact replay; fail on same-ID/different-content.
-
-    This is a pure evidence-layer projection of the accepted replay rule. It
-    performs no persistence or runtime effect.
-    """
     existing_id = getattr(existing, identity_attr)
     incoming_id = getattr(incoming, identity_attr)
     if existing_id != incoming_id:
@@ -98,7 +107,6 @@ def reconcile_immutable_replay(existing: Any, incoming: Any, *, identity_attr: s
 def advance_attempt_history(
     history: tuple[AttemptState, ...], next_state: AttemptState
 ) -> tuple[AttemptState, ...]:
-    """Advance the exact scheduled -> started -> terminal attempt graph."""
     if not history:
         if next_state != AttemptState.SCHEDULED:
             raise ReplayConflict("attempt must begin scheduled")

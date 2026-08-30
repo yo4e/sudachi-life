@@ -8,7 +8,21 @@ from .model import (
     ALLOWED_ORIGINS,
     ALLOWED_SUBSTRATE_CLASSES,
     CONTRACT_VERSION,
+    FIXTURE_ATTEMPT_ASSIGNMENT_RULE,
+    FIXTURE_CLOSURE_BYTES_LIMIT,
+    FIXTURE_CLOSURE_OPERATIONS_LIMIT,
+    FIXTURE_COST_POLICY_ID,
+    FIXTURE_MANIFEST_VERSION,
+    FIXTURE_POPULATION_RECONCILIATION_RULE,
+    FIXTURE_PROTECTED_CONFIGURATION_VERSION,
+    FIXTURE_PUBLICATION_POLICY_VERSION,
+    FIXTURE_RUN_GENERATION_RULE,
+    FIXTURE_SEAL_BYTES_LIMIT,
+    FIXTURE_SEAL_OPERATIONS_LIMIT,
+    FIXTURE_STOPPING_RULE,
+    FIXTURE_STUDY_PURPOSE,
     MANDATORY_COST_FIELDS,
+    MANDATORY_FAILURE_CONTROLS,
     TERMINAL_ATTEMPT_STATES,
     Availability,
     AttemptState,
@@ -17,6 +31,8 @@ from .model import (
     EpisodeBinding,
     EpisodeEvidence,
     EvaluationPointRecord,
+    EvidenceIdentity,
+    Point,
     SubstrateEntry,
     TransitionKind,
     TransitionRecord,
@@ -24,7 +40,6 @@ from .model import (
     WRITER_ORGANISM,
     digest_bytes,
 )
-
 
 _ALLOWED_ASSISTANCE_CLASSES = frozenset(
     {"demonstration", "correction", "constraint", "explanation", "preference", "question", "defer", "abstain"}
@@ -43,10 +58,6 @@ _ALLOWED_CAREGIVER_OUTCOMES = frozenset(
     }
 )
 
-# This first implementation is fixture-only. Its substrate byte corpus is
-# intentionally closed so digest/size evidence can be independently rebuilt
-# rather than accepted from self-attested metadata. Future authorized fixture
-# cases may extend this registry together with protected tests.
 _FIXTURE_SUBSTRATE_PAYLOADS: dict[str, bytes] = {
     "substrate:protected-runtime": b"phase3-protected-runtime-v1",
     "substrate:heldout-evaluator": b"heldout-evaluator-v1",
@@ -58,6 +69,24 @@ _FIXTURE_SUBSTRATE_PAYLOADS: dict[str, bytes] = {
 
 def _is_sha256(value: str) -> bool:
     return len(value) == 64 and all(ch in "0123456789abcdef" for ch in value)
+
+
+def _is_commit_sha(value: str) -> bool:
+    return len(value) == 40 and all(ch in "0123456789abcdef" for ch in value)
+
+
+def _expected_identity(
+    evidence: EpisodeEvidence,
+    *,
+    point: Point,
+    checkpoint_id: str,
+) -> EvidenceIdentity:
+    return EvidenceIdentity.from_binding(
+        evidence.binding,
+        point=point,
+        cutoff_ordinal=evidence.schedule.e1_cutoff_ordinal,
+        checkpoint_id=checkpoint_id,
+    )
 
 
 def _binding_errors(binding: EpisodeBinding) -> list[str]:
@@ -99,11 +128,7 @@ def _binding_errors(binding: EpisodeBinding) -> list[str]:
 
 
 def classify_availability(*, caregiver_routes_available: bool, substrates: Iterable[SubstrateEntry]) -> Availability:
-    """Classify the point-local W0/W1/W2 axis from technical availability.
-
-    W3 is deliberately absent because it is episode-level conformance, not a
-    fourth availability class.
-    """
+    """Classify the point-local W0/W1/W2 axis from technical availability."""
     if caregiver_routes_available:
         return Availability.W0
     externalized = any(
@@ -113,8 +138,16 @@ def classify_availability(*, caregiver_routes_available: bool, substrates: Itera
     return Availability.W1 if externalized else Availability.W2
 
 
-def _validate_cost_vector(vector: CostVector, *, complete: bool, prefix: str) -> list[str]:
+def _validate_cost_vector(
+    vector: CostVector,
+    *,
+    complete: bool,
+    prefix: str,
+    expected_identity: EvidenceIdentity | None = None,
+) -> list[str]:
     errors: list[str] = []
+    if expected_identity is not None and vector.identity != expected_identity:
+        errors.append(f"{prefix}.identity")
     mapping = vector.as_mapping()
     expected = set(MANDATORY_COST_FIELDS)
     actual = set(mapping)
@@ -172,6 +205,45 @@ def _validate_study(evidence: EpisodeEvidence) -> list[str]:
     errors: list[str] = []
     if study.study_id != binding.study_id:
         errors.append("study.binding")
+    if binding.protected_configuration_version != FIXTURE_PROTECTED_CONFIGURATION_VERSION:
+        errors.append("study.protected_configuration_version")
+    if study.manifest_version != FIXTURE_MANIFEST_VERSION:
+        errors.append("study.manifest_version")
+    if study.study_purpose != FIXTURE_STUDY_PURPOSE:
+        errors.append("study.study_purpose")
+    if study.claim_tier != "deterministic_conformance":
+        errors.append("study.claim_tier")
+    if study.deterministic_run_generation_rule != FIXTURE_RUN_GENERATION_RULE:
+        errors.append("study.run_generation_rule")
+    if study.stopping_rule != FIXTURE_STOPPING_RULE:
+        errors.append("study.stopping_rule")
+    if study.attempt_assignment_rule != FIXTURE_ATTEMPT_ASSIGNMENT_RULE:
+        errors.append("study.assignment_rule")
+    if study.population_reconciliation_rule != FIXTURE_POPULATION_RECONCILIATION_RULE:
+        errors.append("study.population_reconciliation_rule")
+    if study.required_failure_controls != MANDATORY_FAILURE_CONTROLS:
+        errors.append("study.failure_controls")
+    if study.comparison_family_conditions:
+        errors.append("study.comparison_family_for_deterministic_claim")
+    if study.cost_policy_id != FIXTURE_COST_POLICY_ID:
+        errors.append("study.cost_policy_id")
+
+    policy = study.publication_policy
+    if policy.version != FIXTURE_PUBLICATION_POLICY_VERSION:
+        errors.append("study.publication_policy.version")
+    if policy.closure_operations_limit != FIXTURE_CLOSURE_OPERATIONS_LIMIT:
+        errors.append("study.publication_policy.closure_operations_limit")
+    if policy.closure_bytes_limit != FIXTURE_CLOSURE_BYTES_LIMIT:
+        errors.append("study.publication_policy.closure_bytes_limit")
+    if policy.seal_operations_limit != FIXTURE_SEAL_OPERATIONS_LIMIT:
+        errors.append("study.publication_policy.seal_operations_limit")
+    if policy.seal_bytes_limit != FIXTURE_SEAL_BYTES_LIMIT:
+        errors.append("study.publication_policy.seal_bytes_limit")
+
+    if study.planned_attempt_ordinals != (1,):
+        errors.append("study.fixture_planned_attempt_ordinals")
+    if study.exact_attempt_count != 1:
+        errors.append("study.fixture_exact_attempt_count")
     if study.exact_attempt_count != len(study.planned_attempt_ordinals):
         errors.append("study.exact_attempt_count")
     if len(set(study.planned_attempt_ordinals)) != len(study.planned_attempt_ordinals):
@@ -180,6 +252,15 @@ def _validate_study(evidence: EpisodeEvidence) -> list[str]:
         errors.append("study.current_attempt.planned_ordinal")
     if len(study.attempt_records) != study.exact_attempt_count:
         errors.append("study.population_size")
+    attempt_ids = [record.attempt_id for record in study.attempt_records]
+    if len(attempt_ids) != len(set(attempt_ids)):
+        errors.append("study.duplicate_attempt_id")
+    episode_ids = [record.episode_id for record in study.attempt_records]
+    if any(not episode_id for episode_id in episode_ids):
+        errors.append("study.missing_episode_id")
+    if len(episode_ids) != len(set(episode_ids)):
+        errors.append("study.duplicate_episode_id")
+
     by_ordinal = {record.ordinal: record for record in study.attempt_records}
     if set(by_ordinal) != set(study.planned_attempt_ordinals):
         errors.append("study.population_ordinals")
@@ -222,8 +303,6 @@ def _validate_study(evidence: EpisodeEvidence) -> list[str]:
         errors.append("study.information_flow_policy_digest")
     if study.schedule_digest != binding.schedule_digest:
         errors.append("study.schedule_digest")
-    if study.claim_tier != "deterministic_conformance":
-        errors.append("study.claim_tier")
     return errors
 
 

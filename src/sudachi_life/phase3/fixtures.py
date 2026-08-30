@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 from .model import (
-    ACCEPTED_PHASE3_REGISTRY_BYTES,
-    ACCEPTED_PHASE3_REGISTRY_SHA256,
     CONTRACT_VERSION,
-    IMPLEMENTATION_VERSION,
     Availability,
     AttemptRecord,
     AttemptState,
@@ -15,32 +12,50 @@ from .model import (
     EpisodeBinding,
     EpisodeEvidence,
     EvaluationPointRecord,
+    EvidenceIdentity,
+    FIXTURE_ATTEMPT_ASSIGNMENT_RULE,
+    FIXTURE_CLOSURE_BYTES_LIMIT,
+    FIXTURE_CLOSURE_OPERATIONS_LIMIT,
+    FIXTURE_COST_POLICY_ID,
+    FIXTURE_MANIFEST_VERSION,
+    FIXTURE_POPULATION_RECONCILIATION_RULE,
+    FIXTURE_PROTECTED_CONFIGURATION_VERSION,
+    FIXTURE_PUBLICATION_POLICY_VERSION,
+    FIXTURE_RUN_GENERATION_RULE,
+    FIXTURE_SEAL_BYTES_LIMIT,
+    FIXTURE_SEAL_OPERATIONS_LIMIT,
+    FIXTURE_STOPPING_RULE,
+    FIXTURE_STUDY_PURPOSE,
     InformationFlowEvidence,
+    InformationFlowInvocation,
+    InformationFlowPolicy,
+    MANDATORY_FAILURE_CONTROLS,
     Point,
     ProtectedSchedule,
+    PublicationPolicy,
     PublicationSeal,
-    REPORT_GROUPS,
     ReviewedDraft,
     StudyManifest,
     TransitionKind,
     TransitionRecord,
     WRITER_ADMINISTRATION,
     WRITER_ORGANISM,
-    canonical_json,
     digest_bytes,
     digest_record,
 )
 from ._fixture_helpers import (
-    _FAILURE_CONTROLS,
     _base_substrates,
     _capability_results,
+    _closure_payload_bytes,
     _cost_vector,
     _report_groups,
+    _seal_payload_bytes,
     _sha,
     _substrate,
 )
 
-def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") -> EpisodeEvidence:
+
+def build_valid_fixture_episode(*, repository_commit: str = "0" * 40) -> EpisodeEvidence:
     """Build the canonical synthetic W1 fixture used by protected Phase 3 tests.
 
     It exercises the accepted evidence mechanics but intentionally does not
@@ -53,6 +68,27 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         e2_checkpoint_id="checkpoint:e2",
         before_availability=Availability.W0,
         after_availability=Availability.W1,
+    )
+    verifier_digest = _sha("phase3-conversion-verifier-v1")
+    evaluator_digest = _sha("phase3-heldout-evaluator-v1")
+    information_flow_policy = InformationFlowPolicy(
+        version="phase3-info-flow-v1",
+        verifier_digest=verifier_digest,
+        evaluator_digest=evaluator_digest,
+        verifier_input_store_id="store:verifier:input",
+        verifier_output_store_id="store:verifier:output",
+        evaluator_input_store_id="store:evaluator:input",
+        evaluator_output_store_id="store:evaluator:output",
+        verifier_path_id="path:verifier",
+        evaluator_path_id="path:evaluator",
+        verifier_cache_id="cache:verifier",
+        evaluator_cache_id="cache:evaluator",
+        verifier_probe_budget=1,
+        verifier_retry_budget=0,
+        permitted_feedback_fields=("verification_status",),
+        permitted_feedback_recipients=("administration",),
+        permitted_feedback_timing="preterminal_verifier_only",
+        permitted_feedback_cardinality=1,
     )
     binding = EpisodeBinding(
         study_id="study:fixture-foundation",
@@ -67,19 +103,27 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         capability_suite_version="phase3-fixture-suite-v1",
         capability_suite_digest=_sha("phase3-fixture-suite-v1"),
         outcome_evaluator_version="phase3-heldout-evaluator-v1",
-        outcome_evaluator_digest=_sha("phase3-heldout-evaluator-v1"),
+        outcome_evaluator_digest=evaluator_digest,
         conversion_verifier_version="phase3-conversion-verifier-v1",
-        conversion_verifier_digest=_sha("phase3-conversion-verifier-v1"),
-        information_flow_policy_version="phase3-info-flow-v1",
-        information_flow_policy_digest=_sha("phase3-info-flow-v1"),
+        conversion_verifier_digest=verifier_digest,
+        information_flow_policy_version=information_flow_policy.version,
+        information_flow_policy_digest=information_flow_policy.canonical_digest(),
         schedule_version=schedule.version,
         schedule_digest=schedule.canonical_digest(),
         protected_budget_version="phase1-v1",
-        protected_configuration_version="phase3-fixture-v1",
+        protected_configuration_version=FIXTURE_PROTECTED_CONFIGURATION_VERSION,
         baseline_checkpoint_id="checkpoint:e0",
         caregiver_condition_id="deterministic-fixture",
         substrate_baseline_condition_id="fixture-baseline-v1",
         fixture_case_id="fixture:w1-retained-rule",
+        contract_version=CONTRACT_VERSION,
+    )
+    publication_policy = PublicationPolicy(
+        version=FIXTURE_PUBLICATION_POLICY_VERSION,
+        closure_operations_limit=FIXTURE_CLOSURE_OPERATIONS_LIMIT,
+        closure_bytes_limit=FIXTURE_CLOSURE_BYTES_LIMIT,
+        seal_operations_limit=FIXTURE_SEAL_OPERATIONS_LIMIT,
+        seal_bytes_limit=FIXTURE_SEAL_BYTES_LIMIT,
     )
     attempt = AttemptRecord(
         attempt_id=binding.attempt_id,
@@ -96,17 +140,25 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
     )
     study = StudyManifest(
         study_id=binding.study_id,
+        manifest_version=FIXTURE_MANIFEST_VERSION,
+        study_purpose=FIXTURE_STUDY_PURPOSE,
         claim_tier="deterministic_conformance",
+        deterministic_run_generation_rule=FIXTURE_RUN_GENERATION_RULE,
         planned_attempt_ordinals=(1,),
         exact_attempt_count=1,
-        required_failure_controls=_FAILURE_CONTROLS,
+        stopping_rule=FIXTURE_STOPPING_RULE,
+        attempt_assignment_rule=FIXTURE_ATTEMPT_ASSIGNMENT_RULE,
+        required_failure_controls=MANDATORY_FAILURE_CONTROLS,
+        comparison_family_conditions=(),
+        population_reconciliation_rule=FIXTURE_POPULATION_RECONCILIATION_RULE,
         attempt_records=(attempt,),
         suite_digest=binding.capability_suite_digest,
         evaluator_digest=binding.outcome_evaluator_digest,
         verifier_digest=binding.conversion_verifier_digest,
         information_flow_policy_digest=binding.information_flow_policy_digest,
         schedule_digest=binding.schedule_digest,
-        cost_policy_id="phase3-fixture-cost-policy-v1",
+        cost_policy_id=FIXTURE_COST_POLICY_ID,
+        publication_policy=publication_policy,
     )
     care_payload = b"fixture demonstration: map marker-alpha to capability success"
     caregiving = CaregivingRecord(
@@ -171,7 +223,27 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
     transition_ids = tuple(record.transition_id for record in transitions)
     rule_payload = b"fixture-rule-v1: marker-alpha -> pass"
 
+    e0_identity = EvidenceIdentity.from_binding(
+        binding,
+        point=Point.E0,
+        cutoff_ordinal=schedule.e1_cutoff_ordinal,
+        checkpoint_id=binding.baseline_checkpoint_id,
+    )
+    e1_identity = EvidenceIdentity.from_binding(
+        binding,
+        point=Point.E1,
+        cutoff_ordinal=schedule.e1_cutoff_ordinal,
+        checkpoint_id=schedule.e1_checkpoint_id,
+    )
+    e2_identity = EvidenceIdentity.from_binding(
+        binding,
+        point=Point.E2,
+        cutoff_ordinal=schedule.e1_cutoff_ordinal,
+        checkpoint_id=schedule.e2_checkpoint_id,
+    )
+
     e0 = EvaluationPointRecord(
+        identity=e0_identity,
         point=Point.E0,
         ordinal=1,
         availability=Availability.W0,
@@ -181,9 +253,9 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         reachable=True,
         suite_complete=True,
         evaluator_sequestered=True,
-        capability_results=_capability_results(binding, Point.E0, binding.baseline_checkpoint_id),
+        capability_results=_capability_results(binding, Point.E0, binding.baseline_checkpoint_id, schedule.e1_cutoff_ordinal),
         substrates=_base_substrates(binding, Point.E0, binding.baseline_checkpoint_id),
-        cumulative_cost=_cost_vector("e0"),
+        cumulative_cost=_cost_vector("e0", e0_identity),
     )
     rule_e1 = _substrate(
         binding=binding,
@@ -201,6 +273,7 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         capability_dependency="capability:fixture-transform",
     )
     e1 = EvaluationPointRecord(
+        identity=e1_identity,
         point=Point.E1,
         ordinal=8,
         availability=Availability.W0,
@@ -210,9 +283,9 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         reachable=True,
         suite_complete=True,
         evaluator_sequestered=True,
-        capability_results=_capability_results(binding, Point.E1, schedule.e1_checkpoint_id),
+        capability_results=_capability_results(binding, Point.E1, schedule.e1_checkpoint_id, schedule.e1_cutoff_ordinal),
         substrates=_base_substrates(binding, Point.E1, schedule.e1_checkpoint_id) + (rule_e1,),
-        cumulative_cost=_cost_vector("e1"),
+        cumulative_cost=_cost_vector("e1", e1_identity),
     )
     rule_e2 = _substrate(
         binding=binding,
@@ -252,6 +325,7 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         ),
     )
     e2 = EvaluationPointRecord(
+        identity=e2_identity,
         point=Point.E2,
         ordinal=10,
         availability=Availability.W1,
@@ -261,11 +335,12 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         reachable=True,
         suite_complete=True,
         evaluator_sequestered=True,
-        capability_results=_capability_results(binding, Point.E2, schedule.e2_checkpoint_id),
+        capability_results=_capability_results(binding, Point.E2, schedule.e2_checkpoint_id, schedule.e1_cutoff_ordinal),
         substrates=_base_substrates(binding, Point.E2, schedule.e2_checkpoint_id) + (rule_e2,),
-        cumulative_cost=_cost_vector("e2"),
+        cumulative_cost=_cost_vector("e2", e2_identity),
     )
     disablement = DisablementProof(
+        identity=e2_identity,
         schedule_digest=binding.schedule_digest,
         transition_id=availability_transition.transition_id,
         writer=WRITER_ADMINISTRATION,
@@ -285,19 +360,82 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         alternate_path_probes_passed=True,
         independently_reconstructed=True,
     )
+    invocations = (
+        InformationFlowInvocation(
+            invocation_id="evaluator:e0:001",
+            identity=e0_identity,
+            role="evaluator",
+            ordinal=1,
+            input_digest=_sha("heldout-evaluator-e0-input"),
+            output_digest=_sha("heldout-evaluator-e0-output"),
+            probe_ordinal=0,
+            retry_ordinal=0,
+            disclosed_fields=(),
+            recipients=("protected_evidence_store",),
+            disclosure_timing="protected_only",
+            contains_heldout_material=True,
+            derivative_of_heldout=False,
+            evaluator_targeted_artifact=False,
+        ),
+        InformationFlowInvocation(
+            invocation_id="verifier:e1:001",
+            identity=e1_identity,
+            role="verifier",
+            ordinal=4,
+            input_digest=_sha("conversion-verifier-input"),
+            output_digest=_sha("conversion-verifier-output"),
+            probe_ordinal=1,
+            retry_ordinal=0,
+            disclosed_fields=("verification_status",),
+            recipients=("administration",),
+            disclosure_timing="preterminal_verifier_only",
+            contains_heldout_material=False,
+            derivative_of_heldout=False,
+            evaluator_targeted_artifact=False,
+        ),
+        InformationFlowInvocation(
+            invocation_id="evaluator:e1:001",
+            identity=e1_identity,
+            role="evaluator",
+            ordinal=8,
+            input_digest=_sha("heldout-evaluator-e1-input"),
+            output_digest=_sha("heldout-evaluator-e1-output"),
+            probe_ordinal=0,
+            retry_ordinal=0,
+            disclosed_fields=(),
+            recipients=("protected_evidence_store",),
+            disclosure_timing="protected_only",
+            contains_heldout_material=True,
+            derivative_of_heldout=False,
+            evaluator_targeted_artifact=False,
+        ),
+        InformationFlowInvocation(
+            invocation_id="evaluator:e2:001",
+            identity=e2_identity,
+            role="evaluator",
+            ordinal=10,
+            input_digest=_sha("heldout-evaluator-e2-input"),
+            output_digest=_sha("heldout-evaluator-e2-output"),
+            probe_ordinal=0,
+            retry_ordinal=0,
+            disclosed_fields=(),
+            recipients=("protected_evidence_store",),
+            disclosure_timing="protected_only",
+            contains_heldout_material=True,
+            derivative_of_heldout=False,
+            evaluator_targeted_artifact=False,
+        ),
+    )
     information_flow = InformationFlowEvidence(
-        verifier_evaluator_distinct=True,
-        stores_disjoint=True,
-        paths_disjoint=True,
-        caches_disjoint=True,
+        identity=e2_identity,
+        invocations=invocations,
         heldout_access_before_terminal=0,
         derivative_leaks=0,
         probe_budget_exceeded=False,
         retry_budget_exhausted=False,
         evaluator_targeted_artifact=False,
-        invocations_reconciled=True,
     )
-    final_cost = _cost_vector("final")
+    final_cost = _cost_vector("final", e2_identity)
     points = (e0, e1, e2)
     groups = _report_groups(
         binding=binding,
@@ -306,32 +444,37 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         transitions=transitions,
         points=points,
         disablement=disablement,
+        information_flow_policy=information_flow_policy,
         information_flow=information_flow,
         final_cost=final_cost,
         terminal_state=AttemptState.COMPLETED_SUCCESSFUL,
         repository_commit=repository_commit,
     )
-    draft = ReviewedDraft(groups=groups, prepared_ordinal=11, reviewed=True)
+    draft = ReviewedDraft(identity=e2_identity, groups=groups, prepared_ordinal=11, reviewed=True)
+    draft_digest = draft.canonical_digest()
+    final_cost_digest = final_cost.canonical_digest()
     closure = CostClosure(
+        identity=e2_identity,
         closure_id="cost-closure:fixture-001",
-        draft_digest=draft.canonical_digest(),
-        cost_vector_digest=final_cost.canonical_digest(),
+        draft_digest=draft_digest,
+        cost_vector_digest=final_cost_digest,
         closed_after_ordinal=12,
         vector_reconciled=True,
         all_in_scope_work_complete=True,
         late_in_scope_cost_count=0,
         unmatched_event_count=0,
         visible_unmeasured_labor_count=0,
-    )
-    seal_payload = canonical_json({"draft": draft.canonical_digest(), "closure": closure.canonical_digest()}).encode("utf-8")
-    seal = PublicationSeal(
-        seal_id="publication-seal:fixture-001",
-        draft_digest=draft.canonical_digest(),
-        closure_digest=closure.canonical_digest(),
         operations_used=1,
-        operations_limit=1,
-        bytes_used=len(seal_payload),
-        bytes_limit=4096,
+        bytes_used=_closure_payload_bytes(draft_digest=draft_digest, cost_vector_digest=final_cost_digest),
+    )
+    closure_digest = closure.canonical_digest()
+    seal = PublicationSeal(
+        identity=e2_identity,
+        seal_id="publication-seal:fixture-001",
+        draft_digest=draft_digest,
+        closure_digest=closure_digest,
+        operations_used=1,
+        bytes_used=_seal_payload_bytes(draft_digest=draft_digest, closure_digest=closure_digest),
         retries=0,
         semantic_edits=0,
     )
@@ -344,6 +487,7 @@ def build_valid_fixture_episode(*, repository_commit: str = "fixture-unmerged") 
         availability_transition=availability_transition,
         points=points,
         disablement=disablement,
+        information_flow_policy=information_flow_policy,
         information_flow=information_flow,
         final_cost=final_cost,
         reviewed_draft=draft,
