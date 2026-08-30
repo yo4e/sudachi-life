@@ -237,6 +237,23 @@ Rejected by the accepted information-flow boundary.
 
 Rejected because caregiver material remains untrusted provenance and live action adoption/execution is out of scope.
 
+## 2026-08-30 independent-audit repair synchronization
+
+The independent implementation audit in Issue #147 reviewed exact candidate `8c14d6acaa76c5c523ff42e48e7498b6c1b24b2a` and required implementation repairs before freeze. The repair pass is intentionally confined to this additive Phase 3 evidence package and does not change research purpose, frozen Phase 1/2 behavior, writer categories, external capability, or accepted resource scope.
+
+The repaired evidence model and validators now additionally require:
+
+- a complete fixture-relevant pre-E0 `StudyManifest`, including manifest version, study purpose, deterministic generation/assignment/stopping/population rules, mandatory failure controls, cost-policy identity, and a digest-bound publication policy;
+- a concrete pre-E0 `InformationFlowPolicy` plus immutable verifier/evaluator invocation records, with policy-digest equality, disjoint domains, exact recipient/disclosure/probe/retry checks, and reconciliation to the protected final cost counters instead of accepting summary booleans as sufficient evidence;
+- a pre-E0 `PublicationPolicy` that fixes closure/seal operation and byte limits, with actual closure/seal byte use reconstructed deterministically and checked against those fixed limits;
+- exact E0 checkpoint equality with the episode baseline checkpoint;
+- `EvidenceIdentity` linkage for nested protected results, point/integrity evidence, cost vectors, disablement, information-flow evidence, report draft, closure, and seal so foreign episode/lineage/point/checkpoint evidence fails closed;
+- an exact 40- or 64-hex repository commit identifier in the report provenance.
+
+Adversarial regressions cover post-hoc study/cost-policy mutation, information-flow policy or ledger mutation, undeclared recipients, publication-policy/byte mutation, foreign E0/nested identities, and invalid repository commit provenance. The source/test repair commit `003cf4fe40f8d2355dc81acb67169a8cc9ea1341` passed GitHub Actions Test run **708** / workflow run `33288494461` with **438 passed in 59.64s** before this documentation-only synchronization.
+
+This synchronization does not declare the package frozen. A fresh independent reviewer who did not participate in these repairs must audit the final synchronized exact candidate before merge.
+
 ## Freeze gate
 
 This ADR and its implementation are not frozen merely because the PR passes ordinary CI. Before freeze:
