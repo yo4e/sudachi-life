@@ -16,6 +16,8 @@ from sudachi_life.phase3.caregiver import (
 from sudachi_life.phase3.human_live import (
     HUMAN_PILOT_LIVE_BRIDGE_VERSION,
     LOCAL_STRUCTURED_HUMAN_TRANSPORT,
+    SELF_HUMAN_AUTHORIZATION_RECORD,
+    SELF_HUMAN_CONSENT_NOTICE_VERSION,
     SELF_HUMAN_PILOT_ID,
     HumanConsultationMeasurement,
     HumanPilotAttemptState,
@@ -114,12 +116,27 @@ def _accept(
     )
 
 
+def _valid_used_state(*, consultations: int, clarifications: int = 0) -> HumanPilotAttemptState:
+    request_ids = tuple(f"request:used:{index}" for index in range(consultations))
+    proposal_ids = tuple(f"proposal:{index:064x}" for index in range(consultations))
+    return HumanPilotAttemptState(
+        consultations_used=consultations,
+        clarifications_used=clarifications,
+        caregiver_active_ms_used=10_000,
+        attempt_elapsed_ms=20_000,
+        accepted_request_ids=request_ids,
+        accepted_proposal_ids=proposal_ids,
+    )
+
+
 def test_authorization_is_exact_self_only_owner_approved_scope() -> None:
     authorization = _authorization()
 
     assert authorization.protocol_version == HUMAN_PILOT_LIVE_BRIDGE_VERSION
     assert authorization.pilot_id == SELF_HUMAN_PILOT_ID
     assert authorization.transport == LOCAL_STRUCTURED_HUMAN_TRANSPORT
+    assert authorization.authorization_record == SELF_HUMAN_AUTHORIZATION_RECORD
+    assert authorization.consent_notice_version == SELF_HUMAN_CONSENT_NOTICE_VERSION
     assert authorization.project_owner_is_caregiver is True
     assert authorization.self_only is True
     assert authorization.ethics_review_status is EthicsReviewStatus.NOT_REQUIRED_DECLARED
@@ -146,6 +163,8 @@ def test_live_bridge_accepts_structured_self_human_proposal_only() -> None:
     assert proposal.accounting.money_minor_units is None
     assert result.state.consultations_used == 1
     assert result.state.caregiver_active_ms_used == 5_000
+    assert result.state.accepted_request_ids == (_request().request_id,)
+    assert result.state.accepted_proposal_ids == (proposal.proposal_id,)
 
 
 def test_generic_validator_remains_fixture_only_and_rejects_live_human() -> None:
@@ -177,6 +196,8 @@ def test_relaxed_or_non_self_authorization_fails_closed() -> None:
     authorization = _authorization()
     relaxed = replace(
         authorization,
+        authorization_record="chat-only",
+        consent_notice_version="unknown",
         self_only=False,
         project_owner_is_caregiver=False,
         consent_attested=False,
@@ -189,6 +210,8 @@ def test_relaxed_or_non_self_authorization_fails_closed() -> None:
     errors = validate_self_human_pilot_authorization(relaxed)
     result = _accept(authorization=relaxed)
 
+    assert "authorization.record" in errors
+    assert "authorization.consent_notice_version" in errors
     assert "authorization.self_only" in errors
     assert "authorization.owner_is_caregiver" in errors
     assert "authorization.consent_attested" in errors
@@ -218,10 +241,16 @@ def test_privacy_and_visible_reference_violations_are_rejected() -> None:
 
 def test_latency_active_time_and_wall_budgets_fail_closed() -> None:
     latency = _accept(
-        measurement=_measurement(latency_ms=PROPOSED_MAX_RESPONSE_LATENCY_MS + 1)
+        measurement=_measurement(
+            elapsed_ms=PROPOSED_MAX_RESPONSE_LATENCY_MS + 2,
+            latency_ms=PROPOSED_MAX_RESPONSE_LATENCY_MS + 1,
+        )
     )
     active = _accept(
-        measurement=_measurement(active_ms=PROPOSED_MAX_CAREGIVER_ACTIVE_MS_PER_ATTEMPT + 1)
+        measurement=_measurement(
+            elapsed_ms=PROPOSED_MAX_CAREGIVER_ACTIVE_MS_PER_ATTEMPT + 2,
+            active_ms=PROPOSED_MAX_CAREGIVER_ACTIVE_MS_PER_ATTEMPT + 1,
+        )
     )
     wall = _accept(
         measurement=_measurement(elapsed_ms=PROPOSED_MAX_ATTEMPT_WALL_MS + 1)
@@ -232,13 +261,16 @@ def test_latency_active_time_and_wall_budgets_fail_closed() -> None:
     assert "bridge.attempt_wall_budget" in wall.errors
 
 
+def test_measured_time_must_fit_inside_elapsed_attempt_interval() -> None:
+    latency = _accept(measurement=_measurement(elapsed_ms=1_000, latency_ms=1_001, active_ms=500))
+    active = _accept(measurement=_measurement(elapsed_ms=1_000, latency_ms=500, active_ms=1_001))
+
+    assert "bridge.latency_exceeds_elapsed" in latency.errors
+    assert "bridge.active_ms_exceeds_elapsed" in active.errors
+
+
 def test_consultation_budget_is_aggregate_and_fixed() -> None:
-    state = replace(
-        start_self_human_pilot_attempt(),
-        consultations_used=PROPOSED_MAX_CONSULTATIONS_PER_ATTEMPT,
-        caregiver_active_ms_used=10_000,
-        attempt_elapsed_ms=20_000,
-    )
+    state = _valid_used_state(consultations=PROPOSED_MAX_CONSULTATIONS_PER_ATTEMPT)
     result = _accept(state=state, measurement=_measurement(elapsed_ms=25_000))
 
     assert result.accepted is False
@@ -246,29 +278,99 @@ def test_consultation_budget_is_aggregate_and_fixed() -> None:
     assert result.state is state
 
 
-def test_clarification_budget_and_linkage_are_enforced() -> None:
+def test_clarification_must_link_to_prior_accepted_proposal_and_budget() -> None:
     unlinked = _accept(measurement=_measurement(is_clarification=True))
-    linked_draft = _draft(clarification_of_proposal_id="proposal:" + "0" * 64)
-    linked = _accept(
-        draft=linked_draft,
-        measurement=_measurement(is_clarification=True),
+    first = _accept()
+    assert first.accepted is True
+    assert first.proposal is not None
+
+    linked_draft = _draft(
+        sequence_ordinal=2,
+        clarification_of_proposal_id=first.proposal.proposal_id,
     )
-    exhausted_state = replace(
-        start_self_human_pilot_attempt(),
-        consultations_used=2,
-        clarifications_used=PROPOSED_MAX_CLARIFICATIONS_PER_ATTEMPT,
-        attempt_elapsed_ms=10_000,
+    linked = _accept(
+        state=first.state,
+        request=_request(sequence_ordinal=2),
+        draft=linked_draft,
+        measurement=_measurement(elapsed_ms=40_000, is_clarification=True),
+    )
+
+    exhausted_state = _valid_used_state(
+        consultations=2,
+        clarifications=PROPOSED_MAX_CLARIFICATIONS_PER_ATTEMPT,
+    )
+    exhausted_draft = _draft(
+        sequence_ordinal=3,
+        clarification_of_proposal_id=exhausted_state.accepted_proposal_ids[0],
     )
     exhausted = _accept(
         state=exhausted_state,
-        draft=linked_draft,
-        measurement=_measurement(elapsed_ms=20_000, is_clarification=True),
+        request=_request(sequence_ordinal=3),
+        draft=exhausted_draft,
+        measurement=_measurement(elapsed_ms=40_000, is_clarification=True),
     )
 
     assert "bridge.clarification_binding" in unlinked.errors
     assert linked.accepted is True
     assert linked.state.clarifications_used == 1
     assert "bridge.clarification_budget" in exhausted.errors
+
+
+def test_unknown_clarification_source_fails_closed() -> None:
+    first = _accept()
+    unknown = _draft(
+        sequence_ordinal=2,
+        clarification_of_proposal_id="proposal:" + "f" * 64,
+    )
+    result = _accept(
+        state=first.state,
+        request=_request(sequence_ordinal=2),
+        draft=unknown,
+        measurement=_measurement(elapsed_ms=40_000, is_clarification=True),
+    )
+
+    assert result.accepted is False
+    assert "bridge.clarification_source" in result.errors
+
+
+def test_request_replay_is_rejected() -> None:
+    first = _accept()
+    replay = _accept(
+        state=first.state,
+        measurement=_measurement(elapsed_ms=40_000),
+    )
+
+    assert replay.accepted is False
+    assert "bridge.request_replay" in replay.errors
+
+
+def test_tampered_aggregate_state_fails_closed() -> None:
+    negative = HumanPilotAttemptState(consultations_used=-1)
+    count_mismatch = HumanPilotAttemptState(
+        consultations_used=1,
+        accepted_request_ids=(),
+        accepted_proposal_ids=(),
+    )
+
+    negative_result = _accept(state=negative)
+    mismatch_result = _accept(state=count_mismatch)
+
+    assert "bridge.state.consultations_used" in negative_result.errors
+    assert "bridge.state.request_count" in mismatch_result.errors
+    assert "bridge.state.proposal_count" in mismatch_result.errors
+
+
+def test_measurement_bool_masquerading_as_integer_fails_closed() -> None:
+    measurement = HumanConsultationMeasurement(
+        latency_ms=True,  # type: ignore[arg-type]
+        caregiver_active_ms=1,
+        attempt_elapsed_ms=10,
+        source_timestamp="2026-08-30T14:30:00+09:00",
+    )
+    result = _accept(measurement=measurement)
+
+    assert result.accepted is False
+    assert "bridge.latency_ms_type" in result.errors
 
 
 def test_offset_timestamp_is_required_for_live_provenance() -> None:
