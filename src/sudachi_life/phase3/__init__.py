@@ -37,6 +37,12 @@ from .model import (
     Point,
     accepted_phase3_requirement_ids,
 )
+from .rehearsal import (
+    IntegratedCaregiverRehearsal,
+    IntegratedRehearsalValidation,
+    build_integrated_caregiver_rehearsal,
+    validate_integrated_caregiver_rehearsal,
+)
 from .validation import (
     ReplayConflict,
     advance_attempt_history,
@@ -67,6 +73,8 @@ __all__ = [
     "EpisodeEvidence",
     "FixtureCaregiverAdapter",
     "FixtureResponse",
+    "IntegratedCaregiverRehearsal",
+    "IntegratedRehearsalValidation",
     "Point",
     "ProposalAuthority",
     "ProposalKind",
@@ -74,11 +82,13 @@ __all__ = [
     "ReplayConflict",
     "accepted_phase3_requirement_ids",
     "advance_attempt_history",
+    "build_integrated_caregiver_rehearsal",
     "build_valid_fixture_episode",
     "classify_availability",
     "proposal_data_fields",
     "proposal_from_text",
     "reconcile_immutable_replay",
     "validate_episode",
+    "validate_integrated_caregiver_rehearsal",
     "validate_proposal",
 ]
